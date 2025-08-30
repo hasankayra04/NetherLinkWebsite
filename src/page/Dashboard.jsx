@@ -462,7 +462,7 @@ export default function Dashboard() {
                     
                     <div className="mt-6">
                       <button
-                        onClick={() => handleSubscription("price_1Rb8PeAVKkE923gG4z0RBQoC")}
+                        onClick={() => handleSubscription("price_1S1x3iAVKkE923gG5UyRlul5")}
                         className="gaming-button bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-6 py-3 rounded-lg shadow-lg transition flex items-center w-auto"
                       >
                         <FaCreditCard className="mr-2" />
