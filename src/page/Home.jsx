@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { FaWindows, FaApple, FaServer, FaGamepad } from "react-icons/fa";
+import { FaWindows, FaApple, FaServer, FaGamepad, FaAndroid } from "react-icons/fa";
+import { SiApple } from "react-icons/si";
 import Footer from "../Footer";
 import Navbar from "../Navbar";
 import WindowsDownloadModal from "./WindowsDownloadModal";
@@ -244,11 +245,11 @@ export default function Home() {
                   Choose your platform you want to run NetherLink on:
                 </p>
 
-                <div className="flex flex-wrap justify-center gap-5 max-w-md mx-auto">
-                  <div className="flex-1 min-w-[150px] max-w-[200px]">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                  <div className="flex-1">
                     <button
                       onClick={() => setWindowsModalOpen(true)}
-                      className="windows-modal-trigger bg-blue-600 hover:bg-blue-500 flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-base font-medium text-white shadow-lg focus:outline-none w-full transition gaming-button"
+                      className="windows-modal-trigger bg-blue-600 hover:bg-blue-500 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-white shadow-lg focus:outline-none w-full transition gaming-button"
                       aria-haspopup="dialog"
                     >
                       <FaWindows className="text-lg" />
@@ -256,13 +257,37 @@ export default function Home() {
                     </button>
                   </div>
 
-                  <div className="flex-1 min-w-[150px] max-w-[200px]">
+                  <div className="flex-1">
                     <a
                       href="https://github.com/NetherLinkMC/NetherLinkWebsite/raw/refs/heads/main/downloads/apple/NetherLink.dmg"
-                      className="bg-gray-700 hover:bg-gray-600 flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-base font-medium text-white shadow-lg focus:outline-none w-full transition gaming-button"
+                      className="bg-gray-700 hover:bg-gray-600 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-white shadow-lg focus:outline-none w-full transition gaming-button"
                     >
                       <FaApple className="text-lg" />
                       Mac
+                    </a>
+                  </div>
+
+                  <div className="flex-1">
+                    <a
+                      href="https://play.google.com/store/apps/details?id=net.netherdev.netherLink"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-green-600 hover:bg-green-500 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-white shadow-lg focus:outline-none w-full transition gaming-button"
+                    >
+                      <FaAndroid className="text-lg" />
+                      Android
+                    </a>
+                  </div>
+
+                  <div className="flex-1">
+                    <a
+                      href="https://apps.apple.com/be/app/netherlink/id6747323142?l=en"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-gray-800 hover:bg-gray-700 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-white shadow-lg focus:outline-none w-full transition gaming-button border border-gray-600"
+                    >
+                      <SiApple className="text-lg" />
+                      iOS
                     </a>
                   </div>
                 </div>
