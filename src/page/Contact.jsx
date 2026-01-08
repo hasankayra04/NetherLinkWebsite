@@ -1,157 +1,170 @@
 import { Link } from "react-router-dom";
 import Navbar from "../Navbar";
 import Footer from "../Footer";
-import { FaEnvelope, FaMapMarkerAlt, FaPhone, FaDiscord, FaArrowLeft, FaBuilding } from "react-icons/fa";
+import { FaEnvelope, FaMapMarkerAlt, FaDiscord, FaArrowLeft, FaBuilding, FaIdCard } from "react-icons/fa";
 
 export default function Contact() {
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-200 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-gray-200 font-sans">
       <Navbar />
 
       <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="relative bg-gray-800 border border-gray-700 p-8 rounded-lg shadow-lg overflow-hidden gaming-card">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-blue-600"></div>
+        <div className="relative bg-slate-900/50 backdrop-blur-xl border border-cyan-500/30 p-8 rounded-2xl shadow-2xl shadow-cyan-500/10 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/50"></div>
 
-          <div className="flex justify-center mb-6">
-            <div className="rounded-full bg-gray-700/50 p-4 border border-emerald-600/30">
-              <FaEnvelope className="w-10 h-10 text-emerald-400" />
+          <div className="flex justify-center mb-8">
+            <div className="relative">
+              <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-xl"></div>
+              <div className="relative rounded-full bg-cyan-500/10 p-5 border border-cyan-500/30">
+                <FaEnvelope className="w-12 h-12 text-cyan-400" />
+              </div>
             </div>
           </div>
 
-          <h1 className="text-3xl font-bold mb-6 text-center text-emerald-400 pixelated">
-            Contact Us
+          <h1 className="text-4xl font-bold mb-6 text-center">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-500">
+              Contact Us
+            </span>
           </h1>
 
-          <p className="mb-8 text-gray-300 text-lg text-center max-w-2xl mx-auto">
-            Need help or want to get in touch with <span className="text-emerald-400 font-medium">NetherLink</span>? 
-            We're happy to assist you with support, business inquiries, or feedback!
+          <p className="mb-10 text-gray-400 text-lg text-center max-w-2xl mx-auto leading-relaxed">
+            Need help or want to get in touch with <span className="text-cyan-400 font-semibold">NetherLink</span>? 
+            We're happy to assist you with support, business inquiries, or feedback! 
           </p>
 
           <div className="space-y-8">
             <section>
-              <h2 className="text-xl font-semibold text-blue-400 mb-3 border-l-4 border-blue-500 pl-3">
+              <h2 className="text-xl font-bold text-cyan-400 mb-5 border-l-4 border-cyan-500 pl-4">
                 Company Details
               </h2>
-              <div className="bg-gray-700/50 rounded-lg p-4 border border-gray-600 flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <FaBuilding className="text-emerald-400" />
-                  <span className="font-medium text-gray-200">Jens-Co</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FaMapMarkerAlt className="text-emerald-400" />
-                  <span>
-                    Statiestraat 26<br />
-                    1570 Tollembeek<br />
-                    Belgie
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FaEnvelope className="text-emerald-400" />
-                  <a
-                    href="mailto:jenscollaert@icloud.com"
-                    className="text-emerald-400 hover:underline"
-                  >
-                    jenscollaert@icloud.com
-                  </a>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FaDiscord className="text-emerald-400" />
-                  <a
-                    href="https://discord.gg/xvaNzE35Rs"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-emerald-400 hover:underline"
-                  >
-                    Join Discord
-                  </a>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-300 font-semibold">KBO:</span> <span>1025.363.838</span>
+              <div className="bg-slate-800/50 backdrop-blur-xl rounded-xl p-6 border border-cyan-500/20">
+                <div className="grid gap-5">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-cyan-500/10 rounded-xl flex items-center justify-center flex-shrink-0 border border-cyan-500/30">
+                      <FaBuilding className="text-cyan-400 text-xl" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-white mb-1">Company Name</div>
+                      <div className="text-gray-400">Jens-Co</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-cyan-500/10 rounded-xl flex items-center justify-center flex-shrink-0 border border-cyan-500/30">
+                      <FaMapMarkerAlt className="text-cyan-400 text-xl" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-white mb-1">Address</div>
+                      <div className="text-gray-400">
+                        Statiestraat 26<br />
+                        1570 Tollembeek<br />
+                        Belgium
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-cyan-500/10 rounded-xl flex items-center justify-center flex-shrink-0 border border-cyan-500/30">
+                      <FaEnvelope className="text-cyan-400 text-xl" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-white mb-1">Email</div>
+                      <a
+                        href="mailto:jenscollaert@icloud.com"
+                        className="text-cyan-400 hover:text-cyan-300 transition-colors"
+                      >
+                        jenscollaert@icloud.com
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-cyan-500/10 rounded-xl flex items-center justify-center flex-shrink-0 border border-cyan-500/30">
+                      <FaDiscord className="text-cyan-400 text-xl" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-white mb-1">Discord</div>
+                      <a
+                        href="https://discord.gg/xvaNzE35Rs"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-cyan-400 hover:text-cyan-300 transition-colors"
+                      >
+                        Join our community
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-cyan-500/10 rounded-xl flex items-center justify-center flex-shrink-0 border border-cyan-500/30">
+                      <FaIdCard className="text-cyan-400 text-xl" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-white mb-1">KBO Number</div>
+                      <div className="text-gray-400 font-mono">1025.363.838</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-blue-400 mb-3 border-l-4 border-blue-500 pl-3">
+              <h2 className="text-xl font-bold text-cyan-400 mb-5 border-l-4 border-cyan-500 pl-4">
                 Support & Quick Contact
               </h2>
-              <div className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
-                <p className="text-gray-300 mb-2">
+              <div className="bg-slate-800/50 backdrop-blur-xl rounded-xl p-6 border border-cyan-500/20">
+                <p className="text-gray-400 leading-relaxed mb-4">
                   The quickest way to get help is via our Discord community. 
                   For business or privacy matters, please email us directly.
                 </p>
-                <ul className="list-disc ml-6 mt-2 text-gray-300 space-y-1">
-                  <li>
-                    <a
-                      href="mailto:jenscollaert@icloud.com"
-                      className="text-emerald-400 hover:underline"
-                    >
-                      jenscollaert@icloud.com
-                    </a> – General support & business
-                  </li>
-                  <li>
-                    <a
-                      href="https://discord.gg/xvaNzE35Rs"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-emerald-400 hover:underline"
-                    >
-                      Discord Community
-                    </a> – Fastest support, community chat
-                  </li>
-                </ul>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-4 bg-slate-900/50 rounded-xl border border-cyan-500/10">
+                    <FaEnvelope className="text-cyan-400 text-lg flex-shrink-0" />
+                    <div>
+                      <div className="text-sm text-gray-500 mb-1">Email Support</div>
+                      <a
+                        href="mailto:jenscollaert@icloud.com"
+                        className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
+                      >
+                        jenscollaert@icloud.com
+                      </a>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 p-4 bg-slate-900/50 rounded-xl border border-cyan-500/10">
+                    <FaDiscord className="text-cyan-400 text-lg flex-shrink-0" />
+                    <div>
+                      <div className="text-sm text-gray-500 mb-1">Community Discord</div>
+                      <a
+                        href="https://discord.gg/xvaNzE35Rs"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
+                      >
+                        discord.gg/xvaNzE35Rs
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
-
           </div>
 
-          <div className="mt-8 text-center">
+          <div className="mt-10 text-center">
             <Link
               to="/"
-              className="inline-flex items-center px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition gaming-button"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-bold rounded-xl transition-all duration-300 shadow-xl shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:scale-105"
             >
-              <FaArrowLeft className="mr-2" /> Back to Home
+              <FaArrowLeft /> Back to Home
             </Link>
           </div>
 
-          <div className="absolute bottom-0 right-0 w-16 h-16 border-r-2 border-b-2 border-emerald-500/30 -mb-2 -mr-2 z-0"></div>
-          <div className="absolute top-0 left-0 w-16 h-16 border-l-2 border-t-2 border-blue-500/30 -mt-2 -ml-2 z-0"></div>
+          <div className="absolute bottom-0 right-0 w-20 h-20 border-r-2 border-b-2 border-cyan-500/20 rounded-br-2xl"></div>
+          <div className="absolute top-0 left-0 w-20 h-20 border-l-2 border-t-2 border-cyan-500/20 rounded-tl-2xl"></div>
         </div>
       </div>
 
       <Footer />
-
-      <style jsx>{`
-        .gaming-card {
-          position: relative;
-          transition: all 0.3s ease;
-        }
-        .gaming-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(16, 185, 129, 0.15);
-        }
-        .gaming-button {
-          position: relative;
-          overflow: hidden;
-        }
-        .gaming-button::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-          transition: 0.5s;
-        }
-        .gaming-button:hover::after {
-          left: 100%;
-        }
-        .pixelated {
-          text-shadow: 2px 2px 0px #003b25;
-          letter-spacing: 1px;
-        }
-      `}</style>
     </div>
   );
 }

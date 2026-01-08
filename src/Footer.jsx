@@ -1,66 +1,110 @@
 import { Link } from "react-router-dom";
+import { FaDiscord, FaGithub } from "react-icons/fa";
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-400 py-8 mt-12 border-t border-gray-800 relative">
-      <div className="max-w-6xl mx-auto px-6">
+    <footer className="relative bg-gradient-to-b from-slate-950 to-slate-900 text-gray-400 py-12 mt-16 border-t border-cyan-500/30 overflow-hidden">
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
+      
+      <div className="relative z-10 max-w-6xl mx-auto px-6">
         <div className="flex flex-col items-center">
-          <Link to="/" className="mb-4">
-            <span className="text-emerald-400 font-bold text-xl pixelated-logo">NetherLink</span>
+          <Link to="/" className="mb-6 group">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl blur-md opacity-50 group-hover:opacity-75 transition-all duration-300"></div>
+                
+                <div className="relative w-10 h-10 bg-gradient-to-br from-cyan-500 via-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-xl shadow-cyan-500/50 border-2 border-cyan-400/50 group-hover:scale-105 transition-all duration-300">
+                  <div className="text-white font-black text-xl leading-none">N</div>
+                </div>
+              </div>
+              
+              <span className="elegant-logo text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-500">
+                NetherLink
+              </span>
+            </div>
           </Link>
           
-          <div className="flex items-center space-x-3 mb-6">
-            <a href="https://discord.gg/xvaNzE35Rs" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300 transition">
-              <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current">
-                <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286z"></path>
-              </svg>
+          <div className="flex items-center gap-4 mb-8">
+            <a 
+              href="https://discord.gg/xvaNzE35Rs" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="group relative"
+            >
+              <div className="absolute inset-0 bg-indigo-500/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+              <div className="relative bg-slate-800/50 backdrop-blur-xl hover:bg-slate-700/50 p-3 rounded-xl border border-indigo-500/30 hover:border-indigo-500/50 transition-all duration-300 hover:scale-110">
+                <FaDiscord className="w-5 h-5 text-indigo-400" />
+              </div>
             </a>
-            <a href="https://github.com/NetherDevMc/NetherLinkWebsite" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-300 transition">
-              <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current">
-                <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"></path>
-              </svg>
+            
+            <a 
+              href="https://github.com/NetherDevMc/NetherLinkWebsite" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="group relative"
+            >
+              <div className="absolute inset-0 bg-cyan-500/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+              <div className="relative bg-slate-800/50 backdrop-blur-xl hover:bg-slate-700/50 p-3 rounded-xl border border-cyan-500/30 hover: border-cyan-500/50 transition-all duration-300 hover:scale-110">
+                <FaGithub className="w-5 h-5 text-cyan-400" />
+              </div>
             </a>
           </div>
           
-          <div className="w-16 h-0.5 bg-emerald-500 mb-6"></div>
+          <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-cyan-500 to-transparent mb-8 shadow-lg shadow-cyan-500/50"></div>
           
-          <nav className="flex flex-wrap justify-center space-x-6 mb-6">
-            <Link 
-              to="/info" 
-              className="text-gray-400 hover:text-emerald-400 transition-colors duration-200 mb-2"
-            >
-              Info
-            </Link>
-            <Link 
-              to="/privacy" 
-              className="text-gray-400 hover:text-emerald-400 transition-colors duration-200 mb-2"
-            >
-              Privacy
-            </Link>
-            <Link 
-              to="/terms" 
-              className="text-gray-400 hover:text-emerald-400 transition-colors duration-200 mb-2"
-            >
-              Terms
-            </Link>
-            <Link 
-              to="/contact" 
-              className="text-gray-400 hover:text-emerald-400 transition-colors duration-200 mb-2"
-            >
-              Contact
-            </Link>
+          <nav className="flex flex-wrap justify-center gap-6 mb-8">
+            {[
+              { to: "/info", label: "Info" },
+              { to: "/privacy", label: "Privacy" },
+              { to: "/terms", label: "Terms" },
+              { to: "/contact", label: "Contact" }
+            ].map((link) => (
+              <Link 
+                key={link.to}
+                to={link.to} 
+                className="relative text-gray-400 hover: text-cyan-400 transition-all duration-300 font-medium group"
+              >
+                <span className="relative z-10">{link.label}</span>
+                <span className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></span>
+              </Link>
+            ))}
           </nav>
           
-          <p className="text-sm text-gray-500">
-            © 2025 NetherLink. All rights reserved.
-          </p>
-          <p className="text-xs text-gray-600 mt-1">
-            Built with <span role="img" aria-label="love" className="text-red-500">❤️</span> by Jens-Co.
-          </p>
+          <div className="text-center space-y-2">
+            <p className="text-sm text-gray-500 font-medium">
+              © 2025 NetherLink. All rights reserved. 
+            </p>
+            <p className="text-xs text-gray-600 flex items-center justify-center gap-1.5">
+              Built with 
+              <span className="inline-flex items-center justify-center w-5 h-5 bg-gradient-to-br from-red-500 to-pink-500 rounded-full animate-pulse">
+                <svg className="w-3 h-3 text-white fill-current" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                </svg>
+              </span>
+              by <span className="text-cyan-400 font-semibold">Jens-Co</span>
+            </p>
+          </div>
         </div>
       </div>
       
-      <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-600 via-emerald-500 to-blue-600 opacity-30"></div>
+      <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50 shadow-lg shadow-cyan-500/50"></div>
+      
+      <style jsx>{`
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
+        
+        .elegant-logo {
+          font-family: 'Orbitron', sans-serif;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.5));
+          transition: all 0.3s ease;
+        }
+        
+        .elegant-logo:hover {
+          filter: drop-shadow(0 0 20px rgba(6, 182, 212, 0.8));
+        }
+      `}</style>
     </footer>
   );
 }
