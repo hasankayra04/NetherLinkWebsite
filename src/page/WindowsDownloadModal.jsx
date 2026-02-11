@@ -48,16 +48,16 @@ const WindowsDownloadModal = ({ isOpen, onClose }) => {
       <div 
         ref={modalRef}
         onClick={handleModalClick}
-        className="relative z-[10000] bg-gray-800 border border-gray-700 rounded-lg shadow-2xl w-full max-w-md p-6 m-4 transform transition-all duration-200 scale-100"
+        className="relative z-[10000] bg-neutral-800 border border-neutral-700 rounded-lg shadow-2xl w-full max-w-md p-6 m-4 transform transition-all duration-200 scale-100"
       >
         <div className="flex justify-between items-center mb-5">
-          <h3 className="text-xl font-bold text-emerald-400 flex items-center">
+          <h3 className="text-xl font-bold text-gray-300 flex items-center">
             <FaWindows className="mr-2" /> Windows Download
           </h3>
           
           <button
             type="button"
-            className="text-gray-400 hover:text-white focus:outline-none p-1 rounded-full hover:bg-gray-700 transition-colors"
+            className="text-gray-400 hover:text-white focus:outline-none p-1 rounded-full hover:bg-neutral-700 transition-colors"
             onClick={onClose}
             aria-label="Close"
           >
@@ -74,7 +74,7 @@ const WindowsDownloadModal = ({ isOpen, onClose }) => {
         <div className="grid grid-cols-1 gap-4">
           <a
             href="https://github.com/NetherLinkMC/NetherLinkWebsite/raw/refs/heads/main/downloads/windows/NetherLinkInstaller.exe"
-            className="flex items-center justify-between px-5 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+            className="flex items-center justify-between px-5 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-neutral-800"
             onClick={onClose}
           >
             <span className="flex items-center">
@@ -91,7 +91,7 @@ const WindowsDownloadModal = ({ isOpen, onClose }) => {
           
           <a
             href="https://github.com/NetherLinkMC/NetherLinkWebsite/raw/refs/heads/main/downloads/windows/NetherLink.rar"
-            className="flex items-center justify-between px-5 py-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+            className="flex items-center justify-between px-5 py-4 bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-neutral-800"
             onClick={onClose}
           >
             <span className="flex items-center">
