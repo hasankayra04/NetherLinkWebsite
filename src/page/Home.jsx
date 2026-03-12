@@ -3,10 +3,8 @@ import { FaWindows, FaApple, FaAndroid} from "react-icons/fa";
 import { SiApple } from "react-icons/si";
 import Footer from "../Footer";
 import Navbar from "../Navbar";
-import WindowsDownloadModal from "./WindowsDownloadModal";
 
 export default function Home() {
-  const [windowsModalOpen, setWindowsModalOpen] = useState(false);
   
   const [isMounted, setIsMounted] = useState(false);
   
@@ -14,28 +12,9 @@ export default function Home() {
     setIsMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (windowsModalOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [windowsModalOpen]);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 text-gray-100 font-sans">
       <Navbar />
-      
-      {isMounted && (
-        <WindowsDownloadModal 
-          isOpen={windowsModalOpen} 
-          onClose={() => setWindowsModalOpen(false)} 
-        />
-      )}
       
       {/* Hero Section */}
       <div className="relative overflow-hidden border-b border-gray-400/20">
@@ -81,7 +60,7 @@ export default function Home() {
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
                   {[
-                    { icon: FaWindows, label: "Windows", color: "from-blue-600 to-blue-700", onClick: () => setWindowsModalOpen(true) },
+                    { icon: FaWindows, label: "Windows", color: "from-blue-600 to-blue-700", href: "https://apps.microsoft.com/detail/9NSFPT6D8PTR" },
                     { icon: FaApple, label: "macOS", color: "from-gray-600 to-gray-700", href: "https://github.com/NetherLinkMC/NetherLinkWebsite/raw/refs/heads/main/downloads/apple/NetherLink.dmg" },
                     { icon: FaAndroid, label: "Android", color: "from-green-600 to-green-700", href: "https://play.google.com/store/apps/details?id=net.netherdev.netherLink" },
                     { icon: SiApple, label: "iOS", color: "from-slate-700 to-slate-800", href: "https://apps.apple.com/be/app/netherlink/id6747323142?l=en" }
