@@ -84,7 +84,8 @@ export default function Terms() {
                   "You may cancel your slot at any time; simply notify us on Discord or by email. Your slot will remain active until the end of your paid period.",
                   "If your payment cannot be processed (for example, due to an expired card), the slot will remain active until the end of your current billing month. After this, your featured server will be removed.",
                   "Refunds: We offer a satisfaction guarantee. If you are not satisfied with the service, you may request a full refund for your current month, no questions asked.",
-                  "All agreements and custom arrangements are discussed personally via Discord (jens.co) or email (see contact page)."
+                  "All agreements and custom arrangements are discussed personally via Discord (jens.co) or email (see contact page).",
+                  "**Pricing Changes:** NetherLink reserves the right to change the price for Featured Server Slots. Price changes will be announced in advance, and new pricing will apply from your next billing period."
                 ]
               }
             ].map((section, i) => (
@@ -105,7 +106,7 @@ export default function Terms() {
           </div>
 
           <p className="mt-10 text-sm text-blue-600 text-right font-medium">
-            Last updated: January 2026
+            Last updated: March 2026
           </p>
 
           <div className="mt-10 text-center">
