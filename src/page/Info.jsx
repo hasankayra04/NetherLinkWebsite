@@ -48,8 +48,8 @@ export default function Info() {
             </h2>
             <ol className="list-decimal pl-7 space-y-3 text-blue-900">
               <li>
-                <b>Set your console's DNS</b><br />
-                Set your console's primary DNS to <span className="font-mono text-blue-700">217.77.15.138</span>, leave secondary empty.
+                <b>Connect everything to the same network</b><br />
+                Make sure your phone/tablet running NetherLink and your console are on the same Wi‑Fi (avoid Guest Wi‑Fi if possible) while sending the DNS config.
               </li>
               <li>
                 <b>Open NetherLink</b><br />
@@ -60,12 +60,16 @@ export default function Info() {
                 Enter the IP/domain & port (default: <span className="font-mono text-blue-700">19132</span>) or select a saved/recommended server.
               </li>
               <li>
-                <b>Switch to US Server & toggle DNS Mode</b><br />
-                Tap on US Server and toggle Nintendo Switch (DNS mode).
+                <b>Select a server and toggle the DNS mode</b><br />
+                Tap on the server you prefer and toggle Nintendo Switch (DNS mode).
               </li>
               <li>
                 <b>Send DNS Config</b><br />
                 Tap "Send DNS Config" in the app – NetherLink pushes the configuration to its servers.
+              </li>
+              <li>
+                <b>Set your console's DNS</b><br />
+                Set your console's DNS to the IP you were provided as the primary DNS, and leave the secondary DNS field blank.
               </li>
               <li>
                 <b>Join from your console</b><br />
@@ -90,7 +94,7 @@ export default function Info() {
               <div>
                 <h3 className="font-semibold mb-2 text-blue-800">✅ Basic Checks</h3>
                 <ul className="list-disc pl-6 space-y-1">
-                  <li>Same WiFi Network: phone/tablet and console must share WiFi</li>
+                  <li>Same WiFi Network: phone/tablet and console MUST be on the same WiFi</li>
                   <li>Correct Server Address: Double-check IP and port (default: 19132)</li>
                   <li>Broadcasting Active: NetherLink must show "Broadcasting" status</li>
                 </ul>
@@ -109,7 +113,7 @@ export default function Info() {
                 <h3 className="font-semibold mb-2 text-blue-800">⚠️ Common Issues</h3>
                 <ul className="list-disc pl-6 space-y-1">
                   <li>
-                    <span className="font-mono">No route found for user</span> — Make sure your public IP matches your phone's IP.
+                    <span className="font-mono">No route found for user</span> — Make sure your phone/tablet running NetherLink and your console are on the same Wi‑Fi (avoid Guest Wi‑Fi if possible).
                   </li>
                   <li>
                     <span className="font-mono">Unable to connect to NetherLink relay server</span> — Check your internet, relay server may be temporarily offline.
