@@ -1,4 +1,5 @@
 import { FaWindows, FaApple, FaAndroid } from "react-icons/fa";
+import FeaturedServersCarousel from "../components/FeaturedServersCarousel"; 
 
 const platforms = [
   {
@@ -63,6 +64,9 @@ export default function Home() {
             ))}
           </div>
         </section>
+
+        <FeaturedServersCarousel />
+
         <section className="w-full max-w-2xl mb-16 mt-1">
           <ul className="grid sm:grid-cols-2 gap-3 bg-white/40 border border-white/30 rounded-2xl shadow p-7 text-base text-blue-900 font-medium backdrop-blur-md glass-tile">
             {features.map(f => (
