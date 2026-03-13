@@ -94,7 +94,7 @@ export default function Info() {
               <div>
                 <h3 className="font-semibold mb-2 text-blue-800">✅ Basic Checks</h3>
                 <ul className="list-disc pl-6 space-y-1">
-                  <li>Same WiFi Network: phone/tablet and console must share WiFi</li>
+                  <li>Same WiFi Network: phone/tablet and console MUST be on the same WiFi</li>
                   <li>Correct Server Address: Double-check IP and port (default: 19132)</li>
                   <li>Broadcasting Active: NetherLink must show "Broadcasting" status</li>
                 </ul>
@@ -113,7 +113,7 @@ export default function Info() {
                 <h3 className="font-semibold mb-2 text-blue-800">⚠️ Common Issues</h3>
                 <ul className="list-disc pl-6 space-y-1">
                   <li>
-                    <span className="font-mono">No route found for user</span> — Make sure your public IP matches your phone's IP.
+                    <span className="font-mono">No route found for user</span> — Make sure your phone/tablet running NetherLink and your console are on the same Wi‑Fi (avoid Guest Wi‑Fi if possible).
                   </li>
                   <li>
                     <span className="font-mono">Unable to connect to NetherLink relay server</span> — Check your internet, relay server may be temporarily offline.
