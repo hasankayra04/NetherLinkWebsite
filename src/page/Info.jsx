@@ -49,7 +49,7 @@ export default function Info() {
             <ol className="list-decimal pl-7 space-y-3 text-blue-900">
               <li>
                 <b>Connect everything to the same network</b><br />
-                Make sure your phone/tablet running NetherLink and your console are on the **same Wi‑Fi** *(avoid Guest Wi‑Fi if possible)* while sending the DNS config.
+                Make sure your phone/tablet running NetherLink and your console are on the same Wi‑Fi (avoid Guest Wi‑Fi if possible) while sending the DNS config.
               </li>
               <li>
                 <b>Open NetherLink</b><br />
