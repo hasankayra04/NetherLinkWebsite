@@ -1,34 +1,25 @@
 import { Link } from "react-router-dom";
-import Navbar from "../Navbar";
-import Footer from "../Footer";
 import { FaShieldAlt, FaArrowLeft } from "react-icons/fa";
 
 export default function Privacy() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 text-gray-200 font-sans">
-      <Navbar />
-      
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="relative bg-neutral-900/50 backdrop-blur-xl border border-gray-400/30 p-8 rounded-2xl shadow-2xl shadow-gray-400/10 overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gray-400 to-gray-500 shadow-lg shadow-gray-400/50"></div>
-          
+    <div className="min-h-screen bg-gradient-to-br from-blue-200/40 via-white/80 to-cyan-200/60 text-blue-900 font-sans">
+      <div className="max-w-4xl mx-auto px-3 py-12">
+        <div className="relative glass-tile-nav p-8 rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400/70 via-cyan-400/70 to-blue-300/40 rounded-t-2xl" />
           <div className="flex justify-center mb-8">
             <div className="relative">
-              <div className="absolute inset-0 bg-gray-400/20 rounded-full blur-xl"></div>
-              <div className="relative rounded-full bg-gray-400/10 p-5 border border-gray-400/30">
-                <FaShieldAlt className="w-12 h-12 text-gray-400" />
+              <div className="absolute inset-0 bg-cyan-300/20 rounded-full blur-xl" />
+              <div className="relative rounded-full bg-white/30 p-5 border border-white/30 backdrop-blur-xl">
+                <FaShieldAlt className="w-12 h-12 text-blue-400 drop-shadow" />
               </div>
             </div>
           </div>
-          
-          <h1 className="text-4xl font-bold mb-6 text-center">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-300 via-gray-400 to-gray-300">
-              Privacy Policy
-            </span>
+          <h1 className="text-4xl font-bold mb-6 text-center bg-gradient-to-r from-blue-700 via-sky-400 to-cyan-400 bg-clip-text text-transparent">
+            Privacy Policy
           </h1>
-          
-          <p className="mb-10 text-gray-400 text-lg text-center max-w-2xl mx-auto leading-relaxed">
-            At <span className="text-gray-300 font-semibold">NetherLink</span>, we are committed to protecting your privacy.   
+          <p className="mb-10 text-blue-800 text-lg text-center max-w-2xl mx-auto leading-relaxed">
+            At <span className="font-semibold">NetherLink</span>, we are committed to protecting your privacy.   
             This policy outlines what information we collect and how we use it.
           </p>
 
@@ -44,45 +35,50 @@ export default function Privacy() {
               { title: "8. Changes to This Policy", content: "We may update this privacy policy from time to time. Any changes will be posted on this page with an updated revision date." }
             ].map((section, i) => (
               <section key={i}>
-                <h2 className="text-xl font-bold text-gray-300 mb-3 border-l-4 border-gray-400 pl-4">
+                <h2 className="text-xl font-bold mb-3 border-l-4 border-cyan-400 pl-4 bg-transparent">
                   {section.title}
                 </h2>
-                <div className="bg-neutral-800/50 backdrop-blur-xl rounded-xl p-5 border border-gray-400/20">
-                  <p className="text-gray-400 leading-relaxed mb-3">{section.content}</p>
+                <div className="bg-white/40 backdrop-blur rounded-xl p-5 border border-white/20">
+                  <p className="text-blue-900 leading-relaxed mb-3">{section.content}</p>
                   {section.list && (
-                    <ul className="list-disc pl-6 space-y-2 text-gray-400 mb-3">
+                    <ul className="list-disc pl-6 space-y-2 text-blue-800 mb-3">
                       {section.list.map((item, j) => (
                         <li key={j}>{item}</li>
                       ))}
                     </ul>
                   )}
                   {section.footer && (
-                    <p className="text-gray-400 leading-relaxed">{section.footer}</p>
+                    <p className="text-blue-900 leading-relaxed">{section.footer}</p>
                   )}
                 </div>
               </section>
             ))}
           </div>
 
-          <p className="mt-10 text-sm text-gray-500 text-right font-medium">
+          <p className="mt-10 text-sm text-blue-600 text-right font-medium">
             Last updated: January 2026
           </p>
 
           <div className="mt-10 text-center">
             <Link
               to="/"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-300 hover:to-gray-400 text-white font-bold rounded-xl transition-all duration-300 shadow-xl shadow-gray-400/30 hover:shadow-gray-400/50 hover:scale-105"
+              className="inline-flex items-center gap-2 px-8 py-4 glass-tile-nav text-blue-900 font-bold rounded-xl border border-white/20 transition-all duration-300 hover:scale-105 shadow-lg"
             >
               <FaArrowLeft /> Back to Home
             </Link>
           </div>
-          
-          <div className="absolute bottom-0 right-0 w-20 h-20 border-r-2 border-b-2 border-gray-400/20 rounded-br-2xl"></div>
-          <div className="absolute top-0 left-0 w-20 h-20 border-l-2 border-t-2 border-gray-400/20 rounded-tl-2xl"></div>
+          <div className="absolute bottom-0 right-0 w-20 h-20 border-r-2 border-b-2 border-white/20 rounded-br-2xl pointer-events-none"></div>
+          <div className="absolute top-0 left-0 w-20 h-20 border-l-2 border-t-2 border-white/20 rounded-tl-2xl pointer-events-none"></div>
         </div>
       </div>
-      
-      <Footer />
+      <style jsx="true">{`
+        .glass-tile-nav {
+          background: linear-gradient(115deg,rgba(255,255,255,0.54),rgba(158,235,255,0.13) 100%);
+          box-shadow: 0 1.5px 14px 0 rgba(50,100,255,0.11);
+          backdrop-filter: blur(15px);
+          -webkit-backdrop-filter: blur(15px);
+        }
+      `}</style>
     </div>
   );
 }
