@@ -64,6 +64,7 @@ const ENDPOINTS = [
     "platform": "bedrock",
     "gamertag": "KobeNetwork",
     "xuid": "2535461503960946",
+    "skinUrl": "http://textures.minecraft.net/texture/827075cf...",
     "gamerscore": 595,
     "tier": "Silver",
     "gamerpicUrl": "https://images-eds-ssl.xboxlive.com/image?url=..."
@@ -79,6 +80,7 @@ const ENDPOINTS = [
       { name: "java.headUrl",    desc: "64×64 head avatar via Crafatar" },
       { name: "bedrock.gamertag",desc: "Xbox gamertag" },
       { name: "bedrock.xuid",    desc: "Numeric Xbox Live identifier" },
+      { name: "bedrock.skinUrl", desc: "Full skin texture URL via GeyserMC" },
       { name: "bedrock.gamerscore", desc: "Xbox Gamerscore" },
       { name: "bedrock.tier",    desc: 'Xbox account tier — "Gold", "Silver", etc.' },
       { name: "bedrock.gamerpicUrl", desc: "Xbox Live profile picture URL" },

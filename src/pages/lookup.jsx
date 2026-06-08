@@ -39,26 +39,6 @@ async function lookupPlayer(identifier) {
   return res.json();
 }
 
-function useBedrockSkin(xuid) {
-  const [skinUrl, setSkinUrl] = useState(null);
-  useEffect(() => {
-    if (!xuid) return;
-    let cancelled = false;
-    fetch(`https://api.geysermc.org/v2/skin/${xuid}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (cancelled || !data?.value) return;
-        try {
-          const url = JSON.parse(atob(data.value))?.textures?.SKIN?.url;
-          if (url) setSkinUrl(url);
-        } catch (_) {}
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [xuid]);
-  return skinUrl;
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function Spinner({ size = 20, color = "currentColor" }) {
@@ -348,7 +328,6 @@ function JavaCard({ data }) {
 // ─── Bedrock Card ─────────────────────────────────────────────────────────────
 
 function BedrockCard({ data }) {
-  const skinUrl  = useBedrockSkin(data.xuid);
   const tierColor = data.tier === "Gold" ? "#f59e0b" : NL.secondary;
 
   return (
@@ -356,8 +335,8 @@ function BedrockCard({ data }) {
       panelBg={`radial-gradient(ellipse at 50% 90%, rgba(96,165,250,0.10) 0%, ${NL.bedrockBg} 70%)`}
       glowColor={NL.bedrockGlow}
       accentBorder={NL.bedrockBorder}
-      skinUrl={skinUrl}
-      skinLoading={!skinUrl}
+      skinUrl={data.skinUrl}
+      skinLoading={false}
     >
       {/* Gamerpic + name */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
