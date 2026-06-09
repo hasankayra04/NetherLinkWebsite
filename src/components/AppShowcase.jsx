@@ -144,7 +144,7 @@ export default function AppShowcase() {
 
     const step = STEPS[active];
 
-    const phoneScale = isMobile ? Math.min(1, (typeof window !== "undefined" ? window.innerWidth - 32 : 300) / PHONE_W) : 1;
+    const phoneScale = isMobile ? Math.min(1, (typeof window !== "undefined" ? (window.innerWidth * 0.75) : 300) / PHONE_W) : 1;
 
     const phoneNode = (
         <div style={{

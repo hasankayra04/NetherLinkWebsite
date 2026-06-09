@@ -248,7 +248,7 @@ export default function FeedbackPage() {
             top: 0,
             left: "50%",
             transform: "translateX(-50%)",
-            width: 600,
+            width: "min(600px, 100vw)",
             height: 400,
             background: `radial-gradient(ellipse at 50% 0%, ${isBug ? "rgba(248,113,113,0.06)" : "rgba(103,228,4,0.06)"} 0%, transparent 70%)`,
             pointerEvents: "none",

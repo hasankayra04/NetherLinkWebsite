@@ -5,6 +5,7 @@ import FeaturedServersCarousel from "../components/FeaturedServersCarousel";
 import ChangelogSection from "../components/ChangelogSection";
 import AppShowcase from "../components/AppShowcase";
 import BotStatus from "../components/BotStatus";
+import CommunitySection from "../components/CommunitySection";
 import Layout from "@theme/Layout";
 
 const NL = {
@@ -152,7 +153,7 @@ export default function Home() {
 
             <motion.div
               variants={fadeUp} custom={2} initial="hidden" animate="visible"
-              style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, width: "100%", maxWidth: 420 }}
+              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))", gap: 8, width: "100%", maxWidth: 420 }}
             >
               {platforms.map(p => (
                 <motion.a
@@ -190,20 +191,24 @@ export default function Home() {
             {stats && (
               <motion.div
                 variants={fadeUp} custom={3} initial="hidden" animate="visible"
-                style={{ display: "flex", alignItems: "center", gap: 10 }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 0,
+                  background: NL.surface, border: `1px solid ${NL.border}`,
+                  borderRadius: 12, overflow: "hidden",
+                }}
               >
                 {[
                   { value: stats.servers.toLocaleString(), label: "servers tracked" },
                   { value: stats.joins.toLocaleString(), label: "total connections" },
                 ].map((s, i) => (
                   <>
-                    {i > 0 && <div key={`sep-${i}`} style={{ width: 1, height: 28, background: NL.border }} />}
-                    <div key={s.label} style={{ textAlign: "center", padding: "0 12px" }}>
+                    {i > 0 && <div key={`sep-${i}`} style={{ width: 1, height: "100%", alignSelf: "stretch", background: NL.border }} />}
+                    <div key={s.label} style={{ textAlign: "center", padding: "14px 28px" }}>
                       <p style={{
                         fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: 20, fontWeight: 700, color: NL.text, margin: 0,
+                        fontSize: 22, fontWeight: 700, color: NL.text, margin: 0,
                       }}>{s.value}</p>
-                      <p style={{ fontSize: 11, color: NL.muted, margin: "2px 0 0" }}>{s.label}</p>
+                      <p style={{ fontSize: 11, color: NL.muted, margin: "3px 0 0", letterSpacing: "0.04em" }}>{s.label}</p>
                     </div>
                   </>
                 ))}
@@ -220,7 +225,7 @@ export default function Home() {
           padding: "0 20px 80px",
           display: "flex", justifyContent: "center",
         }}>
-          <div style={{ width: "100%", maxWidth: 1100, display: "flex", flexDirection: "column", gap: 56 }}>
+          <div style={{ width: "100%", maxWidth: 1100, display: "flex", flexDirection: "column", gap: 40 }}>
 
             <div>
               <SectionLabel>What's included</SectionLabel>
@@ -285,9 +290,20 @@ export default function Home() {
               <BotStatus />
             </div>
 
-            <div>
-              <SectionLabel>Recent changes</SectionLabel>
-              <ChangelogSection />
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: 32,
+              alignItems: "start",
+            }}>
+              <div>
+                <SectionLabel>Recent changes</SectionLabel>
+                <ChangelogSection />
+              </div>
+              <div>
+                <SectionLabel>Community</SectionLabel>
+                <CommunitySection />
+              </div>
             </div>
 
           </div>
