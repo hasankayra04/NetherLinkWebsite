@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaWindows, FaApple, FaAndroid, FaServer, FaSearch, FaUser, FaRobot, FaDiscord, FaCode } from "react-icons/fa";
+import { FaWindows, FaApple, FaAndroid, FaServer, FaSearch, FaUser, FaRobot, FaDiscord, FaCode, FaGamepad } from "react-icons/fa";
 import { motion } from "framer-motion";
 import FeaturedServersCarousel from "../components/FeaturedServersCarousel";
 import ChangelogSection from "../components/ChangelogSection";
@@ -57,8 +57,8 @@ const PRODUCTS = [
     color: "#34d399",
     colorDim: "rgba(52,211,153,0.10)",
     colorBorder: "rgba(52,211,153,0.22)",
-    label: "Xbox bots Network",
-    desc: "Always online Xbox bots in EU and US regions, stable Bedrock connections for everyone.",
+    label: "Xbox Bots Network",
+    desc: "Always online Xbox bots in EU and US regions for stable Bedrock connections.",
     href: "#relay",
     cta: "View live status ↓",
   },
@@ -71,11 +71,18 @@ const PRODUCTS = [
     desc: "Integrate MCCompanion data, server metrics, player lookup, relay status into your own projects.",
     href: "/api-docs",
     cta: "Read the docs →",
-    external: false,
   },
 ];
 
-const FEATURES = [
+const APP_FEATURES = [
+  {
+    icon: <FaGamepad size={16} />,
+    color: "#67e404",
+    colorDim: "rgba(103,228,4,0.10)",
+    colorBorder: "rgba(103,228,4,0.22)",
+    title: "Console Relay",
+    desc: "Connect PlayStation, Xbox, and Switch players to any Java or Bedrock server via our relay network.",
+  },
   {
     icon: <FaServer size={16} />,
     color: "#60a5fa",
@@ -86,28 +93,20 @@ const FEATURES = [
   },
   {
     icon: <FaSearch size={16} />,
-    color: "#67e404",
-    colorDim: "rgba(103,228,4,0.10)",
-    colorBorder: "rgba(103,228,4,0.22)",
+    color: "#f472b6",
+    colorDim: "rgba(244,114,182,0.10)",
+    colorBorder: "rgba(244,114,182,0.20)",
     title: "Player Lookup",
     desc: "Look up any player by Xbox gamertag, Java username, or XUID see their skin, UUID, and linked accounts.",
     href: "/lookup",
   },
   {
     icon: <FaUser size={16} />,
-    color: "#f472b6",
-    colorDim: "rgba(244,114,182,0.10)",
-    colorBorder: "rgba(244,114,182,0.20)",
+    color: "#a78bfa",
+    colorDim: "rgba(167,139,250,0.10)",
+    colorBorder: "rgba(167,139,250,0.20)",
     title: "Skin Editor",
     desc: "Browse thousands of community skins, customize your own, and apply them to your Minecraft account.",
-  },
-  {
-    icon: <FaRobot size={16} />,
-    color: "#34d399",
-    colorDim: "rgba(52,211,153,0.10)",
-    colorBorder: "rgba(52,211,153,0.20)",
-    title: "Xbox Relay Network",
-    desc: "Always online Xbox relay bots across EU and US regions ensure a stable and fast Bedrock connection.",
   },
 ];
 
@@ -121,7 +120,7 @@ const fadeUp = {
 
 function SectionLabel({ children }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
       <span style={{
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 10, letterSpacing: "0.12em",
@@ -150,6 +149,7 @@ export default function Home() {
     >
       <div style={{ background: NL.bg, fontFamily: "'Inter', system-ui, sans-serif" }}>
 
+        {/* ── HERO ── */}
         <main style={{
           width: "100%",
           display: "flex", flexDirection: "column", alignItems: "center",
@@ -192,7 +192,7 @@ export default function Home() {
                 fontSize: 16, color: NL.secondary,
                 maxWidth: 560, margin: "0 auto", lineHeight: 1.7,
               }}>
-                MCCompanion brings your entire Minecraft experience into one free app — manage servers, look up players, edit your skin, monitor servers in Discord, and stay connected through our global Xbox relay network.
+                One free app for every platform — console relay, server browser, skin editor, player lookup, Discord bot, and a global Xbox relay network.
               </p>
             </motion.div>
 
@@ -263,9 +263,10 @@ export default function Home() {
           </div>
         </main>
 
+        {/* ── WHAT WE OFFER — product navigation ── */}
         <div style={{
           width: "100%", boxSizing: "border-box",
-          padding: "0 20px 64px",
+          padding: "0 20px 72px",
           display: "flex", justifyContent: "center",
         }}>
           <div style={{ width: "100%", maxWidth: 1100 }}>
@@ -323,100 +324,123 @@ export default function Home() {
           </div>
         </div>
 
-        <div id="app">
+        {/* ── APP SECTION ── */}
+        <div id="app" style={{
+          width: "100%", boxSizing: "border-box",
+          padding: "0 20px 80px",
+          display: "flex", flexDirection: "column", alignItems: "center",
+          gap: 48,
+        }}>
           <AppShowcase />
+
+          <div style={{ width: "100%", maxWidth: 1100 }}>
+            <SectionLabel>App features</SectionLabel>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 10,
+            }}>
+              {APP_FEATURES.map(f => {
+                const card = (
+                  <div
+                    style={{
+                      padding: "22px 20px",
+                      borderRadius: 14,
+                      background: NL.surface,
+                      border: `1px solid ${NL.border}`,
+                      transition: "border-color 0.2s, background 0.2s",
+                      height: "100%", boxSizing: "border-box",
+                      cursor: f.href ? "pointer" : "default",
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = f.colorBorder;
+                      e.currentTarget.style.background = NL.elevated;
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = NL.border;
+                      e.currentTarget.style.background = NL.surface;
+                    }}
+                  >
+                    <div style={{
+                      width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                      background: f.colorDim, border: `1px solid ${f.colorBorder}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: f.color, marginBottom: 14,
+                    }}>
+                      {f.icon}
+                    </div>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: NL.text, margin: "0 0 6px" }}>
+                      {f.title}
+                      {f.href && <span style={{ fontSize: 12, color: f.color, marginLeft: 6, fontWeight: 500 }}>→</span>}
+                    </p>
+                    <p style={{ fontSize: 13, color: NL.secondary, margin: 0, lineHeight: 1.65 }}>{f.desc}</p>
+                  </div>
+                );
+                return f.href
+                  ? <a key={f.title} href={f.href} style={{ textDecoration: "none", display: "block" }}>{card}</a>
+                  : <div key={f.title}>{card}</div>;
+              })}
+            </div>
+          </div>
         </div>
 
+        {/* ── DISCORD BOT ── */}
         <div style={{
           width: "100%", boxSizing: "border-box",
           padding: "0 20px 80px",
           display: "flex", justifyContent: "center",
         }}>
-          <div style={{ width: "100%", maxWidth: 1100, display: "flex", flexDirection: "column", gap: 64 }}>
+          <div id="discord-bot" style={{ width: "100%", maxWidth: 1100 }}>
+            <SectionLabel>Discord bot</SectionLabel>
+            <DiscordBotSection />
+          </div>
+        </div>
 
+        {/* ── RELAY NETWORK ── */}
+        <div style={{
+          width: "100%", boxSizing: "border-box",
+          padding: "0 20px 80px",
+          display: "flex", justifyContent: "center",
+        }}>
+          <div id="relay" style={{ width: "100%", maxWidth: 1100 }}>
+            <SectionLabel>Xbox relay network</SectionLabel>
+            <BotStatus />
+          </div>
+        </div>
+
+        {/* ── FEATURED SERVERS ── */}
+        <div style={{
+          width: "100%", boxSizing: "border-box",
+          padding: "0 20px 80px",
+          display: "flex", justifyContent: "center",
+        }}>
+          <div style={{ width: "100%", maxWidth: 1100 }}>
+            <SectionLabel>Featured servers</SectionLabel>
+            <FeaturedServersCarousel />
+          </div>
+        </div>
+
+        {/* ── CHANGELOG + COMMUNITY ── */}
+        <div style={{
+          width: "100%", boxSizing: "border-box",
+          padding: "0 20px 80px",
+          display: "flex", justifyContent: "center",
+        }}>
+          <div style={{
+            width: "100%", maxWidth: 1100,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gap: 32,
+            alignItems: "start",
+          }}>
             <div>
-              <SectionLabel>What&apos;s included</SectionLabel>
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: 10,
-              }}>
-                {FEATURES.map(f => {
-                  const card = (
-                    <div
-                      style={{
-                        padding: "22px 20px",
-                        borderRadius: 14,
-                        background: NL.surface,
-                        border: `1px solid ${NL.border}`,
-                        transition: "border-color 0.2s, background 0.2s",
-                        height: "100%", boxSizing: "border-box",
-                        cursor: f.href ? "pointer" : "default",
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.borderColor = f.colorBorder;
-                        e.currentTarget.style.background = NL.elevated;
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.borderColor = NL.border;
-                        e.currentTarget.style.background = NL.surface;
-                      }}
-                    >
-                      <div style={{
-                        width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                        background: f.colorDim, border: `1px solid ${f.colorBorder}`,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        color: f.color, marginBottom: 14,
-                      }}>
-                        {f.icon}
-                      </div>
-                      <p style={{ fontSize: 14, fontWeight: 600, color: NL.text, margin: "0 0 6px" }}>
-                        {f.title}
-                        {f.href && (
-                          <span style={{ fontSize: 12, color: f.color, marginLeft: 6, fontWeight: 500 }}>→</span>
-                        )}
-                      </p>
-                      <p style={{ fontSize: 13, color: NL.secondary, margin: 0, lineHeight: 1.65 }}>{f.desc}</p>
-                    </div>
-                  );
-                  return f.href
-                    ? <a key={f.title} href={f.href} style={{ textDecoration: "none", display: "block" }}>{card}</a>
-                    : <div key={f.title}>{card}</div>;
-                })}
-              </div>
+              <SectionLabel>Recent changes</SectionLabel>
+              <ChangelogSection />
             </div>
-
-            <div id="discord-bot">
-              <SectionLabel>Discord bot</SectionLabel>
-              <DiscordBotSection />
-            </div>
-
             <div>
-              <SectionLabel>Featured servers</SectionLabel>
-              <FeaturedServersCarousel />
+              <SectionLabel>Community</SectionLabel>
+              <CommunitySection />
             </div>
-
-            <div id="relay">
-              <SectionLabel>Relay network</SectionLabel>
-              <BotStatus />
-            </div>
-
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-              gap: 32,
-              alignItems: "start",
-            }}>
-              <div>
-                <SectionLabel>Recent changes</SectionLabel>
-                <ChangelogSection />
-              </div>
-              <div>
-                <SectionLabel>Community</SectionLabel>
-                <CommunitySection />
-              </div>
-            </div>
-
           </div>
         </div>
 
