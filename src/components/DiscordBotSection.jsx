@@ -23,7 +23,7 @@ const COMMANDS = [
   {
     icon: <FaPlus size={13} />,
     name: "/server-add",
-    desc: "Add a Minecraft server to monitor. Provide a name, IP, and channel — the bot posts a live status embed instantly.",
+    desc: "Add a Minecraft server to monitor. Provide a name, IP, and channel, the bot posts a live status embed instantly.",
     color: "#67e404",
     colorDim: "rgba(103,228,4,0.10)",
     colorBorder: "rgba(103,228,4,0.20)",
@@ -47,7 +47,7 @@ const COMMANDS = [
   {
     icon: <FaList size={13} />,
     name: "/server-list",
-    desc: "View all monitored servers for this Discord server — see status, channel, and tracking state at a glance.",
+    desc: "View all monitored servers for this Discord server, see status, channel, and tracking state at a glance.",
     color: "#a78bfa",
     colorDim: "rgba(167,139,250,0.10)",
     colorBorder: "rgba(167,139,250,0.20)",
@@ -238,7 +238,7 @@ export default function DiscordBotSection() {
         </h2>
 
         <p style={{ fontSize: 14, color: NL.secondary, lineHeight: 1.7, margin: "0 0 24px", maxWidth: 440 }}>
-          The MCCompanion Discord bot monitors your Minecraft servers and posts auto-updating status embeds in any channel. Java &amp; Bedrock both supported — direct TCP/UDP pings, no third-party API.
+          The MCCompanion Discord bot monitors your Minecraft servers and posts auto-updating status embeds in any channel. Java &amp; Bedrock both supported, direct TCP/UDP pings, no third-party API.
         </p>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 24 }}>
@@ -296,7 +296,7 @@ export default function DiscordBotSection() {
           }}
         >
           <FaDiscord size={16} />
-          Add to your server — it&apos;s free
+          Add to your server it&apos;s free
         </a>
       </div>
 
