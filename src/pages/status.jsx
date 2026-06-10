@@ -122,7 +122,7 @@ export default function StatusPage() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetch("https://raw.githubusercontent.com/MCCORG/MCCompanionWebsite/main/static/status.json?t=" + Date.now())
+    fetch("https://gist.githubusercontent.com/Jens-Co/4f2407ce7ce66c71675bf477b9eebe3c/raw/status.json?t=" + Date.now())
       .then(r => r.json())
       .then(setData)
       .catch(() => setError(true));

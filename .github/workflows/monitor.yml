@@ -5,23 +5,19 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   monitor:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check endpoints and update status.json
+      - name: Check endpoints and update Gist
         env:
           PELICAN_API_KEY: ${{ secrets.PELICAN_API_KEY }}
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
         run: |
           node --input-type=commonjs <<'EOF'
-          const fs = require('fs');
+          const https = require('https');
 
           const PANEL = 'https://panel.mccompanion.net';
 
@@ -45,14 +41,15 @@ jobs:
           ];
 
           const MAX_HISTORY = 288;
-          const API_KEY = process.env.PELICAN_API_KEY;
+          const PELICAN_KEY = process.env.PELICAN_API_KEY;
+          const GIST_TOKEN  = process.env.GIST_TOKEN;
+          const GIST_ID     = process.env.GIST_ID;
 
           async function checkHttp(endpoint) {
             const start = Date.now();
             try {
               const res = await fetch(endpoint.url, { signal: AbortSignal.timeout(8000) });
-              const latency = Date.now() - start;
-              return { name: endpoint.name, group: endpoint.group, status: res.status < 500 ? 'up' : 'degraded', latency_ms: latency };
+              return { name: endpoint.name, group: endpoint.group, status: res.status < 500 ? 'up' : 'degraded', latency_ms: Date.now() - start };
             } catch {
               return { name: endpoint.name, group: endpoint.group, status: 'down', latency_ms: null };
             }
@@ -61,7 +58,7 @@ jobs:
           async function checkPelican(server) {
             try {
               const res = await fetch(`${PANEL}/api/client/servers/${server.id}/resources`, {
-                headers: { Authorization: `Bearer ${API_KEY}`, Accept: 'application/json' },
+                headers: { Authorization: `Bearer ${PELICAN_KEY}`, Accept: 'application/json' },
                 signal: AbortSignal.timeout(10000),
               });
               if (!res.ok) {
@@ -79,11 +76,56 @@ jobs:
             }
           }
 
+          function fetchGist() {
+            return new Promise((resolve, reject) => {
+              const req = https.request({
+                hostname: 'api.github.com',
+                path: `/gists/${GIST_ID}`,
+                headers: { Authorization: `Bearer ${GIST_TOKEN}`, 'User-Agent': 'MCCompanion-Monitor', Accept: 'application/vnd.github+json' },
+              }, res => {
+                let body = '';
+                res.on('data', d => body += d);
+                res.on('end', () => {
+                  try {
+                    const gist = JSON.parse(body);
+                    const content = gist.files?.['status.json']?.content ?? '{}';
+                    resolve(JSON.parse(content));
+                  } catch { resolve({ services: [], history: [] }); }
+                });
+              });
+              req.on('error', reject);
+              req.end();
+            });
+          }
+
+          function updateGist(content) {
+            return new Promise((resolve, reject) => {
+              const body = JSON.stringify({ files: { 'status.json': { content: JSON.stringify(content, null, 2) } } });
+              const req = https.request({
+                hostname: 'api.github.com',
+                path: `/gists/${GIST_ID}`,
+                method: 'PATCH',
+                headers: {
+                  Authorization: `Bearer ${GIST_TOKEN}`,
+                  'User-Agent': 'MCCompanion-Monitor',
+                  Accept: 'application/vnd.github+json',
+                  'Content-Type': 'application/json',
+                  'Content-Length': Buffer.byteLength(body),
+                },
+              }, res => {
+                res.resume();
+                res.on('end', () => resolve(res.statusCode));
+              });
+              req.on('error', reject);
+              req.write(body);
+              req.end();
+            });
+          }
+
           async function main() {
             const now = new Date().toISOString();
 
-            let existing = { services: [], history: [] };
-            try { existing = JSON.parse(fs.readFileSync('static/status.json', 'utf8')); } catch {}
+            const existing = await fetchGist().catch(() => ({ services: [], history: [] }));
 
             const [httpResults, pelicanResults] = await Promise.all([
               Promise.all(HTTP_ENDPOINTS.map(checkHttp)),
@@ -98,18 +140,9 @@ jobs:
             const history = [...(existing.history || []), historyEntry].slice(-MAX_HISTORY);
             const output = { updated_at: now, services, history };
 
-            fs.writeFileSync('static/status.json', JSON.stringify(output, null, 2));
-            console.log('Updated:', services.map(s => `${s.name}=${s.status}`).join(', '));
+            const status = await updateGist(output);
+            console.log(`Gist updated (HTTP ${status}):`, services.map(s => `${s.name}=${s.status}`).join(', '));
           }
 
           main().catch(e => { console.error(e); process.exit(1); });
           EOF
-
-      - name: Commit status.json
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add static/status.json
-          git diff --cached --quiet || git commit -m "chore: update status [skip ci]"
-          git pull --rebase origin main
-          git push
