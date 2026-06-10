@@ -948,6 +948,7 @@ function FeedbackPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [revealedEmails, setRevealedEmails] = useState({});
+  const [deleting, setDeleting] = useState({});
 
   const loadContacts = useCallback(async () => {
     setLoading(true); setError(null);
@@ -968,7 +969,27 @@ function FeedbackPanel() {
     setRevealedEmails(prev => ({ ...prev, [issueNumber]: !prev[issueNumber] }));
   }
 
+  async function deleteContact(issueNumber) {
+    if (!window.confirm(`Remove contact for issue #${issueNumber}? This cannot be undone.`)) return;
+    setDeleting(prev => ({ ...prev, [issueNumber]: true }));
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${issueNumber}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      setContacts(prev => prev.filter(c => c.issue_number !== issueNumber));
+    } catch (e) {
+      alert("Failed to delete: " + e.message);
+    } finally {
+      setDeleting(prev => ({ ...prev, [issueNumber]: false }));
+    }
+  }
+
   const ghUrl = (n) => `https://github.com/MCCORG/MCCompanion/issues/${n}`;
+  const mailtoUrl = (email, issueNumber) =>
+    `mailto:${email}?subject=${encodeURIComponent(`Re: your feedback (issue #${issueNumber})`)}`;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -988,13 +1009,9 @@ function FeedbackPanel() {
             {contacts.map(c => (
               <div key={c.issue_number} style={{ border: `1px solid ${NL.border}`, borderRadius: 10, background: NL.elevated, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <span style={{ fontFamily: mono, fontSize: 11, color: NL.muted, flexShrink: 0 }}>#{c.issue_number}</span>
-                <a
-                  href={ghUrl(c.issue_number)}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ fontSize: 12, color: NL.accent, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}
-                >
-                  View on GitHub ↗
+                <a href={ghUrl(c.issue_number)} target="_blank" rel="noreferrer"
+                  style={{ fontSize: 12, color: NL.accent, textDecoration: "none", flexShrink: 0 }}>
+                  GitHub ↗
                 </a>
                 <div style={{ flex: 1 }} />
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1005,11 +1022,19 @@ function FeedbackPanel() {
                   ) : (
                     <span style={{ fontSize: 12, color: NL.muted }}>●●●●●●●●</span>
                   )}
-                  <button
-                    onClick={() => toggleEmail(c.issue_number)}
-                    style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, border: `1px solid ${NL.borderMid}`, background: NL.subtle, color: NL.secondary, cursor: "pointer", fontFamily: font }}
-                  >
+                  <button onClick={() => toggleEmail(c.issue_number)}
+                    style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, border: `1px solid ${NL.borderMid}`, background: NL.subtle, color: NL.secondary, cursor: "pointer", fontFamily: font }}>
                     {revealedEmails[c.issue_number] ? "Hide" : "Reveal"}
+                  </button>
+                  <a href={mailtoUrl(c.email, c.issue_number)}
+                    style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: NL.accentDim, color: NL.accent, textDecoration: "none", border: `1px solid ${NL.accentBorder}`, fontFamily: font }}>
+                    Reply ✉
+                  </a>
+                  <button
+                    onClick={() => deleteContact(c.issue_number)}
+                    disabled={deleting[c.issue_number]}
+                    style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, border: `1px solid ${NL.dangerBorder ?? "#5a2020"}`, background: NL.dangerDim ?? "rgba(220,53,69,0.12)", color: NL.danger, cursor: "pointer", fontFamily: font, opacity: deleting[c.issue_number] ? 0.5 : 1 }}>
+                    {deleting[c.issue_number] ? "…" : "Delete"}
                   </button>
                 </div>
                 <span style={{ fontSize: 11, color: NL.muted, flexShrink: 0 }}>
