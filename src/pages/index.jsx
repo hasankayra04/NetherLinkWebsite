@@ -27,7 +27,7 @@ const NL = {
 
 const platforms = [
   { icon: <FaWindows size={16} />, label: "Windows", url: "https://apps.microsoft.com/detail/9NSFPT6D8PTR", color: "#60a5fa" },
-  { icon: <FaApple size={16} />, label: "macOS", url: "https://github.com/MCCORG/MCCompanionWebsite/raw/refs/heads/main/downloads/apple/MCCompanion.dmg", color: "#c0c7d4" },
+  { icon: <FaApple size={16} />, label: "macOS", url: "https://apps.apple.com/us/app/mccompanion/id6747323142?platform=mac", color: "#c0c7d4" },
   { icon: <FaAndroid size={16} />, label: "Android", url: "https://play.google.com/store/apps/details?id=net.netherdev.netherLink", color: "#34d399" },
   { icon: <FaApple size={16} />, label: "iOS", url: "https://apps.apple.com/be/app/netherlink/id6747323142?l=en", color: "#c0c7d4" },
 ];
