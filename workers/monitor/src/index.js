@@ -86,6 +86,23 @@ async function updateGist(gistId, token, content) {
   return res.status;
 }
 
+const ALERT_ROLE = '1487850126092533832';
+
+const STATUS_EMOJI = { up: '🟢', down: '🔴', degraded: '🟡', unknown: '⚫' };
+
+async function sendDiscordAlert(webhookUrl, downServices) {
+  const lines = downServices.map(s => `${STATUS_EMOJI[s.status] ?? '⚫'} **${s.name}** — ${s.status}`).join('\n');
+  const body = {
+    content: `<@&${ALERT_ROLE}> Service disruption detected!\n${lines}`,
+    username: 'MCCompanion Monitor',
+  };
+  await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
 async function runMonitor(env) {
   const now = new Date().toISOString();
 
@@ -97,6 +114,17 @@ async function runMonitor(env) {
 
   const pelicanResults = PELICAN_SERVERS.map(s => checkPelican(s, pelicanMap));
   const services = [...pelicanResults, ...httpResults];
+
+  // Alert only when a service newly goes down (was up before)
+  if (env.DISCORD_WEBHOOK) {
+    const prevMap = Object.fromEntries((existing.services ?? []).map(s => [s.name, s.status]));
+    const newlyDown = services.filter(s =>
+      (s.status === 'down' || s.status === 'degraded') && prevMap[s.name] === 'up'
+    );
+    if (newlyDown.length > 0) {
+      await sendDiscordAlert(env.DISCORD_WEBHOOK, newlyDown);
+    }
+  }
 
   const historyEntry = {
     timestamp: now,
