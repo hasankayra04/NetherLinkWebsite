@@ -66,6 +66,11 @@ const config = {
             label: 'Docs',
           },
           {
+            to: '/status',
+            label: 'Status',
+            position: 'right',
+          },
+          {
             href: 'https://github.com/MCCORG/MCCompanionWebsite',
             label: 'GitHub',
             position: 'right',

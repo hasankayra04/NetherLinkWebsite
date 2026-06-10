@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FaDiscord, FaStar, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaLightbulb } from "react-icons/fa";
+import { FaDiscord, FaStar, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaLightbulb, FaCircle } from "react-icons/fa";
 import { useHistory, useLocation } from "@docusaurus/router";
 import sidebars from "../../../sidebars.js";
 import { signOut } from "firebase/auth";
@@ -228,6 +228,13 @@ export default function Navbar() {
               <FaStar size={13} /> Featured Slot
             </button>
 
+            <button onClick={() => navigate("/status")} style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 7, fontSize: 13, fontWeight: 500, color: NL.secondary }}
+              onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
+              onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; }}
+            >
+              <FaCircle size={8} style={{ color: "#67e404" }} /> Status
+            </button>
+
             {portalLink && (
               <button onClick={() => navigate(portalLink.path)} style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 7, fontSize: 13, fontWeight: 500, color: NL.secondary }}
                 onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
@@ -335,6 +342,10 @@ export default function Navbar() {
             <button onClick={() => navigate("/slot")} style={drawerBtn()}
               onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
             ><FaStar size={14} /> Featured Slot</button>
+
+            <button onClick={() => navigate("/status")} style={drawerBtn()}
+              onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
+            ><FaCircle size={9} style={{ color: "#67e404" }} /> Status</button>
 
             {portalLink && (
               <button onClick={() => navigate(portalLink.path)} style={drawerBtn()}
