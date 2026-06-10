@@ -1,0 +1,111 @@
+name: Monitor API status
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check endpoints and update status.json
+        env:
+          PELICAN_API_KEY: ${{ secrets.PELICAN_API_KEY }}
+        run: |
+          node - <<'EOF'
+          const fs = require('fs');
+
+          const PANEL = 'https://panel.mccompanion.net';
+
+          const HTTP_ENDPOINTS = [
+            { name: 'EU API',         group: 'api',  url: 'https://api.mccompanion.net/api/featured-servers' },
+          ];
+
+          const PELICAN_SERVERS = [
+            { id: 'c6a0fcad', name: 'EU Redis',             group: 'infrastructure' },
+            { id: 'f176ca5a', name: 'US Redis',             group: 'infrastructure' },
+            { id: 'a0a42068', name: 'EU Relay',             group: 'infrastructure' },
+            { id: 'f9a27188', name: 'US Relay',             group: 'infrastructure' },
+            { id: '82947325', name: 'EU API',               group: 'api'            },
+            { id: '60e47e69', name: 'US API',               group: 'api'            },
+            { id: 'e3b00977', name: 'EU MCCBot',            group: 'bots'           },
+            { id: '72b6a16b', name: 'EU Xbox Broadcast',    group: 'bots'           },
+            { id: '071f1b1c', name: 'US Xbox Broadcast',    group: 'bots'           },
+            { id: 'fbd2e58b', name: 'EU Geyser',            group: 'bots'           },
+            { id: '4b70a1de', name: 'US Geyser',            group: 'bots'           },
+            { id: '8b060c22', name: 'MCC Status Bot',       group: 'bots'           },
+          ];
+
+          const MAX_HISTORY = 288;
+          const API_KEY = process.env.PELICAN_API_KEY;
+
+          async function checkHttp(endpoint) {
+            const start = Date.now();
+            try {
+              const res = await fetch(endpoint.url, { signal: AbortSignal.timeout(8000) });
+              const latency = Date.now() - start;
+              return { name: endpoint.name, group: endpoint.group, status: res.status < 500 ? 'up' : 'degraded', latency_ms: latency };
+            } catch {
+              return { name: endpoint.name, group: endpoint.group, status: 'down', latency_ms: null };
+            }
+          }
+
+          async function checkPelican(server) {
+            try {
+              const res = await fetch(`${PANEL}/api/client/servers/${server.id}/resources`, {
+                headers: {
+                  Authorization: `Bearer ${API_KEY}`,
+                  Accept: 'application/json',
+                },
+                signal: AbortSignal.timeout(10000),
+              });
+              if (!res.ok) return { name: server.name, group: server.group, status: 'unknown', latency_ms: null };
+              const data = await res.json();
+              const state = data.attributes?.current_state ?? 'unknown';
+              const status = state === 'running' ? 'up' : state === 'starting' ? 'degraded' : 'down';
+              return { name: server.name, group: server.group, status, latency_ms: null, state };
+            } catch {
+              return { name: server.name, group: server.group, status: 'unknown', latency_ms: null };
+            }
+          }
+
+          const now = new Date().toISOString();
+
+          let existing = { services: [], history: [] };
+          try { existing = JSON.parse(fs.readFileSync('static/status.json', 'utf8')); } catch {}
+
+          const [httpResults, pelicanResults] = await Promise.all([
+            Promise.all(HTTP_ENDPOINTS.map(checkHttp)),
+            Promise.all(PELICAN_SERVERS.map(checkPelican)),
+          ]);
+
+          const services = [...pelicanResults, ...httpResults];
+
+          const historyEntry = {
+            timestamp: now,
+            checks: services.map(s => ({ name: s.name, group: s.group, status: s.status })),
+          };
+
+          const history = [...(existing.history || []), historyEntry].slice(-MAX_HISTORY);
+
+          const output = { updated_at: now, services, history };
+
+          fs.writeFileSync('static/status.json', JSON.stringify(output, null, 2));
+          console.log('Updated:', services.map(s => `${s.name}=${s.status}`).join(', '));
+          EOF
+
+      - name: Commit status.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add static/status.json
+          git diff --cached --quiet || git commit -m "chore: update status [skip ci]"
+          git push
