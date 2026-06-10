@@ -81,12 +81,12 @@ const EMBED_STATES = [
     server: "offline.example.net:25565",
     status: "Offline",
     statusColor: "#f87171",
-    players: "N/A",
-    version: "Unknown",
+    players: "—",
+    version: "—",
     platform: "Java Edition",
-    motd: null,
+    motd: "Server is currently offline",
     embedColor: "#f87171",
-    ping: null,
+    ping: "—",
   },
 ];
 
@@ -110,6 +110,7 @@ function DiscordEmbedMockup() {
       width: "100%",
       boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
       border: "1px solid rgba(255,255,255,0.06)",
+      minHeight: 310,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
         <div style={{
@@ -167,20 +168,16 @@ function DiscordEmbedMockup() {
               <p style={{ color: "#b5bac1", fontSize: 11, fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Platform</p>
               <p style={{ color: "#e3e5e8", fontSize: 13, margin: 0 }}>{embed.platform}</p>
             </div>
-            {embed.ping && (
-              <div>
-                <p style={{ color: "#b5bac1", fontSize: 11, fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Ping</p>
-                <p style={{ color: "#e3e5e8", fontSize: 13, margin: 0 }}>{embed.ping}</p>
-              </div>
-            )}
+            <div>
+              <p style={{ color: "#b5bac1", fontSize: 11, fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Ping</p>
+              <p style={{ color: "#e3e5e8", fontSize: 13, margin: 0 }}>{embed.ping}</p>
+            </div>
           </div>
 
-          {embed.motd && (
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 8 }}>
-              <p style={{ color: "#b5bac1", fontSize: 11, fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Message of the Day</p>
-              <p style={{ color: "#e3e5e8", fontSize: 12, margin: 0 }}>{embed.motd}</p>
-            </div>
-          )}
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 8 }}>
+            <p style={{ color: "#b5bac1", fontSize: 11, fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Message of the Day</p>
+            <p style={{ color: "#e3e5e8", fontSize: 12, margin: 0 }}>{embed.motd}</p>
+          </div>
 
           <p style={{ color: "#72767d", fontSize: 11, margin: "10px 0 0" }}>
             MCCompanion • Instant updates for Minecraft servers
