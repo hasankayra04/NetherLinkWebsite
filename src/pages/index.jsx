@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { FaWindows, FaApple, FaAndroid, FaServer, FaSearch, FaUser, FaRobot } from "react-icons/fa";
+import { FaWindows, FaApple, FaAndroid, FaServer, FaSearch, FaUser, FaRobot, FaDiscord, FaCode } from "react-icons/fa";
 import { motion } from "framer-motion";
 import FeaturedServersCarousel from "../components/FeaturedServersCarousel";
 import ChangelogSection from "../components/ChangelogSection";
 import AppShowcase from "../components/AppShowcase";
 import BotStatus from "../components/BotStatus";
 import CommunitySection from "../components/CommunitySection";
+import DiscordBotSection from "../components/DiscordBotSection";
 import Layout from "@theme/Layout";
 
 const NL = {
@@ -28,6 +29,50 @@ const platforms = [
   { icon: <FaApple size={18} />, label: "macOS", url: "https://github.com/MCCORG/MCCompanionWebsite/raw/refs/heads/main/downloads/apple/MCCompanion.dmg", color: "#9299a6" },
   { icon: <FaAndroid size={18} />, label: "Android", url: "https://play.google.com/store/apps/details?id=net.netherdev.netherLink", color: "#34d399" },
   { icon: <FaApple size={18} />, label: "iOS", url: "https://apps.apple.com/be/app/netherlink/id6747323142?l=en", color: "#9299a6" },
+];
+
+const PRODUCTS = [
+  {
+    icon: <FaAndroid size={20} />,
+    color: "#67e404",
+    colorDim: "rgba(103,228,4,0.10)",
+    colorBorder: "rgba(103,228,4,0.22)",
+    label: "Mobile & Desktop App",
+    desc: "Console relay, server browser, skin editor & player lookup. Free on Windows, macOS, Android and iOS.",
+    href: "#app",
+    cta: "See the app ↓",
+  },
+  {
+    icon: <FaDiscord size={20} />,
+    color: "#7289da",
+    colorDim: "rgba(114,137,218,0.10)",
+    colorBorder: "rgba(114,137,218,0.25)",
+    label: "Discord Bot",
+    desc: "Auto-updating Minecraft server status embeds in any Discord channel. Java & Bedrock, direct pings.",
+    href: "#discord-bot",
+    cta: "Learn more ↓",
+  },
+  {
+    icon: <FaRobot size={20} />,
+    color: "#34d399",
+    colorDim: "rgba(52,211,153,0.10)",
+    colorBorder: "rgba(52,211,153,0.22)",
+    label: "Xbox Relay Network",
+    desc: "Always-online Xbox relay bots in EU and US regions — stable Bedrock connections for everyone.",
+    href: "#relay",
+    cta: "View live status ↓",
+  },
+  {
+    icon: <FaCode size={20} />,
+    color: "#a78bfa",
+    colorDim: "rgba(167,139,250,0.10)",
+    colorBorder: "rgba(167,139,250,0.22)",
+    label: "Public API",
+    desc: "Integrate MCCompanion data — server metrics, player lookup, relay status — into your own projects.",
+    href: "/api-docs",
+    cta: "Read the docs →",
+    external: false,
+  },
 ];
 
 const FEATURES = [
@@ -101,7 +146,7 @@ export default function Home() {
   return (
     <Layout
       title="MCCompanion — The Complete Minecraft Companion App"
-      description="Console relay for PlayStation, Xbox & Switch, player lookup, skin editor, Minecraft wiki, friends & chat. The all-in-one Minecraft companion app. Free on all platforms."
+      description="Console relay for PlayStation, Xbox & Switch, player lookup, skin editor, Discord bot, and a global Xbox relay network. Free on all platforms."
     >
       <div style={{ background: NL.bg, fontFamily: "'Inter', system-ui, sans-serif" }}>
 
@@ -141,13 +186,13 @@ export default function Home() {
               }}>
                 The complete{" "}
                 <span style={{ color: NL.accent }}>Minecraft</span>
-                {" "}companion
+                {" "}ecosystem
               </h1>
               <p style={{
                 fontSize: 16, color: NL.secondary,
-                maxWidth: 540, margin: "0 auto", lineHeight: 1.7,
+                maxWidth: 560, margin: "0 auto", lineHeight: 1.7,
               }}>
-                MCCompanion brings your entire Minecraft experience into one free app — manage servers, look up players, edit your skin, and stay connected through our global Xbox relay network.
+                MCCompanion brings your entire Minecraft experience into one free app — manage servers, look up players, edit your skin, monitor servers in Discord, and stay connected through our global Xbox relay network.
               </p>
             </motion.div>
 
@@ -218,17 +263,79 @@ export default function Home() {
           </div>
         </main>
 
-        <AppShowcase />
+        <div style={{
+          width: "100%", boxSizing: "border-box",
+          padding: "0 20px 64px",
+          display: "flex", justifyContent: "center",
+        }}>
+          <div style={{ width: "100%", maxWidth: 1100 }}>
+            <SectionLabel>What we offer</SectionLabel>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 10,
+            }}>
+              {PRODUCTS.map(p => (
+                <a
+                  key={p.label}
+                  href={p.href}
+                  style={{ textDecoration: "none", display: "block" }}
+                >
+                  <div
+                    style={{
+                      padding: "22px 20px",
+                      borderRadius: 14,
+                      background: NL.surface,
+                      border: `1px solid ${NL.border}`,
+                      transition: "border-color 0.2s, background 0.2s",
+                      height: "100%", boxSizing: "border-box",
+                      cursor: "pointer",
+                      display: "flex", flexDirection: "column",
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = p.colorBorder;
+                      e.currentTarget.style.background = NL.elevated;
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = NL.border;
+                      e.currentTarget.style.background = NL.surface;
+                    }}
+                  >
+                    <div style={{
+                      width: 42, height: 42, borderRadius: 11, flexShrink: 0,
+                      background: p.colorDim, border: `1px solid ${p.colorBorder}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: p.color, marginBottom: 14,
+                    }}>
+                      {p.icon}
+                    </div>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: NL.text, margin: "0 0 6px" }}>
+                      {p.label}
+                    </p>
+                    <p style={{ fontSize: 13, color: NL.secondary, margin: "0 0 14px", lineHeight: 1.65, flex: 1 }}>
+                      {p.desc}
+                    </p>
+                    <span style={{ fontSize: 12, color: p.color, fontWeight: 500 }}>{p.cta}</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div id="app">
+          <AppShowcase />
+        </div>
 
         <div style={{
           width: "100%", boxSizing: "border-box",
           padding: "0 20px 80px",
           display: "flex", justifyContent: "center",
         }}>
-          <div style={{ width: "100%", maxWidth: 1100, display: "flex", flexDirection: "column", gap: 40 }}>
+          <div style={{ width: "100%", maxWidth: 1100, display: "flex", flexDirection: "column", gap: 64 }}>
 
             <div>
-              <SectionLabel>What's included</SectionLabel>
+              <SectionLabel>What&apos;s included</SectionLabel>
               <div style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -279,13 +386,17 @@ export default function Home() {
               </div>
             </div>
 
+            <div id="discord-bot">
+              <SectionLabel>Discord bot</SectionLabel>
+              <DiscordBotSection />
+            </div>
+
             <div>
               <SectionLabel>Featured servers</SectionLabel>
               <FeaturedServersCarousel />
             </div>
 
-            {/* BOT NETWORK */}
-            <div>
+            <div id="relay">
               <SectionLabel>Relay network</SectionLabel>
               <BotStatus />
             </div>
