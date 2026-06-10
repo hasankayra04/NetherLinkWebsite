@@ -19,7 +19,7 @@ const NL = {
 const sections = [
   {
     title: "1. Who We Are",
-    content: "MCCompanion is developed and operated by Netherdev. If you have any questions about this Privacy Policy or your data, you can reach us at privacy@mccompanion.net or via our Discord community.",
+    content: "MCCompanion is developed and operated by MCCORG. If you have any questions about this Privacy Policy or your data, you can reach us at privacy@mccompanion.net or via our Discord community.",
   },
   {
     title: "2. Account Information",

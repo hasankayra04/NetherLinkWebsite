@@ -34,7 +34,7 @@ const config = {
         docs: {
           sidebarPath: './sidebars.js',
           routeBasePath: 'docs',
-          editUrl: 'https://github.com/NetherDevMc/MCCompanionWebsite/tree/main/docs/',
+          editUrl: 'https://github.com/MCCORG/MCCompanionWebsite/tree/main/docs/',
         },
         blog: false,
         theme: {
@@ -66,7 +66,7 @@ const config = {
             label: 'Docs',
           },
           {
-            href: 'https://github.com/NetherDevMc/MCCompanionWebsite',
+            href: 'https://github.com/MCCORG/MCCompanionWebsite',
             label: 'GitHub',
             position: 'right',
           },

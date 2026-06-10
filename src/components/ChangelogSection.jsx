@@ -59,7 +59,7 @@ export default function ChangelogSection() {
           )}
         </div>
         <a
-          href="https://github.com/NetherDevMc"
+          href="https://github.com/MCCORG"
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs text-slate-500 hover:text-slate-300 transition flex items-center gap-1"

@@ -112,7 +112,7 @@ const sections = [
   },
   {
     title: "11. Intellectual Property",
-    content: "All content, design, code, logos, and trademarks in the App are the property of Netherdev unless otherwise stated. You may not reproduce, distribute, or create derivative works from any part of the App without our prior written consent. MCCompanion is an independent project and is not affiliated with, endorsed by, or sponsored by Mojang Studios or Microsoft Corporation. \"Minecraft\" is a trademark of Microsoft Corporation.",
+    content: "All content, design, code, logos, and trademarks in the App are the property of MCCORG unless otherwise stated. You may not reproduce, distribute, or create derivative works from any part of the App without our prior written consent. MCCompanion is an independent project and is not affiliated with, endorsed by, or sponsored by Mojang Studios or Microsoft Corporation. \"Minecraft\" is a trademark of Microsoft Corporation.",
   },
   {
     title: "12. Third-Party Services",
@@ -131,7 +131,7 @@ const sections = [
   },
   {
     title: "14. Limitation of Liability",
-    content: "To the fullest extent permitted by applicable law, Netherdev shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to:",
+    content: "To the fullest extent permitted by applicable law, MCCORG shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to:",
     list: [
       "Loss of data or messages",
       "Service interruptions or downtime",
