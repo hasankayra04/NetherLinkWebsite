@@ -55,25 +55,38 @@ jobs:
             }
           }
 
-          async function checkPelican(server) {
+          async function fetchAllPelicanServers() {
             try {
-              const res = await fetch(`${PANEL}/api/client/servers/${server.id}/resources`, {
+              const res = await fetch(`${PANEL}/api/application/servers?per_page=100`, {
                 headers: { Authorization: `Bearer ${PELICAN_KEY}`, Accept: 'application/json' },
                 signal: AbortSignal.timeout(10000),
               });
               if (!res.ok) {
                 const text = await res.text().catch(() => '');
-                console.error(`[${server.name}] HTTP ${res.status}: ${text.slice(0, 200)}`);
-                return { name: server.name, group: server.group, status: 'unknown', latency_ms: null };
+                console.error(`Pelican API HTTP ${res.status}: ${text.slice(0, 200)}`);
+                return {};
               }
               const data = await res.json();
-              const state = data.attributes?.current_state ?? 'unknown';
-              const status = state === 'running' ? 'up' : state === 'starting' ? 'degraded' : 'down';
-              return { name: server.name, group: server.group, status, latency_ms: null, state };
+              const map = {};
+              for (const s of data.data ?? []) {
+                const id = s.attributes?.identifier;
+                const status = s.attributes?.status; // null=healthy, suspended/installing/etc=problem
+                if (id) map[id] = status;
+              }
+              return map;
             } catch (e) {
-              console.error(`[${server.name}] Error: ${e.message}`);
+              console.error(`Pelican API error: ${e.message}`);
+              return {};
+            }
+          }
+
+          async function checkPelican(server, statusMap) {
+            if (!(server.id in statusMap)) {
               return { name: server.name, group: server.group, status: 'unknown', latency_ms: null };
             }
+            const raw = statusMap[server.id];
+            const status = raw === null ? 'up' : raw === 'suspended' ? 'down' : 'degraded';
+            return { name: server.name, group: server.group, status, latency_ms: null, state: raw ?? 'running' };
           }
 
           function fetchGist() {
@@ -127,10 +140,11 @@ jobs:
 
             const existing = await fetchGist().catch(() => ({ services: [], history: [] }));
 
-            const [httpResults, pelicanResults] = await Promise.all([
+            const [httpResults, pelicanStatusMap] = await Promise.all([
               Promise.all(HTTP_ENDPOINTS.map(checkHttp)),
-              Promise.all(PELICAN_SERVERS.map(checkPelican)),
+              fetchAllPelicanServers(),
             ]);
+            const pelicanResults = await Promise.all(PELICAN_SERVERS.map(s => checkPelican(s, pelicanStatusMap)));
 
             const services = [...pelicanResults, ...httpResults];
             const historyEntry = {
