@@ -37,7 +37,7 @@ const REGION_BASES = {
 };
 const REGION_PARAMS = { EU: "eu", US: "us" };
 const EVENTS_CAP = 1500;
-const TABS = [{ id: "overview", label: "Overview" }, { id: "partners", label: "Partners" }, { id: "moderation", label: "Moderation" }];
+const TABS = [{ id: "overview", label: "Overview" }, { id: "partners", label: "Partners" }, { id: "moderation", label: "Moderation" }, { id: "feedback", label: "Feedback" }];
 const REPORT_STATUSES = ['pending', 'reviewed', 'dismissed', 'actioned'];
 
 async function dbFetch(path, options = {}) {
@@ -943,6 +943,87 @@ function ModerationPanel({ bans, bansLoading, banError, loadBans, handleBan, han
   );
 }
 
+function FeedbackPanel() {
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [revealedEmails, setRevealedEmails] = useState({});
+
+  const loadContacts = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/admin/feedback-contacts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      setContacts((await res.json()).contacts || []);
+    } catch (e) { setError("Failed: " + e.message); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadContacts(); }, [loadContacts]);
+
+  function toggleEmail(issueNumber) {
+    setRevealedEmails(prev => ({ ...prev, [issueNumber]: !prev[issueNumber] }));
+  }
+
+  const ghUrl = (n) => `https://github.com/MCCORG/MCCompanion/issues/${n}`;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <Card
+        title="Feedback contacts"
+        subtitle={`${contacts.length} issue${contacts.length !== 1 ? "s" : ""} with contact info`}
+        action={iconBtn(loadContacts, "Refresh", <IC.Refresh />)}
+      >
+        {loading ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13, padding: "24px 0", justifyContent: "center" }}><Spinner /> Loading…</div>
+        ) : error ? (
+          <p style={{ fontSize: 12, color: NL.danger, padding: "16px 0", textAlign: "center" }}>{error}</p>
+        ) : contacts.length === 0 ? (
+          <p style={{ fontSize: 13, color: NL.muted, textAlign: "center", padding: "32px 0" }}>No feedback with contact info yet.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {contacts.map(c => (
+              <div key={c.issue_number} style={{ border: `1px solid ${NL.border}`, borderRadius: 10, background: NL.elevated, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <span style={{ fontFamily: mono, fontSize: 11, color: NL.muted, flexShrink: 0 }}>#{c.issue_number}</span>
+                <a
+                  href={ghUrl(c.issue_number)}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ fontSize: 12, color: NL.accent, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}
+                >
+                  View on GitHub ↗
+                </a>
+                <div style={{ flex: 1 }} />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {revealedEmails[c.issue_number] ? (
+                    <span style={{ fontFamily: mono, fontSize: 12, color: NL.text, background: NL.subtle, padding: "3px 8px", borderRadius: 6, border: `1px solid ${NL.borderMid}` }}>
+                      {c.email}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 12, color: NL.muted }}>●●●●●●●●</span>
+                  )}
+                  <button
+                    onClick={() => toggleEmail(c.issue_number)}
+                    style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, border: `1px solid ${NL.borderMid}`, background: NL.subtle, color: NL.secondary, cursor: "pointer", fontFamily: font }}
+                  >
+                    {revealedEmails[c.issue_number] ? "Hide" : "Reveal"}
+                  </button>
+                </div>
+                <span style={{ fontSize: 11, color: NL.muted, flexShrink: 0 }}>
+                  {new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const history = useHistory();
 
@@ -1377,6 +1458,8 @@ export default function DashboardPage() {
           </header>
 
           {activeTab === "partners" && <PartnersPanel />}
+
+          {activeTab === "feedback" && <FeedbackPanel />}
 
           {activeTab === "moderation" && (
             <ModerationPanel
