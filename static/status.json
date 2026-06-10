@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-10T20:53:52.881Z",
+  "updated_at": "2026-06-10T21:01:46.701Z",
   "services": [
     {
       "name": "EU Redis",
@@ -76,8 +76,8 @@
     {
       "name": "EU API",
       "group": "api",
-      "status": "down",
-      "latency_ms": null
+      "status": "up",
+      "latency_ms": 361
     }
   ],
   "history": [
@@ -218,6 +218,76 @@
           "name": "EU API",
           "group": "api",
           "status": "down"
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-06-10T21:01:46.701Z",
+      "checks": [
+        {
+          "name": "EU Redis",
+          "group": "infrastructure",
+          "status": "unknown"
+        },
+        {
+          "name": "US Redis",
+          "group": "infrastructure",
+          "status": "unknown"
+        },
+        {
+          "name": "EU Relay",
+          "group": "infrastructure",
+          "status": "unknown"
+        },
+        {
+          "name": "US Relay",
+          "group": "infrastructure",
+          "status": "unknown"
+        },
+        {
+          "name": "EU API",
+          "group": "api",
+          "status": "unknown"
+        },
+        {
+          "name": "US API",
+          "group": "api",
+          "status": "unknown"
+        },
+        {
+          "name": "EU MCCBot",
+          "group": "bots",
+          "status": "unknown"
+        },
+        {
+          "name": "EU Xbox Broadcast",
+          "group": "bots",
+          "status": "unknown"
+        },
+        {
+          "name": "US Xbox Broadcast",
+          "group": "bots",
+          "status": "unknown"
+        },
+        {
+          "name": "EU Geyser",
+          "group": "bots",
+          "status": "unknown"
+        },
+        {
+          "name": "US Geyser",
+          "group": "bots",
+          "status": "unknown"
+        },
+        {
+          "name": "MCC Status Bot",
+          "group": "bots",
+          "status": "unknown"
+        },
+        {
+          "name": "EU API",
+          "group": "api",
+          "status": "up"
         }
       ]
     }
