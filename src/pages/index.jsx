@@ -279,6 +279,20 @@ export default function Home() {
           </motion.div>
         </section>
 
+        <style>{`
+          .bento-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
+          .bento-lg { grid-column: span 7; }
+          .bento-sm { grid-column: span 5; }
+          @media (max-width: 900px) {
+            .bento-grid { grid-template-columns: 1fr 1fr; }
+            .bento-lg, .bento-sm { grid-column: span 1; }
+          }
+          @media (max-width: 580px) {
+            .bento-grid { grid-template-columns: 1fr; }
+            .bento-lg, .bento-sm { grid-column: span 1; }
+          }
+        `}</style>
+
         <section style={{ padding: "0 20px 96px", maxWidth: 1200, margin: "0 auto" }}>
           <SectionHeading
             eyebrow="Everything in one place"
@@ -287,18 +301,12 @@ export default function Home() {
             subtitle="Built for Minecraft players, server owners, and community managers. Every tool connects to the next."
           />
 
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(12, 1fr)",
-            gridTemplateRows: "auto auto",
-            gap: 12,
-          }}>
+          <div className="bento-grid">
 
             <motion.a
               href="#app"
               variants={fadeUp} custom={0} initial="hidden" whileInView="visible" viewport={{ once: true }}
               style={{
-                gridColumn: "span 7",
                 textDecoration: "none",
                 display: "block",
                 position: "relative",
@@ -310,6 +318,7 @@ export default function Home() {
                 transition: "border-color 0.2s, box-shadow 0.2s",
                 cursor: "pointer",
               }}
+              className="bento-lg"
               whileHover={{ scale: 1.01 }}
               onMouseEnter={e => {
                 e.currentTarget.style.borderColor = "rgba(103,228,4,0.25)";
@@ -362,8 +371,8 @@ export default function Home() {
             <motion.a
               href="#discord-bot"
               variants={fadeUp} custom={1} initial="hidden" whileInView="visible" viewport={{ once: true }}
+              className="bento-sm"
               style={{
-                gridColumn: "span 5",
                 textDecoration: "none",
                 display: "block",
                 position: "relative",
@@ -417,8 +426,8 @@ export default function Home() {
             <motion.a
               href="#relay"
               variants={fadeUp} custom={2} initial="hidden" whileInView="visible" viewport={{ once: true }}
+              className="bento-sm"
               style={{
-                gridColumn: "span 5",
                 textDecoration: "none",
                 display: "block",
                 position: "relative",
@@ -480,8 +489,8 @@ export default function Home() {
             <motion.a
               href="/api-docs"
               variants={fadeUp} custom={3} initial="hidden" whileInView="visible" viewport={{ once: true }}
+              className="bento-lg"
               style={{
-                gridColumn: "span 7",
                 textDecoration: "none",
                 display: "block",
                 position: "relative",
