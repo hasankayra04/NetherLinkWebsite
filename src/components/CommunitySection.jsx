@@ -203,18 +203,6 @@ export default function CommunitySection() {
         >
           <FaBug size={11} /> Report a bug or idea
         </a>
-        <a
-          href="/roadmap"
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            fontSize: 12, color: NL.secondary, textDecoration: "none",
-            transition: "color 0.15s",
-          }}
-          onMouseEnter={e => e.currentTarget.style.color = NL.text}
-          onMouseLeave={e => e.currentTarget.style.color = NL.secondary}
-        >
-          View full roadmap <FaExternalLinkAlt size={10} />
-        </a>
       </div>
     </div>
   );

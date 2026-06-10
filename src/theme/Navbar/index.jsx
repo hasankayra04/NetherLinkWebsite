@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FaDiscord, FaStar, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaLightbulb, FaCircle } from "react-icons/fa";
+import { FaDiscord, FaStar, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaCircle } from "react-icons/fa";
 import { useHistory, useLocation } from "@docusaurus/router";
 import sidebars from "../../../sidebars.js";
 import { signOut } from "firebase/auth";
@@ -207,14 +207,7 @@ export default function Navbar() {
               <FaBug size={12} /> Feedback
             </button>
 
-            <button onClick={() => navigate("/roadmap")} style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 7, fontSize: 13, fontWeight: 500, color: NL.secondary }}
-              onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
-              onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; }}
-            >
-              <FaLightbulb size={12} /> Roadmap
-            </button>
-
-            <button onClick={() => navigate("/api-docs")} style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 7, fontSize: 13, fontWeight: 500, color: NL.secondary }}
+<button onClick={() => navigate("/api-docs")} style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 7, fontSize: 13, fontWeight: 500, color: NL.secondary }}
               onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
               onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; }}
             >
@@ -331,11 +324,7 @@ export default function Navbar() {
               onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
             ><FaBug size={13} /> Feedback</button>
 
-            <button onClick={() => navigate("/roadmap")} style={drawerBtn()}
-              onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
-            ><FaLightbulb size={13} /> Roadmap</button>
-
-            <button onClick={() => navigate("/api-docs")} style={drawerBtn()}
+<button onClick={() => navigate("/api-docs")} style={drawerBtn()}
               onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
             ><FaCode size={13} /> API</button>
 
