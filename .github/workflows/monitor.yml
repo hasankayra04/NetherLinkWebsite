@@ -20,28 +20,28 @@ jobs:
         env:
           PELICAN_API_KEY: ${{ secrets.PELICAN_API_KEY }}
         run: |
-          node - <<'EOF'
+          node --input-type=commonjs <<'EOF'
           const fs = require('fs');
 
           const PANEL = 'https://panel.mccompanion.net';
 
           const HTTP_ENDPOINTS = [
-            { name: 'EU API',         group: 'api',  url: 'https://api.mccompanion.net/api/featured-servers' },
+            { name: 'EU API', group: 'api', url: 'https://api.mccompanion.net/api/featured-servers' },
           ];
 
           const PELICAN_SERVERS = [
-            { id: 'c6a0fcad', name: 'EU Redis',             group: 'infrastructure' },
-            { id: 'f176ca5a', name: 'US Redis',             group: 'infrastructure' },
-            { id: 'a0a42068', name: 'EU Relay',             group: 'infrastructure' },
-            { id: 'f9a27188', name: 'US Relay',             group: 'infrastructure' },
-            { id: '82947325', name: 'EU API',               group: 'api'            },
-            { id: '60e47e69', name: 'US API',               group: 'api'            },
-            { id: 'e3b00977', name: 'EU MCCBot',            group: 'bots'           },
-            { id: '72b6a16b', name: 'EU Xbox Broadcast',    group: 'bots'           },
-            { id: '071f1b1c', name: 'US Xbox Broadcast',    group: 'bots'           },
-            { id: 'fbd2e58b', name: 'EU Geyser',            group: 'bots'           },
-            { id: '4b70a1de', name: 'US Geyser',            group: 'bots'           },
-            { id: '8b060c22', name: 'MCC Status Bot',       group: 'bots'           },
+            { id: 'c6a0fcad', name: 'EU Redis',          group: 'infrastructure' },
+            { id: 'f176ca5a', name: 'US Redis',          group: 'infrastructure' },
+            { id: 'a0a42068', name: 'EU Relay',          group: 'infrastructure' },
+            { id: 'f9a27188', name: 'US Relay',          group: 'infrastructure' },
+            { id: '82947325', name: 'EU API',            group: 'api'            },
+            { id: '60e47e69', name: 'US API',            group: 'api'            },
+            { id: 'e3b00977', name: 'EU MCCBot',         group: 'bots'           },
+            { id: '72b6a16b', name: 'EU Xbox Broadcast', group: 'bots'           },
+            { id: '071f1b1c', name: 'US Xbox Broadcast', group: 'bots'           },
+            { id: 'fbd2e58b', name: 'EU Geyser',         group: 'bots'           },
+            { id: '4b70a1de', name: 'US Geyser',         group: 'bots'           },
+            { id: '8b060c22', name: 'MCC Status Bot',    group: 'bots'           },
           ];
 
           const MAX_HISTORY = 288;
@@ -61,10 +61,7 @@ jobs:
           async function checkPelican(server) {
             try {
               const res = await fetch(`${PANEL}/api/client/servers/${server.id}/resources`, {
-                headers: {
-                  Authorization: `Bearer ${API_KEY}`,
-                  Accept: 'application/json',
-                },
+                headers: { Authorization: `Bearer ${API_KEY}`, Accept: 'application/json' },
                 signal: AbortSignal.timeout(10000),
               });
               if (!res.ok) return { name: server.name, group: server.group, status: 'unknown', latency_ms: null };
@@ -77,29 +74,30 @@ jobs:
             }
           }
 
-          const now = new Date().toISOString();
+          async function main() {
+            const now = new Date().toISOString();
 
-          let existing = { services: [], history: [] };
-          try { existing = JSON.parse(fs.readFileSync('static/status.json', 'utf8')); } catch {}
+            let existing = { services: [], history: [] };
+            try { existing = JSON.parse(fs.readFileSync('static/status.json', 'utf8')); } catch {}
 
-          const [httpResults, pelicanResults] = await Promise.all([
-            Promise.all(HTTP_ENDPOINTS.map(checkHttp)),
-            Promise.all(PELICAN_SERVERS.map(checkPelican)),
-          ]);
+            const [httpResults, pelicanResults] = await Promise.all([
+              Promise.all(HTTP_ENDPOINTS.map(checkHttp)),
+              Promise.all(PELICAN_SERVERS.map(checkPelican)),
+            ]);
 
-          const services = [...pelicanResults, ...httpResults];
+            const services = [...pelicanResults, ...httpResults];
+            const historyEntry = {
+              timestamp: now,
+              checks: services.map(s => ({ name: s.name, group: s.group, status: s.status })),
+            };
+            const history = [...(existing.history || []), historyEntry].slice(-MAX_HISTORY);
+            const output = { updated_at: now, services, history };
 
-          const historyEntry = {
-            timestamp: now,
-            checks: services.map(s => ({ name: s.name, group: s.group, status: s.status })),
-          };
+            fs.writeFileSync('static/status.json', JSON.stringify(output, null, 2));
+            console.log('Updated:', services.map(s => `${s.name}=${s.status}`).join(', '));
+          }
 
-          const history = [...(existing.history || []), historyEntry].slice(-MAX_HISTORY);
-
-          const output = { updated_at: now, services, history };
-
-          fs.writeFileSync('static/status.json', JSON.stringify(output, null, 2));
-          console.log('Updated:', services.map(s => `${s.name}=${s.status}`).join(', '));
+          main().catch(e => { console.error(e); process.exit(1); });
           EOF
 
       - name: Commit status.json
