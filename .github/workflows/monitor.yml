@@ -64,12 +64,17 @@ jobs:
                 headers: { Authorization: `Bearer ${API_KEY}`, Accept: 'application/json' },
                 signal: AbortSignal.timeout(10000),
               });
-              if (!res.ok) return { name: server.name, group: server.group, status: 'unknown', latency_ms: null };
+              if (!res.ok) {
+                const text = await res.text().catch(() => '');
+                console.error(`[${server.name}] HTTP ${res.status}: ${text.slice(0, 200)}`);
+                return { name: server.name, group: server.group, status: 'unknown', latency_ms: null };
+              }
               const data = await res.json();
               const state = data.attributes?.current_state ?? 'unknown';
               const status = state === 'running' ? 'up' : state === 'starting' ? 'degraded' : 'down';
               return { name: server.name, group: server.group, status, latency_ms: null, state };
-            } catch {
+            } catch (e) {
+              console.error(`[${server.name}] Error: ${e.message}`);
               return { name: server.name, group: server.group, status: 'unknown', latency_ms: null };
             }
           }
@@ -106,4 +111,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add static/status.json
           git diff --cached --quiet || git commit -m "chore: update status [skip ci]"
+          git pull --rebase origin main
           git push
