@@ -28,6 +28,80 @@ const API_BASE = "https://api.mccompanion.net";
 
 const ENDPOINTS = [
   {
+    id: "lookup-java",
+    method: "GET",
+    path: "/api/lookup/java/:identifier",
+    title: "Java Lookup",
+    rateLimit: "60 req / min",
+    description:
+      "Resolve a Minecraft Java player by username or UUID. Returns the Mojang profile including skin and head avatar URL.",
+    params: [
+      {
+        name: "identifier",
+        in: "path",
+        required: true,
+        type: "string",
+        description: "Minecraft Java username or UUID (with or without dashes)",
+      },
+    ],
+    example: {
+      request: `GET ${API_BASE}/api/lookup/java/Notch`,
+      response: `{
+  "platform": "java",
+  "username": "Notch",
+  "uuid": "069a79f4-44e9-4726-a5be-fca90e38aaf5",
+  "skinUrl": "http://textures.minecraft.net/texture/292009a4...",
+  "headUrl": "https://crafatar.com/avatars/069a79f4...?size=64&overlay"
+}`,
+    },
+    responseFields: [
+      { name: "platform", desc: 'Always "java"' },
+      { name: "username", desc: "In-game Minecraft username" },
+      { name: "uuid", desc: "Mojang UUID (dashed format)" },
+      { name: "skinUrl", desc: "Full skin texture URL from Mojang" },
+      { name: "headUrl", desc: "64×64 head avatar via Crafatar" },
+    ],
+  },
+  {
+    id: "lookup-bedrock",
+    method: "GET",
+    path: "/api/lookup/bedrock/:identifier",
+    title: "Bedrock Lookup",
+    rateLimit: "60 req / min",
+    description:
+      "Resolve a Minecraft Bedrock player by Xbox gamertag or numeric XUID. Returns Xbox Live profile data including skin, gamerpic, and gamerscore.",
+    params: [
+      {
+        name: "identifier",
+        in: "path",
+        required: true,
+        type: "string",
+        description: "Xbox gamertag or numeric XUID (10–20 digits)",
+      },
+    ],
+    example: {
+      request: `GET ${API_BASE}/api/lookup/bedrock/KobeNetwork`,
+      response: `{
+  "platform": "bedrock",
+  "gamertag": "KobeNetwork",
+  "xuid": "2535461503960946",
+  "skinUrl": "http://textures.minecraft.net/texture/827075cf...",
+  "gamerscore": 595,
+  "tier": "Silver",
+  "gamerpicUrl": "https://images-eds-ssl.xboxlive.com/image?url=..."
+}`,
+    },
+    responseFields: [
+      { name: "platform", desc: 'Always "bedrock"' },
+      { name: "gamertag", desc: "Xbox Live gamertag" },
+      { name: "xuid", desc: "Numeric Xbox Live identifier" },
+      { name: "skinUrl", desc: "Full skin texture URL via GeyserMC" },
+      { name: "gamerscore", desc: "Xbox Gamerscore" },
+      { name: "tier", desc: 'Xbox account tier — "Gold", "Silver", etc.' },
+      { name: "gamerpicUrl", desc: "Xbox Live profile picture URL" },
+    ],
+  },
+  {
     id: "lookup",
     method: "GET",
     path: "/api/lookup/bedrock-java/:identifier",
@@ -74,17 +148,17 @@ const ENDPOINTS = [
     },
     note: "bedrock is null when no linked Bedrock account is found, and vice-versa. linked: true means both profiles were resolved and cross-linked.",
     responseFields: [
-      { name: "java.username",   desc: "Java in-game username" },
-      { name: "java.uuid",       desc: "Mojang UUID (dashed)" },
-      { name: "java.skinUrl",    desc: "Full skin texture URL" },
-      { name: "java.headUrl",    desc: "64×64 head avatar via Crafatar" },
-      { name: "bedrock.gamertag",desc: "Xbox gamertag" },
-      { name: "bedrock.xuid",    desc: "Numeric Xbox Live identifier" },
+      { name: "java.username", desc: "Java in-game username" },
+      { name: "java.uuid", desc: "Mojang UUID (dashed)" },
+      { name: "java.skinUrl", desc: "Full skin texture URL" },
+      { name: "java.headUrl", desc: "64×64 head avatar via Crafatar" },
+      { name: "bedrock.gamertag", desc: "Xbox gamertag" },
+      { name: "bedrock.xuid", desc: "Numeric Xbox Live identifier" },
       { name: "bedrock.skinUrl", desc: "Full skin texture URL via GeyserMC" },
       { name: "bedrock.gamerscore", desc: "Xbox Gamerscore" },
-      { name: "bedrock.tier",    desc: 'Xbox account tier — "Gold", "Silver", etc.' },
+      { name: "bedrock.tier", desc: 'Xbox account tier — "Gold", "Silver", etc.' },
       { name: "bedrock.gamerpicUrl", desc: "Xbox Live profile picture URL" },
-      { name: "linked",          desc: "true when both Java and Bedrock were resolved together" },
+      { name: "linked", desc: "true when both Java and Bedrock were resolved together" },
     ],
   },
   {
@@ -193,9 +267,9 @@ const ENDPOINTS = [
 }`,
     },
     responseFields: [
-      { name: "title",   desc: "Short notification heading" },
+      { name: "title", desc: "Short notification heading" },
       { name: "message", desc: "Full notification body text" },
-      { name: "type",    desc: 'Severity level — "info", "warning", "error"' },
+      { name: "type", desc: 'Severity level — "info", "warning", "error"' },
     ],
   },
   {
@@ -213,6 +287,73 @@ const ENDPOINTS = [
   "updated_at": "2026-05-12T23:26:18.992Z"
 }`,
     },
+  },
+  {
+    id: "user-profile",
+    method: "GET",
+    path: "/api/users/:username",
+    title: "User Profile",
+    rateLimit: "60 req / min",
+    description:
+      "Fetch the public profile of a MCCompanion user by username.",
+    params: [
+      {
+        name: "username",
+        in: "path",
+        required: true,
+        type: "string",
+        description: "MCCompanion username (3–20 chars, a–z 0–9 _)",
+      },
+    ],
+    example: {
+      request: `GET ${API_BASE}/api/users/KobeNetwork`,
+      response: `{
+  "user": {
+    "username": "KobeNetwork",
+    "displayName": "Kobe",
+    "avatarUrl": "https://...",
+    "bio": "Minecraft enjoyer",
+    "createdAt": "2026-01-10T12:00:00.000Z"
+  }
+}`,
+    },
+    responseFields: [
+      { name: "user.username", desc: "Unique username" },
+      { name: "user.displayName", desc: "Display name shown in the app" },
+      { name: "user.avatarUrl", desc: "Profile picture URL" },
+      { name: "user.bio", desc: "Short user bio" },
+      { name: "user.createdAt", desc: "Account creation timestamp (ISO 8601)" },
+    ],
+  },
+  {
+    id: "feedback",
+    method: "POST",
+    path: "/api/feedback",
+    title: "Submit Feedback",
+    rateLimit: "60 req / min",
+    description:
+      "Submit a bug report or feature request. Creates a GitHub issue and returns the issue number and URL.",
+    params: [
+      { name: "type", in: "body", required: true, type: '"bug" | "feature"', description: "Type of feedback" },
+      { name: "title", in: "body", required: true, type: "string", description: "Short title (5–200 chars)" },
+      { name: "description", in: "body", required: true, type: "string", description: "Detailed description (10–3000 chars)" },
+      { name: "platform", in: "body", required: true, type: '"android" | "ios" | "windows" | "macos" | "other"', description: "Platform the issue occurs on" },
+      { name: "appVersion", in: "body", required: true, type: "string", description: "App version string" },
+      { name: "email", in: "body", required: false, type: "string", description: "Contact email for follow-up (optional)" },
+    ],
+    example: {
+      request: `POST ${API_BASE}/api/feedback\nContent-Type: application/json\n\n{\n  "type": "bug",\n  "title": "App crashes on connect",\n  "description": "When I tap connect the app crashes immediately.",\n  "platform": "ios",\n  "appVersion": "4.1.0",\n  "email": "user@example.com"\n}`,
+      response: `{
+  "ok": true,
+  "issueNumber": 42,
+  "issueUrl": "https://github.com/..."
+}`,
+    },
+    responseFields: [
+      { name: "ok", desc: "true when the issue was created successfully" },
+      { name: "issueNumber", desc: "GitHub issue number" },
+      { name: "issueUrl", desc: "Direct link to the created GitHub issue" },
+    ],
   },
   {
     id: "health",
@@ -235,10 +376,10 @@ const ENDPOINTS = [
 }`,
     },
     responseFields: [
-      { name: "status",        desc: '"ok" when the server is healthy' },
-      { name: "time",          desc: "Current server time (ISO 8601)" },
+      { name: "status", desc: '"ok" when the server is healthy' },
+      { name: "time", desc: "Current server time (ISO 8601)" },
       { name: "uptimeSeconds", desc: "Seconds since the process started" },
-      { name: "cache.size",    desc: "Number of entries currently in the player cache" },
+      { name: "cache.size", desc: "Number of entries currently in the player cache" },
     ],
   },
 ];
