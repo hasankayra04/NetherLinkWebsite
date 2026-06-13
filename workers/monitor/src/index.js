@@ -21,13 +21,17 @@ const PELICAN_SERVERS = [
 ];
 
 async function checkHttp(endpoint) {
-  const start = Date.now();
-  try {
-    const res = await fetch(endpoint.url, { signal: AbortSignal.timeout(8000) });
-    return { name: endpoint.name, group: endpoint.group, status: res.status < 500 ? 'up' : 'degraded', latency_ms: Date.now() - start };
-  } catch {
-    return { name: endpoint.name, group: endpoint.group, status: 'down', latency_ms: null };
+  const RETRIES = 2;
+  for (let attempt = 0; attempt <= RETRIES; attempt++) {
+    const start = Date.now();
+    try {
+      const res = await fetch(endpoint.url, { signal: AbortSignal.timeout(8000) });
+      return { name: endpoint.name, group: endpoint.group, status: res.status < 500 ? 'up' : 'degraded', latency_ms: Date.now() - start };
+    } catch {
+      if (attempt < RETRIES) await new Promise(r => setTimeout(r, 2000));
+    }
   }
+  return { name: endpoint.name, group: endpoint.group, status: 'down', latency_ms: null };
 }
 
 async function fetchAllPelicanServers(apiKey) {
@@ -55,7 +59,10 @@ function checkPelican(server, statusMap) {
     return { name: server.name, group: server.group, status: 'unknown', latency_ms: null };
   }
   const raw = statusMap[server.id];
-  const status = raw === null ? 'up' : raw === 'suspended' ? 'down' : 'degraded';
+  const status = raw === null ? 'up'
+    : raw === 'suspended' ? 'down'
+    : (raw === 'starting' || raw === 'stopping' || raw === 'installing') ? 'degraded'
+    : 'up';
   return { name: server.name, group: server.group, status, latency_ms: null, state: raw ?? 'running' };
 }
 
@@ -86,7 +93,7 @@ async function updateGist(gistId, token, content) {
   return res.status;
 }
 
-const ALERT_ROLE = '1487850126092533832';
+const ALERT_ROLE = '1515309276342648852';
 
 const STATUS_EMOJI = { up: '🟢', down: '🔴', degraded: '🟡', unknown: '⚫' };
 
