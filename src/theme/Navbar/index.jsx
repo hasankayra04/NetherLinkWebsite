@@ -75,6 +75,7 @@ export default function Navbar() {
   const [moreDrop, setMoreDrop] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const menuRef = useRef();
+  const hamburgerRef = useRef();
   const wikiRef = useRef();
   const moreRef = useRef();
   const history = useHistory();
@@ -82,7 +83,11 @@ export default function Navbar() {
   const { user, role } = useAuth();
 
   useEffect(() => {
-    function check() { setIsMobile(window.innerWidth < 768); }
+    function check() {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) setDrawerOpen(false);
+    }
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
@@ -105,7 +110,12 @@ export default function Navbar() {
   }, [moreDrop]);
 
   useEffect(() => {
-    const h = e => { if (menuRef.current && !menuRef.current.contains(e.target)) setDrawerOpen(false); };
+    const h = e => {
+      if (
+        menuRef.current && !menuRef.current.contains(e.target) &&
+        hamburgerRef.current && !hamburgerRef.current.contains(e.target)
+      ) setDrawerOpen(false);
+    };
     if (drawerOpen) document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [drawerOpen]);
@@ -262,7 +272,7 @@ export default function Navbar() {
         )}
 
         {isMobile && (
-          <button onClick={() => setDrawerOpen(v => !v)} aria-label="Toggle menu"
+          <button ref={hamburgerRef} onClick={() => setDrawerOpen(v => !v)} aria-label="Toggle menu"
             style={{ ...btnReset, display: "flex", flexDirection: "column", gap: 5, padding: 6 }}
           >
             {[0, 1, 2].map(i => (

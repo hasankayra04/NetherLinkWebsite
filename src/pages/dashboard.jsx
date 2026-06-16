@@ -122,9 +122,9 @@ function StatusDot({ status }) {
 
 function TabBar({ active, onChange, tabs }) {
   return (
-    <div style={{ display: "flex", gap: 2, background: NL.subtle, borderRadius: 10, padding: 3, border: `1px solid ${NL.border}` }}>
+    <div style={{ display: "flex", gap: 2, background: NL.subtle, borderRadius: 10, padding: 3, border: `1px solid ${NL.border}`, width: "fit-content" }}>
       {tabs.map(t => (
-        <button key={t.id} onClick={() => onChange(t.id)} style={{ padding: "6px 16px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: font, background: active === t.id ? NL.accent : "transparent", color: active === t.id ? "#0d1a18" : NL.secondary, transition: "background 0.15s, color 0.15s" }}>
+        <button key={t.id} onClick={() => onChange(t.id)} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: font, background: active === t.id ? NL.accent : "transparent", color: active === t.id ? "#0d1a18" : NL.secondary, transition: "background 0.15s, color 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}>
           {t.label}
         </button>
       ))}
@@ -789,7 +789,7 @@ function ReportExpanded({ report, onStatusChange }) {
   );
 }
 
-function ModerationPanel({ bans, bansLoading, banError, loadBans, handleBan, handleUnban }) {
+function ModerationPanel({ bans, bansLoading, banError, loadBans, handleBan, handleUnban, isMobile }) {
   const [reports, setReports] = useState([]);
   const [reportsLoading, setReportsLoading] = useState(true);
   const [reportsError, setReportsError] = useState(null);
@@ -915,7 +915,7 @@ function ModerationPanel({ bans, bansLoading, banError, loadBans, handleBan, han
         )}
       </Card>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
         <Card title="Ban IP" subtitle="Manually ban an IP address">
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <input placeholder="IP address" value={banIpInput} onChange={e => setBanIpInput(e.target.value)} onKeyDown={e => e.key === "Enter" && handleBan(banIpInput.trim(), banReasonInput.trim()).then(() => { setBanIpInput(""); setBanReasonInput(""); })} style={{ padding: "9px 12px", borderRadius: 9, border: `1px solid ${NL.borderMid}`, background: NL.subtle, color: NL.text, fontSize: 13, fontFamily: mono, outline: "none", width: "100%", boxSizing: "border-box" }} />
@@ -1528,19 +1528,18 @@ export default function DashboardPage() {
       <div style={{ minHeight: "100vh", background: NL.bg, fontFamily: font, paddingBottom: 48 }}>
         <div style={{ maxWidth: 1400, margin: "0 auto", padding: "28px 16px 0" }}>
 
-          <header style={{ marginBottom: 24, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", color: NL.accent, fontSize: 18 }}>⚡</div>
-              <div>
-                <h1 style={{ fontSize: 16, fontWeight: 700, color: NL.text, margin: 0, letterSpacing: "-0.01em" }}>MCCompanion</h1>
-                <p style={{ fontSize: 11, color: NL.muted, margin: 0 }}>{user?.email}{isAdmin ? " · Admin" : isPartner ? " · Partner" : ""}</p>
+          <header style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", color: NL.accent, fontSize: 18 }}>⚡</div>
+                <div>
+                  <h1 style={{ fontSize: 16, fontWeight: 700, color: NL.text, margin: 0, letterSpacing: "-0.01em" }}>MCCompanion</h1>
+                  <p style={{ fontSize: 11, color: NL.muted, margin: 0 }}>{user?.email}{isAdmin ? " · Admin" : isPartner ? " · Partner" : ""}</p>
+                </div>
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 2, display: "flex", justifyContent: "center" }}>
               <TabBar active={activeTab} onChange={setActiveTab} tabs={visibleTabs} />
-              <Btn onClick={async () => { try { await signOut(auth); } catch (e) { console.error(e); } }} variant="ghost" size="sm">
-                <IC.SignOut /> Sign out
-              </Btn>
             </div>
           </header>
 
@@ -1685,6 +1684,7 @@ export default function DashboardPage() {
               loadBans={loadBans}
               handleBan={handleBan}
               handleUnban={handleUnban}
+              isMobile={isMobile}
             />
           )}
 
@@ -1715,7 +1715,7 @@ export default function DashboardPage() {
               {connStatsLoading ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13, padding: "24px 0", justifyContent: "center" }}><Spinner /> Loading…</div>
               ) : connStats ? (<>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 18 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 10, marginBottom: 18 }}>
                   {[
                     { label: "Today", value: connStats.today },
                     { label: "Last 7 days", value: connStats.thisWeek },
@@ -1754,8 +1754,8 @@ export default function DashboardPage() {
                 {rightColumn}
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-                <div style={{ gridColumn: "1 / 3", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 16 }}>
+                <div style={{ gridColumn: isMobile ? "1" : "1 / 3", display: "flex", flexDirection: "column", gap: 16 }}>
                   {mainColumn}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
