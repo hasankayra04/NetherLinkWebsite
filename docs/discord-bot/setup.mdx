@@ -1,0 +1,119 @@
+---
+id: discord-bot-setup
+title: Discord Bot Setup
+sidebar_position: 1
+---
+
+# NetherStatus Discord Bot
+
+The **NetherStatus** bot monitors your Minecraft servers and posts live status updates directly in your Discord server. Player counts, online/offline state, version, and MOTD are all updated automatically.
+
+---
+
+## Inviting the bot
+
+1. Go to the MCCompanion [Discord server](https://discord.gg/xvaNzE35Rs) and grab the bot invite link from the `#bots` channel, or ask an admin
+2. Click the invite link and select your Discord server
+3. Grant the following permissions when prompted:
+   - **Send Messages:** to post status embeds
+   - **Embed Links:** to format the status cards
+   - **Manage Messages:** to update existing status messages
+   - **View Channel:** to post in your chosen channels
+4. Click **Authorise**. The bot joins your server immediately.
+
+---
+
+## Commands
+
+All commands require the **Manage Server** permission in Discord.
+
+---
+
+### `/server-add`
+
+Add a Minecraft server to monitor.
+
+| Option | Required | Description |
+|---|---|---|
+| `name` | Yes | Display name for this server |
+| `ip` | Yes | Server address (domain or IP) |
+| `channel` | Yes | Discord channel for the status embed |
+| `port` | No | Port number (default: `25565` Java / `19132` Bedrock) |
+| `platform` | No | `java` or `bedrock` (default: `java`) |
+| `favicon` | No | URL to an image used as the embed thumbnail |
+
+The bot immediately pings the server and posts a live status embed in the chosen channel. Each Discord server can monitor up to **10 servers**.
+
+---
+
+### `/server-list`
+
+List all servers currently monitored in this Discord server. Shows each server's name, address, channel, and current tracking status.
+
+---
+
+### `/server-edit`
+
+Edit the settings for an existing monitored server.
+
+| Option | Required | Description |
+|---|---|---|
+| `name` | Yes | Name of the server to edit |
+| `new-ip` | No | New address |
+| `new-port` | No | New port |
+| `new-platform` | No | `java` or `bedrock` |
+| `new-channel` | No | Move the status embed to a different channel |
+| `new-favicon` | No | New thumbnail URL, or `remove` to clear it |
+
+---
+
+### `/server-delete`
+
+Remove a monitored server. The bot also attempts to delete the status embed from Discord.
+
+| Option | Required | Description |
+|---|---|---|
+| `name` | Yes | Name of the server to delete |
+
+---
+
+## Status embed
+
+Each monitored server gets a live embed that shows:
+
+| Field | Description |
+|---|---|
+| Title | `ip:port` |
+| Status | Online (green) / Offline (red) |
+| Players | Current / maximum |
+| Version | Server software version |
+| Platform | Java Edition or Bedrock Edition |
+| MOTD | Server message of the day (up to 1000 chars) |
+| Thumbnail | Server favicon if provided |
+| Footer | "MCCompanion • Instant updates for Minecraft servers" |
+
+The embed colour is green when online, red when offline, yellow when checking, and purple on error.
+
+The embed updates itself automatically. No commands needed after setup.
+
+---
+
+## Tips
+
+- Post the status embed in a read-only channel (e.g. `#server-status`) so it stays clean
+- Use a square image as the favicon for best results
+- If the embed stops updating, check that the bot still has permissions in that channel
+- Use `/server-delete` to remove a server rather than deleting the embed message manually — deleting the message causes the bot to lose track of it
+
+---
+
+## Troubleshooting
+
+**Bot not responding to commands**
+Make sure the bot has permission to read messages and use slash commands in the channel where you are typing.
+
+**Status shows "Offline" but server is running**
+The bot pings from an external server. Check that your server firewall allows incoming connections on the configured port.
+
+**Embed not updating**
+Verify the bot still has **Send Messages** and **Embed Links** permissions in the target channel.

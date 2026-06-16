@@ -6,11 +6,11 @@ const sidebars = {
     {
       type: 'doc',
       id: 'overview',
-      label: 'Overview'
+      label: 'Overview',
     },
     {
       type: 'category',
-      label: 'How to use',
+      label: 'Connect from console',
       collapsible: true,
       collapsed: false,
       items: [
@@ -22,9 +22,41 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: 'Common issues',
+      label: 'Features',
       collapsible: true,
       collapsed: false,
+      items: [
+        { type: 'doc', id: 'features/account', label: 'Account & Profile' },
+        { type: 'doc', id: 'features/player-lookup', label: 'Player Lookup' },
+        { type: 'doc', id: 'features/server-tracker', label: 'Server Tracker' },
+        { type: 'doc', id: 'features/skins', label: 'Skins' },
+        { type: 'doc', id: 'features/friends-chat', label: 'Friends & Chat' },
+      ],
+    },
+    {
+      type: 'category',
+      label: 'For server owners',
+      collapsible: true,
+      collapsed: false,
+      items: [
+        { type: 'doc', id: 'partner-servers/partner-overview', label: 'Partner Server Program' },
+        { type: 'doc', id: 'discord-bot/discord-bot-setup', label: 'Discord Bot' },
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Reference',
+      collapsible: true,
+      collapsed: true,
+      items: [
+        { type: 'doc', id: 'api/api-overview', label: 'API' },
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Common issues',
+      collapsible: true,
+      collapsed: true,
       items: [
         { type: 'doc', id: 'issues/dns-issue', label: 'Nintendo DNS Not Working' },
         { type: 'doc', id: 'issues/does-not-appear-issue', label: 'MCCompanion Not Appearing' },

@@ -88,11 +88,9 @@ function ForgotPasswordModal({ onClose }) {
                     boxShadow: "0 24px 60px rgba(0,0,0,0.5)",
                 }}
             >
-                {/* top accent line */}
                 <div style={{ height: 2, background: `linear-gradient(90deg, ${NL.accent}55 0%, transparent 100%)` }} />
 
                 <div style={{ padding: "24px 22px", display: "flex", flexDirection: "column", gap: 16 }}>
-                    {/* header */}
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
                         <div>
                             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: NL.text, letterSpacing: "-0.02em" }}>
@@ -254,25 +252,15 @@ export default function LoginPage() {
     async function redirectForUser(u) {
         try {
             const token = await u.getIdToken();
-
-            const adminRes = await fetch(`${API_BASE}/api/admin/members`, {
+            const res = await fetch(`${API_BASE}/api/auth/me`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (adminRes.status === 200) {
+            if (res.ok) {
                 history.replace("/dashboard");
                 return;
             }
-
-            const memberRes = await fetch(`${API_BASE}/api/partner/me`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (memberRes.status === 200) {
-                history.replace("/partner");
-                return;
-            }
-
             await import("firebase/auth").then(({ signOut }) => signOut(auth));
-            setError("This account does not have partner access. Please contact us on Discord if you think this is a mistake.");
+            setError("Something went wrong. Please try again.");
             setChecking(false);
         } catch {
             history.replace("/login");
@@ -439,7 +427,8 @@ export default function LoginPage() {
                     </div>
 
                     <p style={{ fontSize: 12, color: NL.muted, textAlign: "center", marginTop: 16 }}>
-                        You'll be redirected to the right dashboard automatically.
+                        Don't have an account?{" "}
+                        <a href="/register" style={{ color: NL.accent, textDecoration: "none", fontWeight: 600 }}>Create one</a>
                     </p>
                 </div>
             </div>

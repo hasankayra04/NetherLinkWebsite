@@ -1,8 +1,5 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../firebaseClient";
+import React, { useState, useEffect, useCallback } from "react";
 import { fetchIdToken } from "../firebaseAuthHelpers";
-import Layout from "@theme/Layout";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { FaFileInvoiceDollar } from "react-icons/fa";
 
@@ -44,7 +41,6 @@ async function apiFetch(path, options = {}) {
   throw Object.assign(new Error(data.message || res.statusText), { data, status: res.status });
 }
 
-
 function Spinner({ size = 16 }) {
   return (
     <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -54,7 +50,7 @@ function Spinner({ size = 16 }) {
   );
 }
 
-function Btn({ children, onClick, variant = "primary", size = "md", disabled, className = "", type = "button", style: extraStyle }) {
+function Btn({ children, onClick, variant = "primary", size = "md", disabled, type = "button", style: extraStyle }) {
   const base = {
     display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
     fontWeight: 600, borderRadius: 10, cursor: disabled ? "not-allowed" : "pointer",
@@ -68,10 +64,9 @@ function Btn({ children, onClick, variant = "primary", size = "md", disabled, cl
     secondary: { background: NL.elevated, color: NL.secondary, border: `1px solid ${NL.borderMid}` },
     danger: { background: NL.dangerDim, color: NL.danger, border: `1px solid ${NL.dangerBorder}` },
     ghost: { background: "transparent", color: NL.secondary, border: `1px solid ${NL.border}` },
-    success: { background: NL.successDim, color: NL.success, border: `1px solid rgba(52,211,153,0.22)` },
   };
   return (
-    <button type={type} onClick={onClick} disabled={disabled} className={className}
+    <button type={type} onClick={onClick} disabled={disabled}
       style={{ ...base, ...sizes[size], ...variants[variant], ...extraStyle }}>
       {children}
     </button>
@@ -199,10 +194,8 @@ function InvoiceList() {
                       fontSize: 12, fontWeight: 600, color: NL.accent,
                       textDecoration: "none", padding: "4px 10px",
                       border: `1px solid ${NL.accentBorder}`, borderRadius: 6,
-                      background: NL.accentDim, transition: "background 0.15s",
+                      background: NL.accentDim,
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = "rgba(103,228,4,0.18)"}
-                    onMouseLeave={e => e.currentTarget.style.background = NL.accentDim}
                   >
                     Download PDF
                   </a>
@@ -215,7 +208,6 @@ function InvoiceList() {
     </div>
   );
 }
-
 
 const EMPTY = { name: "", address: "", port: "19132", description: "", iconUrl: "", websiteUrl: "" };
 
@@ -232,8 +224,7 @@ function ServerForm({ initial = EMPTY, onSubmit, onCancel, submitting }) {
   };
   const labelStyle = {
     display: "block", fontSize: 10, fontWeight: 600, letterSpacing: "0.1em",
-    textTransform: "uppercase", color: NL.muted, marginBottom: 5,
-    fontFamily: mono,
+    textTransform: "uppercase", color: NL.muted, marginBottom: 5, fontFamily: mono,
   };
 
   const fields = [
@@ -285,7 +276,6 @@ function ServerForm({ initial = EMPTY, onSubmit, onCancel, submitting }) {
   );
 }
 
-
 function StatsBar({ stats }) {
   const items = [
     { label: "Total", value: stats.total },
@@ -330,7 +320,6 @@ function ServerLineChart({ data }) {
     </div>
   );
 }
-
 
 function ServerCard({ server, onEdit, onDelete, deleting }) {
   return (
@@ -382,7 +371,7 @@ function ServerCard({ server, onEdit, onDelete, deleting }) {
   );
 }
 
-function Dashboard({ user }) {
+export default function PartnerPanel() {
   const [servers, setServers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState("list");
@@ -445,159 +434,129 @@ function Dashboard({ user }) {
   const slotFull = slots.used >= slots.total;
 
   return (
-    <div style={{ minHeight: "100vh", background: NL.bg, fontFamily: font }}>
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "40px 16px 64px", display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ maxWidth: 860, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
 
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: NL.text, margin: "0 0 4px", letterSpacing: "-0.02em" }}>Your Servers</h1>
-            <p style={{ fontSize: 13, color: NL.secondary, margin: 0 }}>
-              Servers you add here will be visible in the MCCompanion app for all players.
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: NL.text, margin: "0 0 4px", letterSpacing: "-0.02em" }}>Your Servers</h2>
+          <p style={{ fontSize: 13, color: NL.secondary, margin: 0 }}>
+            Servers you add here will be visible in the MCCompanion app for all players.
+          </p>
+        </div>
+        {mode === "list" && !slotFull && (
+          <Btn onClick={() => setMode("add")}>+ Add server</Btn>
+        )}
+      </div>
+
+      {mode === "list" && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10 }}>
+          <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, padding: "14px 16px", textAlign: "center" }}>
+            <p style={{ fontSize: 11, color: NL.muted, margin: "0 0 4px" }}>Featured</p>
+            <p style={{ fontFamily: mono, fontSize: 24, fontWeight: 700, color: NL.text, margin: 0 }}>
+              {servers.filter(s => s.featured).length}
             </p>
           </div>
-          {mode === "list" && !slotFull && (
-            <Btn onClick={() => setMode("add")}>+ Add server</Btn>
-          )}
+          <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, padding: "14px 16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <p style={{ fontSize: 11, color: NL.muted, margin: 0 }}>Server slots</p>
+              <p style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: NL.secondary, margin: 0 }}>{slots.used} / {slots.total}</p>
+            </div>
+            <div style={{ height: 5, borderRadius: 3, background: NL.subtle, overflow: "hidden" }}>
+              <div style={{
+                height: "100%", borderRadius: 3,
+                background: slotFull ? NL.danger : NL.accent,
+                width: `${slotPct}%`, transition: "width 0.4s",
+              }} />
+            </div>
+            {slotFull && <p style={{ fontSize: 11, color: NL.danger, margin: "6px 0 0" }}>Slot limit reached — contact MCCompanion for more.</p>}
+          </div>
         </div>
+      )}
 
-        {mode === "list" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10 }}>
-            <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, padding: "14px 16px", textAlign: "center" }}>
-              <p style={{ fontSize: 11, color: NL.muted, margin: "0 0 4px" }}>Featured</p>
-              <p style={{ fontFamily: mono, fontSize: 24, fontWeight: 700, color: NL.text, margin: 0 }}>
-                {servers.filter(s => s.featured).length}
+      {mode !== "list" && (
+        <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 18, overflow: "hidden" }}>
+          <div style={{ height: 2, background: `linear-gradient(90deg, ${NL.accent}55 0%, transparent 100%)` }} />
+          <div style={{ padding: "20px 20px" }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: NL.text, margin: "0 0 16px" }}>
+              {mode === "add" ? "Add a new server" : `Edit — ${editTarget?.name}`}
+            </h2>
+            <ServerForm
+              initial={mode === "edit"
+                ? { name: editTarget.name, address: editTarget.address, port: String(editTarget.port), description: editTarget.description ?? "", iconUrl: editTarget.iconUrl ?? "", websiteUrl: editTarget.websiteUrl ?? "" }
+                : EMPTY}
+              onSubmit={mode === "add" ? handleAdd : handleEdit}
+              onCancel={cancelForm}
+              submitting={submitting}
+            />
+          </div>
+        </div>
+      )}
+
+      {mode === "list" && (
+        loading ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "80px 0", color: NL.muted }}>
+            <Spinner size={20} /><span style={{ fontSize: 14 }}>Loading your servers…</span>
+          </div>
+        ) : servers.length === 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 0", gap: 14, textAlign: "center" }}>
+            <div style={{ width: 56, height: 56, borderRadius: 14, background: NL.surface, border: `1px solid ${NL.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🖥</div>
+            <div>
+              <p style={{ fontSize: 15, fontWeight: 700, color: NL.text, margin: "0 0 4px" }}>No servers yet</p>
+              <p style={{ fontSize: 13, color: NL.secondary, margin: 0, maxWidth: 300 }}>
+                Add your first server to get listed in the MCCompanion app for PlayStation, Xbox and Nintendo players.
               </p>
             </div>
-            <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, padding: "14px 16px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <p style={{ fontSize: 11, color: NL.muted, margin: 0 }}>Server slots</p>
-                <p style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: NL.secondary, margin: 0 }}>{slots.used} / {slots.total}</p>
-              </div>
-              <div style={{ height: 5, borderRadius: 3, background: NL.subtle, overflow: "hidden" }}>
-                <div style={{
-                  height: "100%", borderRadius: 3,
-                  background: slotFull ? NL.danger : NL.accent,
-                  width: `${slotPct}%`, transition: "width 0.4s",
-                }} />
-              </div>
-              {slotFull && <p style={{ fontSize: 11, color: NL.danger, margin: "6px 0 0" }}>Slot limit reached — contact MCCompanion for more.</p>}
-            </div>
+            <Btn onClick={() => setMode("add")}>+ Add your first server</Btn>
           </div>
-        )}
-
-        {mode !== "list" && (
-          <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 18, overflow: "hidden" }}>
-            <div style={{ height: 2, background: `linear-gradient(90deg, ${NL.accent}55 0%, transparent 100%)` }} />
-            <div style={{ padding: "20px 20px" }}>
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: NL.text, margin: "0 0 16px" }}>
-                {mode === "add" ? "Add a new server" : `Edit — ${editTarget?.name}`}
-              </h2>
-              <ServerForm
-                initial={mode === "edit"
-                  ? { name: editTarget.name, address: editTarget.address, port: String(editTarget.port), description: editTarget.description ?? "", iconUrl: editTarget.iconUrl ?? "", websiteUrl: editTarget.websiteUrl ?? "" }
-                  : EMPTY}
-                onSubmit={mode === "add" ? handleAdd : handleEdit}
-                onCancel={cancelForm}
-                submitting={submitting}
-              />
-            </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 14 }}>
+            {servers.map(s => (
+              <ServerCard key={s.id} server={s} onEdit={startEdit} onDelete={handleDelete} deleting={deletingId === s.id} />
+            ))}
+            {!slotFull && (
+              <button onClick={() => setMode("add")} style={{
+                border: `2px dashed ${NL.border}`, borderRadius: 16, background: "transparent", cursor: "pointer",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
+                padding: "48px 0", color: NL.muted, minHeight: 180, fontFamily: font,
+                transition: "border-color 0.2s, color 0.2s",
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = NL.accentBorder; e.currentTarget.style.color = NL.accent; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = NL.border; e.currentTarget.style.color = NL.muted; }}
+              >
+                <span style={{ fontSize: 28 }}>+</span>
+                <span style={{ fontSize: 12, fontWeight: 600 }}>Add server</span>
+              </button>
+            )}
           </div>
-        )}
+        )
+      )}
 
-        {mode === "list" && (
-          loading ? (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "80px 0", color: NL.muted }}>
-              <Spinner size={20} /><span style={{ fontSize: 14 }}>Loading your servers…</span>
-            </div>
-          ) : servers.length === 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 0", gap: 14, textAlign: "center" }}>
-              <div style={{ width: 56, height: 56, borderRadius: 14, background: NL.surface, border: `1px solid ${NL.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🖥</div>
-              <div>
-                <p style={{ fontSize: 15, fontWeight: 700, color: NL.text, margin: "0 0 4px" }}>No servers yet</p>
-                <p style={{ fontSize: 13, color: NL.secondary, margin: 0, maxWidth: 300 }}>
-                  Add your first server to get listed in the MCCompanion app for PlayStation, Xbox and Nintendo players.
-                </p>
-              </div>
-              <Btn onClick={() => setMode("add")}>+ Add your first server</Btn>
-            </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 14 }}>
-              {servers.map(s => (
-                <ServerCard key={s.id} server={s} onEdit={startEdit} onDelete={handleDelete} deleting={deletingId === s.id} />
-              ))}
-              {!slotFull && (
-                <button onClick={() => setMode("add")} style={{
-                  border: `2px dashed ${NL.border}`, borderRadius: 16, background: "transparent", cursor: "pointer",
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
-                  padding: "48px 0", color: NL.muted, minHeight: 180, fontFamily: font,
-                  transition: "border-color 0.2s, color 0.2s",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = NL.accentBorder; e.currentTarget.style.color = NL.accent; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = NL.border; e.currentTarget.style.color = NL.muted; }}
-                >
-                  <span style={{ fontSize: 28 }}>+</span>
-                  <span style={{ fontSize: 12, fontWeight: 600 }}>Add server</span>
-                </button>
-              )}
-            </div>
-          )
-        )}
+      {mode === "list" && <InvoiceList />}
 
-        {mode === "list" && <InvoiceList />}
-
-        <div style={{
-          background: NL.accentDim, border: `1px solid ${NL.accentBorder}`,
-          borderRadius: 16, padding: "16px 18px",
-          display: "flex", gap: 14,
-        }}>
-          <span style={{ fontSize: 18, flexShrink: 0, marginTop: 2 }}>ℹ️</span>
-          <div>
-            <p style={{ fontSize: 13, fontWeight: 600, color: NL.accent, margin: "0 0 6px" }}>How it works</p>
-            <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
-              {[
-                <>Your servers appear in the <strong style={{ color: NL.text }}>Partner Servers</strong> section of the MCCompanion app.</>,
-                <><strong style={{ color: NL.text }}>Featured</strong> status is managed by the MCCompanion team — contact us to get featured.</>,
-                <>Use a square icon image (min 128×128px) for the best look in the app.</>,
-              ].map((item, i) => (
-                <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, color: NL.secondary }}>
-                  <span style={{ width: 4, height: 4, borderRadius: "50%", background: NL.accent, flexShrink: 0, marginTop: 5 }} />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
+      <div style={{
+        background: NL.accentDim, border: `1px solid ${NL.accentBorder}`,
+        borderRadius: 16, padding: "16px 18px",
+        display: "flex", gap: 14,
+      }}>
+        <span style={{ fontSize: 18, flexShrink: 0, marginTop: 2 }}>ℹ️</span>
+        <div>
+          <p style={{ fontSize: 13, fontWeight: 600, color: NL.accent, margin: "0 0 6px" }}>How it works</p>
+          <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
+            {[
+              <>Your servers appear in the <strong style={{ color: NL.text }}>Partner Servers</strong> section of the MCCompanion app.</>,
+              <><strong style={{ color: NL.text }}>Featured</strong> status is managed by the MCCompanion team — contact us to get featured.</>,
+              <>Use a square icon image (min 128×128px) for the best look in the app.</>,
+            ].map((item, i) => (
+              <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, color: NL.secondary }}>
+                <span style={{ width: 4, height: 4, borderRadius: "50%", background: NL.accent, flexShrink: 0, marginTop: 5 }} />
+                {item}
+              </li>
+            ))}
+          </ul>
         </div>
-
       </div>
+
       <ToastContainer toasts={toasts} remove={removeToast} />
     </div>
-  );
-}
-
-export default function PartnerDashboardPage() {
-  const [user, setUser] = useState(null);
-  const [checking, setChecking] = useState(true);
-
-  useEffect(() => {
-    if (!auth) { window.location.replace("/login"); return; }
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      if (!u) { window.location.replace("/login"); return; }
-      window.location.replace("/dashboard");
-    });
-    return () => unsub();
-  }, []);
-
-  if (checking) return (
-    <Layout>
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: NL.bg }}>
-        <Spinner size={24} />
-      </div>
-    </Layout>
-  );
-
-  return (
-    <Layout>
-      <Dashboard user={user} />
-    </Layout>
   );
 }

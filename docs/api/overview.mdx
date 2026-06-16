@@ -1,0 +1,131 @@
+---
+id: api-overview
+title: API Overview
+sidebar_position: 1
+---
+
+# MCCompanion API
+
+The MCCompanion REST API powers the app and is partially available for public integrations. All endpoints live under:
+
+```
+https://api.mccompanion.net
+```
+
+---
+
+## Authentication
+
+Most endpoints require a **Firebase ID token** passed as a Bearer token in the `Authorization` header:
+
+```http
+Authorization: Bearer <firebase_id_token>
+```
+
+To get a token, sign in with Firebase Authentication using your MCCompanion email and password, then call `getIdToken()`. Tokens expire after **1 hour**. Refresh them automatically using the Firebase SDK.
+
+Unauthenticated requests to protected endpoints return `401 Unauthorized`.
+
+---
+
+## Public endpoints
+
+These endpoints do not require authentication:
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/version` | Current app version string |
+| `GET` | `/api/health` | API health check |
+| `GET` | `/api/metrics` | Public stats (top servers, total connections) |
+| `GET` | `/lookup/java/:identifier` | Look up a Java player by username or UUID |
+| `GET` | `/lookup/bedrock/:identifier` | Look up a Bedrock player by gamertag or XUID |
+| `GET` | `/featured-servers` | List all featured servers |
+| `GET` | `/users/:username` | Get a user's public profile |
+| `GET` | `/notification` | Current in-app notification banner |
+
+---
+
+## User endpoints
+
+Require a valid Firebase token for any registered MCCompanion user.
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/auth/me` | Get your roles and registration status |
+| `POST` | `/api/users/register` | Register a new MCCompanion account |
+| `GET` | `/api/users/me` | Get your full profile |
+| `PATCH` | `/api/users/me` | Update display name, bio, avatar URL, appear offline |
+| `GET` | `/api/users/me/subscription` | Check subscription status and tracker slots |
+| `GET` | `/api/users/me/friends` | List friends |
+| `GET` | `/api/users/me/friend-requests` | List pending friend requests |
+| `POST` | `/api/users/me/friends/:username` | Send a friend request |
+| `PATCH` | `/api/users/me/friends/:username/accept` | Accept a friend request |
+| `DELETE` | `/api/users/me/friends/:username` | Remove a friend |
+| `POST` | `/api/users/me/block/:username` | Block a user |
+| `GET` | `/api/users/search?q=` | Search users by username (min 2 chars) |
+| `GET` | `/api/tracker` | List your tracked servers |
+| `POST` | `/api/tracker` | Add a server to track |
+| `PATCH` | `/api/tracker/:id` | Update a tracked server |
+| `DELETE` | `/api/tracker/:id` | Remove a tracked server |
+| `GET` | `/api/messages/conversations` | List your conversations |
+| `GET` | `/api/messages/:username` | Get message history with a user |
+| `POST` | `/api/messages/:username` | Send a message |
+| `PATCH` | `/api/messages/:username/read` | Mark messages as read |
+| `POST` | `/api/feedback` | Submit a bug report or feature request |
+| `POST` | `/api/reports` | Report a user |
+
+---
+
+## Xbox and Java account linking
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/xbox/me/xbox/start` | Start Xbox account linking (device code flow) |
+| `GET` | `/api/xbox/me/xbox/status` | Poll linking status |
+| `DELETE` | `/api/xbox/me/xbox/:xuid` | Unlink a specific Xbox account |
+| `POST` | `/api/java/me/java/start` | Start Java account linking (device code flow) |
+| `GET` | `/api/java/me/java/status` | Poll linking status |
+| `DELETE` | `/api/java/me/java/:uuid` | Unlink a specific Java account |
+
+---
+
+## Rate limiting
+
+The API applies rate limits per IP and per authenticated user. Hitting a limit returns `429 Too Many Requests` with a `Retry-After` header.
+
+| Endpoint group | Limit |
+|---|---|
+| General user endpoints | 60 requests / 60 seconds |
+| Fast read endpoints (e.g. `/users/me`) | 120 requests / 60 seconds |
+| Feedback | 5 requests / 10 minutes |
+| WebSocket upgrades | 10 connections / 60 seconds per IP |
+
+---
+
+## Error format
+
+All errors follow a consistent JSON format:
+
+```json
+{
+  "error": "error_code",
+  "message": "Human-readable description"
+}
+```
+
+Common error codes:
+
+| Code | HTTP status | Meaning |
+|---|---|---|
+| `unauthorized` | 401 | Missing or invalid token |
+| `not_registered` | 403 | Firebase user exists but no MCCompanion account yet |
+| `forbidden` | 403 | Valid token but insufficient role |
+| `not_found` | 404 | Resource does not exist |
+| `conflict` | 409 | Resource already exists (e.g. duplicate username) |
+| `internal_error` | 500 | Unexpected server error |
+
+---
+
+:::info
+The API is primarily designed to serve the MCCompanion app. Third-party usage is allowed for non-commercial integrations, but there is no formal SLA. Breaking changes may occur with prior notice in the [Discord server](https://discord.gg/xvaNzE35Rs).
+:::

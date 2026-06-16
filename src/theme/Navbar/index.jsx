@@ -72,9 +72,11 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [wikiDrop, setWikiDrop] = useState(false);
   const [wikiDropMobile, setWikiDropMobile] = useState(false);
+  const [moreDrop, setMoreDrop] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const menuRef = useRef();
   const wikiRef = useRef();
+  const moreRef = useRef();
   const history = useHistory();
   const location = useLocation();
   const { user, role } = useAuth();
@@ -87,7 +89,7 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    setDrawerOpen(false); setWikiDrop(false); setWikiDropMobile(false);
+    setDrawerOpen(false); setWikiDrop(false); setWikiDropMobile(false); setMoreDrop(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -95,6 +97,12 @@ export default function Navbar() {
     if (wikiDrop) document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [wikiDrop]);
+
+  useEffect(() => {
+    const h = e => { if (moreRef.current && !moreRef.current.contains(e.target)) setMoreDrop(false); };
+    if (moreDrop) document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [moreDrop]);
 
   useEffect(() => {
     const h = e => { if (menuRef.current && !menuRef.current.contains(e.target)) setDrawerOpen(false); };
@@ -169,8 +177,8 @@ export default function Navbar() {
             <div ref={wikiRef} style={{ position: "relative" }}>
               <button onClick={() => setWikiDrop(x => !x)} style={{
                 ...btnReset,
-                display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "6px 10px", borderRadius: 7,
+                display: "inline-flex", alignItems: "center", gap: 5,
+                padding: "6px 10px", borderRadius: 8,
                 fontSize: 13, fontWeight: 500,
                 color: wikiDrop ? NL.text : NL.secondary,
                 background: wikiDrop ? NL.elevated : "none",
@@ -178,8 +186,8 @@ export default function Navbar() {
                 onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
                 onMouseLeave={e => { if (!wikiDrop) { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; } }}
               >
-                <FaBook size={13} /> Wiki
-                <FaChevronDown size={10} style={{ transition: "transform 0.2s", transform: wikiDrop ? "rotate(180deg)" : "none" }} />
+                Wiki
+                <FaChevronDown size={9} style={{ transition: "transform 0.2s", transform: wikiDrop ? "rotate(180deg)" : "none" }} />
               </button>
               {wikiDrop && DOC_SIDEBAR.length > 0 && (
                 <div style={{
@@ -187,62 +195,46 @@ export default function Navbar() {
                   background: NL.surface, border: `1px solid ${NL.borderMid}`,
                   borderRadius: 12, padding: 6,
                   boxShadow: "0 12px 40px rgba(0,0,0,0.4)", zIndex: 1001,
+                  maxHeight: "calc(100vh - 100px)", overflowY: "auto",
                 }}>
                   <SidebarDropdown items={DOC_SIDEBAR} onClose={() => setWikiDrop(false)} />
                 </div>
               )}
             </div>
 
-            <button onClick={() => navigate("/lookup")} style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 7, fontSize: 13, fontWeight: 500, color: NL.secondary }}
-              onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
-              onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; }}
-            >
-              <FaSearch size={12} /> Lookup
-            </button>
-
-            <button onClick={() => navigate("/feedback")} style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 7, fontSize: 13, fontWeight: 500, color: NL.secondary }}
-              onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
-              onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; }}
-            >
-              <FaBug size={12} /> Feedback
-            </button>
-
-<button onClick={() => navigate("/api-docs")} style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 7, fontSize: 13, fontWeight: 500, color: NL.secondary }}
-              onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
-              onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; }}
-            >
-              <FaCode size={12} /> API
-            </button>
-
-            <button onClick={() => navigate("/slot")} style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 7, fontSize: 13, fontWeight: 500, color: NL.secondary }}
-              onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
-              onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; }}
-            >
-              <FaStar size={13} /> Featured Slot
-            </button>
-
-            <button onClick={() => navigate("/status")} style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 7, fontSize: 13, fontWeight: 500, color: NL.secondary }}
-              onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
-              onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; }}
-            >
-              <FaCircle size={8} style={{ color: "#67e404" }} /> Status
-            </button>
-
-            {portalLink && (
-              <button onClick={() => navigate(portalLink.path)} style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 7, fontSize: 13, fontWeight: 500, color: NL.secondary }}
+            {[
+              { label: "Lookup", path: "/lookup" },
+              { label: "Bug Report", path: "/feedback" },
+              { label: "API", path: "/api-docs" },
+              { label: "Featured Slot", path: "/slot" },
+              { label: "Status", path: "/status", dot: true },
+            ].map(item => (
+              <button key={item.path} onClick={() => navigate(item.path)}
+                style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: NL.secondary }}
                 onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
                 onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; }}
               >
-                {portalLink.icon} {portalLink.label}
+                {item.dot && <FaCircle size={7} style={{ color: "#67e404" }} />}
+                {item.label}
+              </button>
+            ))}
+
+            {portalLink && (
+              <button onClick={() => navigate(portalLink.path)}
+                style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: NL.secondary }}
+                onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
+                onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; }}
+              >
+                {portalLink.label}
               </button>
             )}
 
-            <a href="https://discord.gg/xvaNzE35Rs" target="_blank" rel="noopener noreferrer"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 7, fontSize: 13, fontWeight: 500, color: "#7289da", textDecoration: "none" }}
+            <a href="https://discord.gg/xvaNzE35Rs" target="_blank" rel="noopener noreferrer" title="Discord"
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 8, color: "#7289da", textDecoration: "none" }}
               onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
               onMouseLeave={e => { e.currentTarget.style.color = "#7289da"; e.currentTarget.style.background = "none"; }}
             >
-              <FaDiscord size={14} /> Discord
+              <FaDiscord size={15} />
             </a>
 
             <a href="https://github.com/sponsors/MCCORG" target="_blank" rel="noopener noreferrer"
@@ -322,7 +314,7 @@ export default function Navbar() {
 
             <button onClick={() => navigate("/feedback")} style={drawerBtn()}
               onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
-            ><FaBug size={13} /> Feedback</button>
+            ><FaBug size={13} /> Bug Report</button>
 
 <button onClick={() => navigate("/api-docs")} style={drawerBtn()}
               onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}

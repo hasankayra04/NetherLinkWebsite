@@ -5,6 +5,7 @@ import { auth } from "../firebaseClient";
 import { fetchIdToken } from "../firebaseAuthHelpers";
 import Layout from "@theme/Layout";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import PartnerPanel from "../components/PartnerPanel";
 
 const NL = {
   bg: "#111318",
@@ -37,7 +38,14 @@ const REGION_BASES = {
 };
 const REGION_PARAMS = { EU: "eu", US: "us" };
 const EVENTS_CAP = 1500;
-const TABS = [{ id: "overview", label: "Overview" }, { id: "partners", label: "Partners" }, { id: "moderation", label: "Moderation" }, { id: "feedback", label: "Feedback" }];
+const ALL_TABS = [
+  { id: "account", label: "My Account", roles: null },
+  { id: "partner-servers", label: "Partner Servers", roles: ["partner"] },
+  { id: "overview", label: "Overview", roles: ["admin"] },
+  { id: "partners", label: "Partners", roles: ["admin"] },
+  { id: "moderation", label: "Moderation", roles: ["admin"] },
+  { id: "feedback", label: "Feedback", roles: ["admin"] },
+];
 const REPORT_STATUSES = ['pending', 'reviewed', 'dismissed', 'actioned'];
 
 async function dbFetch(path, options = {}) {
@@ -112,10 +120,10 @@ function StatusDot({ status }) {
   return <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: cfg.color, boxShadow: cfg.glow ? `0 0 0 2px ${cfg.glow}` : "none", flexShrink: 0 }} className={cfg.pulse ? "animate-pulse" : ""} />;
 }
 
-function TabBar({ active, onChange }) {
+function TabBar({ active, onChange, tabs }) {
   return (
     <div style={{ display: "flex", gap: 2, background: NL.subtle, borderRadius: 10, padding: 3, border: `1px solid ${NL.border}` }}>
-      {TABS.map(t => (
+      {tabs.map(t => (
         <button key={t.id} onClick={() => onChange(t.id)} style={{ padding: "6px 16px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: font, background: active === t.id ? NL.accent : "transparent", color: active === t.id ? "#0d1a18" : NL.secondary, transition: "background 0.15s, color 0.15s" }}>
           {t.label}
         </button>
@@ -274,10 +282,13 @@ function PartnersPanel() {
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ email: "", password: "", serverSlots: 1 });
+  const [searchQ, setSearchQ] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [serverSlots, setServerSlots] = useState(1);
   const [formError, setFormError] = useState(null);
-  const [creating, setCreating] = useState(false);
-  const [createdInfo, setCreatedInfo] = useState(null);
+  const [promoting, setPromoting] = useState(false);
   const [expandedUid, setExpandedUid] = useState(null);
   const [memberServers, setMemberServers] = useState({});
   const [loadingServers, setLoadingServers] = useState({});
@@ -296,35 +307,43 @@ function PartnersPanel() {
   useEffect(() => { load(); }, [load]);
 
   function resetForm() {
-    setForm({ email: "", password: "", serverSlots: 1 });
-    setFormError(null);
-    setCreatedInfo(null);
+    setSearchQ(""); setSearchResults([]); setSelectedUser(null);
+    setServerSlots(1); setFormError(null);
   }
 
-  async function handleCreate(e) {
+  const searchTimer = useRef(null);
+  async function handleSearchChange(q) {
+    setSearchQ(q); setSelectedUser(null);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (q.trim().length < 2) { setSearchResults([]); return; }
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const token = await fetchIdToken();
+        const res = await fetch(`${API_BASE}/api/admin/users/search?q=${encodeURIComponent(q.trim())}`, { headers: { Authorization: `Bearer ${token}` } });
+        const json = await res.json();
+        setSearchResults(res.ok ? (json.users || []) : []);
+      } catch (_) { setSearchResults([]); }
+      finally { setSearching(false); }
+    }, 300);
+  }
+
+  async function handlePromote(e) {
     e.preventDefault();
-    setFormError(null);
-    setCreatedInfo(null);
-    setCreating(true);
+    if (!selectedUser) return;
+    setFormError(null); setPromoting(true);
     try {
       const token = await fetchIdToken();
-      const res = await fetch(`${API_BASE}/api/admin/members/register`, {
+      const res = await fetch(`${API_BASE}/api/admin/members/promote`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          email: form.email.trim(),
-          password: form.password,
-          serverSlots: Number(form.serverSlots) || 1,
-        }),
+        body: JSON.stringify({ firebaseUid: selectedUser.firebaseUid, serverSlots: Number(serverSlots) || 1 }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || `${res.status}`);
-
-      setCreatedInfo({ email: json.firebase.email, uid: json.firebase.uid });
-      setForm({ email: "", password: "", serverSlots: 1 });
-      await load();
+      setShowForm(false); resetForm(); await load();
     } catch (e) { setFormError(e.message); }
-    finally { setCreating(false); }
+    finally { setPromoting(false); }
   }
 
   async function handleDelete(uid, email) {
@@ -400,78 +419,68 @@ function PartnersPanel() {
       }
     >
       {showForm && (
-        <div style={{ marginBottom: 16 }}>
-          {createdInfo && (
-            <div style={{ padding: 14, background: NL.successDim, border: "1px solid rgba(52,211,153,0.30)", borderRadius: 10, marginBottom: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: NL.success, margin: 0 }}>✓ Partner aangemaakt</p>
-              <p style={{ fontSize: 11, color: NL.text, margin: 0 }}>
-                <strong>{createdInfo.email}</strong> kan nu inloggen met het ingestelde wachtwoord.
-              </p>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontFamily: mono, fontSize: 10, color: NL.muted, background: "rgba(0,0,0,0.2)", padding: "3px 8px", borderRadius: 4 }}>{createdInfo.uid}</span>
-                {iconBtn(() => navigator.clipboard?.writeText(createdInfo.uid), "Copy UID", <IC.Copy />, NL.success)}
+        <form onSubmit={handlePromote} style={{ marginBottom: 16, padding: 14, background: NL.elevated, border: `1px solid ${NL.accentBorder}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 12 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: NL.accent, margin: 0 }}>Promote user to partner</p>
+
+          <div>
+            <label style={labelStyle}>Search user by username</label>
+            <input
+              type="text"
+              value={searchQ}
+              onChange={e => handleSearchChange(e.target.value)}
+              placeholder="Start typing a username…"
+              style={inputStyle}
+              autoFocus
+            />
+            {searching && <p style={{ fontSize: 11, color: NL.muted, margin: "4px 0 0" }}>Searching…</p>}
+            {!searching && searchResults.length > 0 && !selectedUser && (
+              <div style={{ marginTop: 6, border: `1px solid ${NL.border}`, borderRadius: 8, overflow: "hidden" }}>
+                {searchResults.map(u => (
+                  <button key={u.firebaseUid} type="button" onClick={() => { setSelectedUser(u); setSearchQ(u.username); setSearchResults([]); }}
+                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: NL.subtle, border: "none", borderBottom: `1px solid ${NL.border}`, cursor: "pointer", textAlign: "left" }}
+                    onMouseEnter={e => e.currentTarget.style.background = NL.elevated}
+                    onMouseLeave={e => e.currentTarget.style.background = NL.subtle}
+                  >
+                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: NL.accent, flexShrink: 0 }}>
+                      {u.username[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: NL.text, margin: 0 }}>{u.username}</p>
+                      {u.displayName && <p style={{ fontSize: 11, color: NL.muted, margin: 0 }}>{u.displayName}</p>}
+                    </div>
+                  </button>
+                ))}
               </div>
-              <button onClick={() => setCreatedInfo(null)} style={{ alignSelf: "flex-start", fontSize: 11, color: NL.muted, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Sluiten</button>
-            </div>
+            )}
+            {selectedUser && (
+              <div style={{ marginTop: 6, padding: "8px 10px", background: NL.successDim, border: "1px solid rgba(52,211,153,0.25)", borderRadius: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 12, color: NL.success }}>✓</span>
+                <span style={{ fontSize: 12, color: NL.text }}><strong>{selectedUser.username}</strong></span>
+                <span style={{ fontFamily: mono, fontSize: 10, color: NL.muted }}>{selectedUser.firebaseUid}</span>
+                <button type="button" onClick={() => { setSelectedUser(null); setSearchQ(""); }} style={{ marginLeft: "auto", background: "none", border: "none", color: NL.muted, cursor: "pointer", fontSize: 13 }}>✕</button>
+              </div>
+            )}
+          </div>
+
+          <div style={{ maxWidth: 160 }}>
+            <label style={labelStyle}>Server slots</label>
+            <input type="number" min="1" max="100" value={serverSlots}
+              onChange={e => setServerSlots(Number(e.target.value))}
+              style={{ ...inputStyle, fontFamily: mono }}
+            />
+          </div>
+
+          {formError && (
+            <p style={{ fontSize: 11, color: NL.danger, background: NL.dangerDim, border: `1px solid ${NL.dangerBorder}`, borderRadius: 6, padding: "8px 10px", margin: 0 }}>⚠ {formError}</p>
           )}
 
-          <form onSubmit={handleCreate} style={{ padding: 14, background: NL.elevated, border: `1px solid ${NL.accentBorder}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 12 }}>
-            <div>
-              <p style={{ fontSize: 12, fontWeight: 700, color: NL.accent, margin: "0 0 4px" }}>Register new partner</p>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div>
-                <label style={labelStyle}>Email *</label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                  placeholder="partner@example.com"
-                  required
-                  style={inputStyle}
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Temp password *</label>
-                <PasswordInput
-                  value={form.password}
-                  onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                  placeholder="Min. 6 characters"
-                  style={{ ...inputStyle, fontFamily: mono }}
-                />
-              </div>
-            </div>
-
-            <div style={{ maxWidth: 160 }}>
-              <label style={labelStyle}>Server slots</label>
-              <input
-                type="number"
-                min="1"
-                max="100"
-                value={form.serverSlots}
-                onChange={e => setForm(p => ({ ...p, serverSlots: Number(e.target.value) }))}
-                style={{ ...inputStyle, fontFamily: mono }}
-              />
-              <p style={{ fontSize: 10, color: NL.muted, margin: "4px 0 0" }}>Number of servers this partner can create</p>
-            </div>
-
-            {formError && (
-              <p style={{ fontSize: 11, color: NL.danger, background: NL.dangerDim, border: `1px solid ${NL.dangerBorder}`, borderRadius: 6, padding: "8px 10px", margin: 0 }}>
-                ⚠ {formError}
-              </p>
-            )}
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, paddingTop: 4, borderTop: `1px solid ${NL.border}` }}>
-              <Btn type="button" variant="ghost" size="sm" onClick={() => { setShowForm(false); resetForm(); }}>
-                Cancel
-              </Btn>
-              <Btn type="submit" variant="success" size="sm" disabled={creating || !form.email.trim() || form.password.length < 6}>
-                {creating ? <><Spinner size={12} /> Creating…</> : <><IC.Plus /> Create partner</>}
-              </Btn>
-            </div>
-          </form>
-        </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, paddingTop: 4, borderTop: `1px solid ${NL.border}` }}>
+            <Btn type="button" variant="ghost" size="sm" onClick={() => { setShowForm(false); resetForm(); }}>Cancel</Btn>
+            <Btn type="submit" variant="success" size="sm" disabled={promoting || !selectedUser}>
+              {promoting ? <><Spinner size={12} /> Promoting…</> : <><IC.Plus /> Promote to partner</>}
+            </Btn>
+          </div>
+        </form>
       )}
 
       {loading ? (
@@ -691,8 +700,8 @@ function ReportExpanded({ report, onStatusChange }) {
             </span>
             {modLoading ? <Spinner size={10} /> : (
               isBanned ? <Badge color="danger">Banned</Badge>
-              : isRestricted ? <Badge color="warn">Chat restricted</Badge>
-              : <Badge color="success">Clean</Badge>
+                : isRestricted ? <Badge color="warn">Chat restricted</Badge>
+                  : <Badge color="success">Clean</Badge>
             )}
           </div>
 
@@ -1056,8 +1065,9 @@ export default function DashboardPage() {
   const apiBase = REGION_BASES[region];
   const regionParam = REGION_PARAMS[region];
   const [user, setUser] = useState(null);
+  const [roles, setRoles] = useState([]);
   const [checking, setChecking] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
 
   const [currentNotification, setCurrentNotification] = useState("");
@@ -1091,6 +1101,14 @@ export default function DashboardPage() {
   const [connStats, setConnStats] = useState(null);
   const [connStatsLoading, setConnStatsLoading] = useState(false);
 
+  const [profile, setProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileEdit, setProfileEdit] = useState({ displayName: "", bio: "" });
+  const [profileDirty, setProfileDirty] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState(null);
+  const [profileSuccess, setProfileSuccess] = useState(false);
+
   useEffect(() => {
     function check() { setIsMobile(window.innerWidth < 1024); }
     check();
@@ -1105,8 +1123,13 @@ export default function DashboardPage() {
       setUser(u);
       try {
         const token = await u.getIdToken();
-        const res = await fetch(`${API_BASE}/api/admin/members`, { headers: { Authorization: `Bearer ${token}` } });
-        if (res.status !== 200) { history.replace("/partner"); return; }
+        const res = await fetch(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) { history.replace("/login"); return; }
+        const { roles: r } = await res.json();
+        setRoles(r || []);
+        if ((r || []).includes("admin")) setActiveTab("overview");
+        else if ((r || []).includes("partner")) setActiveTab("partner-servers");
+        else setActiveTab("account");
       } catch (_) { history.replace("/login"); return; }
       setChecking(false);
     });
@@ -1157,7 +1180,11 @@ export default function DashboardPage() {
     finally { setBansLoading(false); }
   }
 
-  useEffect(() => { if (user) { loadBans(); loadCurrentNotification(); loadCurrentVersion(); loadConnStats(); } }, [user]);
+  const isAdmin = roles.includes("admin");
+  const isPartner = roles.includes("partner");
+  const visibleTabs = ALL_TABS.filter(t => !t.roles || t.roles.some(r => roles.includes(r)));
+
+  useEffect(() => { if (user && isAdmin) { loadBans(); loadCurrentNotification(); loadCurrentVersion(); loadConnStats(); } }, [user, isAdmin]);
 
   useEffect(() => {
     if (filterTimer.current) clearTimeout(filterTimer.current);
@@ -1279,6 +1306,41 @@ export default function DashboardPage() {
       await loadBans();
     } catch (err) { setBanError(String(err)); }
   }
+
+  const loadProfile = useCallback(async () => {
+    setProfileLoading(true); setProfileError(null);
+    try {
+      const token = await fetchIdToken(); if (!token) return;
+      const res = await fetch(`${API_BASE}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { if (res.status === 403) { setProfile(null); return; } throw new Error(`${res.status}`); }
+      const { user: u } = await res.json();
+      setProfile(u);
+      setProfileEdit({ displayName: u.displayName || "", bio: u.bio || "" });
+      setProfileDirty(false);
+    } catch (e) { setProfileError("Failed to load profile: " + e.message); }
+    finally { setProfileLoading(false); }
+  }, []);
+
+  async function saveProfile() {
+    setProfileSaving(true); setProfileError(null); setProfileSuccess(false);
+    try {
+      const token = await fetchIdToken(); if (!token) throw new Error("Not authenticated");
+      const res = await fetch(`${API_BASE}/api/users/me`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ displayName: profileEdit.displayName.trim() || null, bio: profileEdit.bio.trim() || null }),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      const { user: u } = await res.json();
+      setProfile(u);
+      setProfileEdit({ displayName: u.displayName || "", bio: u.bio || "" });
+      setProfileDirty(false); setProfileSuccess(true);
+      setTimeout(() => setProfileSuccess(false), 3000);
+    } catch (e) { setProfileError("Failed to save: " + e.message); }
+    finally { setProfileSaving(false); }
+  }
+
+  useEffect(() => { if (activeTab === "account") loadProfile(); }, [activeTab, loadProfile]);
 
   const filtered = useMemo(() => {
     return [...eventsFeed].reverse().filter(ev => {
@@ -1470,23 +1532,152 @@ export default function DashboardPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", color: NL.accent, fontSize: 18 }}>⚡</div>
               <div>
-                <h1 style={{ fontSize: 16, fontWeight: 700, color: NL.text, margin: 0, letterSpacing: "-0.01em" }}>MCCompanion Admin</h1>
-                <p style={{ fontSize: 11, color: NL.muted, margin: 0 }}>{user?.email}</p>
+                <h1 style={{ fontSize: 16, fontWeight: 700, color: NL.text, margin: 0, letterSpacing: "-0.01em" }}>MCCompanion</h1>
+                <p style={{ fontSize: 11, color: NL.muted, margin: 0 }}>{user?.email}{isAdmin ? " · Admin" : isPartner ? " · Partner" : ""}</p>
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <TabBar active={activeTab} onChange={setActiveTab} />
+              <TabBar active={activeTab} onChange={setActiveTab} tabs={visibleTabs} />
               <Btn onClick={async () => { try { await signOut(auth); } catch (e) { console.error(e); } }} variant="ghost" size="sm">
                 <IC.SignOut /> Sign out
               </Btn>
             </div>
           </header>
 
-          {activeTab === "partners" && <PartnersPanel />}
+          {activeTab === "account" && (
+            <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, alignItems: "start" }}>
 
-          {activeTab === "feedback" && <FeedbackPanel />}
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {profileLoading ? (
+                  <Card title="Profile">
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13, padding: "24px 0", justifyContent: "center" }}><Spinner /> Loading…</div>
+                  </Card>
+                ) : !profile ? (
+                  <Card title="Profile">
+                    <div style={{ textAlign: "center", padding: "24px 0" }}>
+                      <p style={{ fontSize: 13, color: NL.secondary, margin: "0 0 6px" }}>No app account found.</p>
+                      <p style={{ fontSize: 12, color: NL.muted, margin: 0 }}>Download the MCCompanion app or <a href="/register" style={{ color: NL.accent }}>register via the website</a> to create a profile.</p>
+                    </div>
+                  </Card>
+                ) : (
+                  <Card title="Profile">
+                    <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 16 }}>
+                      {profile.avatarUrl ? (
+                        <img src={profile.avatarUrl} alt="avatar" style={{ width: 56, height: 56, borderRadius: 12, objectFit: "cover", border: `1px solid ${NL.borderMid}`, flexShrink: 0 }} onError={e => e.currentTarget.style.display = "none"} />
+                      ) : (
+                        <div style={{ width: 56, height: 56, borderRadius: 12, background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: NL.accent, flexShrink: 0 }}>
+                          {(profile.username || "?")[0].toUpperCase()}
+                        </div>
+                      )}
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: 17, fontWeight: 700, color: NL.text, margin: "0 0 2px", fontFamily: mono }}>{profile.username}</p>
+                        {profile.displayName && <p style={{ fontSize: 12, color: NL.secondary, margin: "0 0 4px" }}>{profile.displayName}</p>}
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {profile.createdAt && <span style={{ fontSize: 11, color: NL.muted }}>Member since {new Date(profile.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span>}
+                          {profile.lastSeenAt && <span style={{ fontSize: 11, color: NL.muted }}>· Active {new Date(profile.lastSeenAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: NL.muted, marginBottom: 4, letterSpacing: "0.06em", textTransform: "uppercase" }}>Display name</label>
+                        <input value={profileEdit.displayName} onChange={e => { setProfileEdit(p => ({ ...p, displayName: e.target.value })); setProfileDirty(true); }} placeholder="Optional display name…" maxLength={32} style={{ ...inputStyle }} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: NL.muted, marginBottom: 4, letterSpacing: "0.06em", textTransform: "uppercase" }}>Bio</label>
+                        <textarea value={profileEdit.bio} onChange={e => { setProfileEdit(p => ({ ...p, bio: e.target.value })); setProfileDirty(true); }} placeholder="Tell something about yourself…" maxLength={200} rows={3} style={{ ...inputStyle, resize: "vertical", minHeight: 72, fontFamily: font }} />
+                        <p style={{ fontSize: 10, color: NL.muted, margin: "4px 0 0", textAlign: "right" }}>{(profileEdit.bio || "").length}/200</p>
+                      </div>
+                      {profileError && <p style={{ fontSize: 11, color: NL.danger, background: NL.dangerDim, border: `1px solid ${NL.dangerBorder}`, borderRadius: 6, padding: "8px 10px", margin: 0 }}>⚠ {profileError}</p>}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Btn onClick={saveProfile} disabled={!profileDirty || profileSaving} size="sm">
+                          {profileSaving ? <><Spinner size={12} /> Saving…</> : "Save"}
+                        </Btn>
+                        {profileSuccess && <span style={{ fontSize: 12, color: NL.success }}>✓ Saved</span>}
+                      </div>
+                    </div>
+                  </Card>
+                )}
+              </div>
 
-          {activeTab === "moderation" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <Card title="Account" action={iconBtn(loadProfile, "Refresh", <IC.Refresh />)}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                    {[
+                      { label: "Email", value: user?.email, mono: true },
+                      { label: "UID", value: user?.uid, mono: true, small: true },
+                      { label: "Roles", value: null },
+                    ].map(({ label, value, mono: isMono, small }, i, arr) => (
+                      <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${NL.border}` : "none" }}>
+                        <span style={{ fontSize: 12, color: NL.muted }}>{label}</span>
+                        {value !== null && value !== undefined
+                          ? <span style={{ fontSize: small ? 11 : 13, color: NL.text, fontFamily: isMono ? mono : font }}>{value}</span>
+                          : <div style={{ display: "flex", gap: 4 }}>
+                            <Badge color="default">user</Badge>
+                            {roles.map(r => <Badge key={r} color={r === "admin" ? "danger" : "accent"}>{r}</Badge>)}
+                          </div>
+                        }
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+
+                {profile && (
+                  <Card title="Minecraft accounts" subtitle="Linked via the app">
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: NL.muted, margin: "0 0 6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Java Edition</p>
+                        {(profile.javaAccounts || []).length === 0 ? (
+                          <p style={{ fontSize: 12, color: NL.muted, margin: 0 }}>No Java account linked.</p>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            {(profile.javaAccounts || []).map(a => (
+                              <div key={a.javaUuid} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: NL.elevated, border: `1px solid ${NL.border}` }}>
+                                <img src={`https://crafatar.com/avatars/${a.javaUuid}?size=32&overlay`} alt={a.javaUsername} style={{ width: 32, height: 32, borderRadius: 6, imageRendering: "pixelated", flexShrink: 0 }} onError={e => e.currentTarget.style.display = "none"} />
+                                <div style={{ flex: 1 }}>
+                                  <p style={{ fontSize: 13, fontWeight: 600, color: NL.text, margin: 0 }}>{a.javaUsername}</p>
+                                  <p style={{ fontFamily: mono, fontSize: 10, color: NL.muted, margin: 0 }}>{a.javaUuid}</p>
+                                </div>
+                                {a.linkedAt && <span style={{ fontSize: 10, color: NL.muted }}>{new Date(a.linkedAt).toLocaleDateString("en-GB")}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 600, color: NL.muted, margin: "0 0 6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Bedrock Edition</p>
+                        {(profile.bedrockAccounts || []).length === 0 ? (
+                          <p style={{ fontSize: 12, color: NL.muted, margin: 0 }}>No Bedrock account linked.</p>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            {(profile.bedrockAccounts || []).map(a => (
+                              <div key={a.xboxXuid} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: NL.elevated, border: `1px solid ${NL.border}` }}>
+                                <div style={{ width: 32, height: 32, borderRadius: 6, background: NL.elevated, border: `1px solid ${NL.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🎮</div>
+                                <div style={{ flex: 1 }}>
+                                  <p style={{ fontSize: 13, fontWeight: 600, color: NL.text, margin: 0 }}>{a.xboxGamertag}</p>
+                                  <p style={{ fontFamily: mono, fontSize: 10, color: NL.muted, margin: 0 }}>XUID: {a.xboxXuid}</p>
+                                </div>
+                                {a.linkedAt && <span style={{ fontSize: 10, color: NL.muted }}>{new Date(a.linkedAt).toLocaleDateString("en-GB")}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <p style={{ fontSize: 11, color: NL.muted, margin: 0 }}>Link your accounts via the MCCompanion app.</p>
+                    </div>
+                  </Card>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "partner-servers" && isPartner && <PartnerPanel />}
+
+          {activeTab === "partners" && isAdmin && <PartnersPanel />}
+
+          {activeTab === "feedback" && isAdmin && <FeedbackPanel />}
+
+          {activeTab === "moderation" && isAdmin && (
             <ModerationPanel
               bans={bans}
               bansLoading={bansLoading}
@@ -1497,7 +1688,7 @@ export default function DashboardPage() {
             />
           )}
 
-          {activeTab === "overview" && (<>
+          {activeTab === "overview" && isAdmin && (<>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
               {[
                 { label: "Live players", value: Object.keys(currentMap).length, sub: "In cache" },
