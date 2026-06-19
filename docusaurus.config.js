@@ -66,6 +66,11 @@ const config = {
             label: 'Docs',
           },
           {
+            to: '/beta',
+            label: 'Beta',
+            position: 'right',
+          },
+          {
             to: '/status',
             label: 'Status',
             position: 'right',
