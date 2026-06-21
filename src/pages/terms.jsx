@@ -100,26 +100,44 @@ const sections = [
     ],
   },
   {
-    title: "10. Server Metrics and Monitoring",
-    content: "MCCompanion collects aggregate server-level metrics to improve service quality and reliability. These metrics do not contain personal user data.",
+    title: "10. Server Metrics and Public Data",
+    content: "MCCompanion collects aggregate server-level metrics to improve service quality and reliability.",
     list: [
-      "What we collect: server address (IP/hostname), server port, connection timestamps, and aggregated counts.",
-      "Purpose: service monitoring, troubleshooting, improving featured server lists, and general usage analytics.",
+      "What we collect: server address (IP/hostname), server port, connection timestamps, and aggregated connection counts.",
+      "Public metrics page: the top 30 most-connected servers (by IP/hostname and count) are publicly visible at mccompanion.net/metrics without requiring an account. By connecting to a server via MCCompanion, you acknowledge that the server's address may appear in this public list.",
       "No personal data: metrics are not tied to individual users or devices.",
       "Storage and retention: metrics are stored on our backend and automatically deleted after 90 days.",
-      "Contact for concerns: if you own a server and require removal or redaction of metrics, contact us and we will review your request.",
+      "Server operator requests: if you own a server and require removal or redaction from the public metrics, contact us at support@mccompanion.net and we will review your request.",
     ],
   },
   {
-    title: "11. Intellectual Property",
+    title: "11. Resource Pack Caching",
+    content: "To deliver resource packs to your console via the relay, MCCompanion may automatically download, cache, and serve resource packs from Minecraft servers you connect to.",
+    list: [
+      "Server-side packs: packs are downloaded from the server and stored in our cloud storage (Cloudflare R2) for deduplication and relay delivery. They are not publicly listed or searchable.",
+      "User-uploaded packs: if you upload your own resource pack in the App, it is stored in our cloud storage and accessible to anyone with the direct URL. You can delete your uploaded pack at any time from within the App.",
+      "Intellectual property: resource packs may be subject to copyright. By using the relay feature, you agree not to use MCCompanion to infringe third-party intellectual property rights. We are not responsible for the content of third-party resource packs.",
+    ],
+  },
+  {
+    title: "12. Intellectual Property",
     content: "All content, design, code, logos, and trademarks in the App are the property of MCCORG unless otherwise stated. You may not reproduce, distribute, or create derivative works from any part of the App without our prior written consent. MCCompanion is an independent project and is not affiliated with, endorsed by, or sponsored by Mojang Studios or Microsoft Corporation. \"Minecraft\" is a trademark of Microsoft Corporation.",
   },
   {
-    title: "12. Third-Party Services",
-    content: "The App integrates with third-party services including Google Firebase, Microsoft/Xbox, and Mojang. Your use of those services is subject to their own terms and privacy policies. We are not responsible for the content, practices, or policies of any third-party services or Minecraft servers you connect to through the App.",
+    title: "13. Third-Party Services",
+    content: "The App integrates with third-party services. Your use of those services is subject to their own terms and privacy policies. We are not responsible for the content, practices, or policies of any third-party services or Minecraft servers you connect to through the App. Third-party services used include:",
+    list: [
+      "Google Firebase: authentication and push notifications",
+      "Microsoft / Xbox: Bedrock account linking",
+      "Mojang / Microsoft: Java account linking and player lookup",
+      "RevenueCat: subscription and payment management",
+      "Cloudflare: cloud storage and CDN for resource packs",
+      "Zoho Mail: transactional emails (feedback confirmations, support replies)",
+      "GitHub: public issue tracker for in-app feedback",
+    ],
   },
   {
-    title: "13. Disclaimer of Warranties",
+    title: "14. Disclaimer of Warranties",
     content: "The App is provided \"as is\" and \"as available\" without warranties of any kind. We do not guarantee:",
     list: [
       "Uninterrupted or error-free operation",
@@ -130,7 +148,7 @@ const sections = [
     footer: "Your use of the App is at your sole risk.",
   },
   {
-    title: "14. Limitation of Liability",
+    title: "15. Limitation of Liability",
     content: "To the fullest extent permitted by applicable law, MCCORG shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to:",
     list: [
       "Loss of data or messages",
@@ -141,19 +159,19 @@ const sections = [
     footer: "Our total liability to you for any claim arising out of or related to these Terms or the App shall not exceed the amount you have paid us in the past twelve (12) months.",
   },
   {
-    title: "15. Governing Law",
+    title: "16. Governing Law",
     content: "These Terms are governed by and construed in accordance with the laws of Belgium, without regard to conflict of law principles. Any disputes arising from these Terms shall be subject to the exclusive jurisdiction of the courts of Belgium.",
   },
   {
-    title: "16. Changes to These Terms",
+    title: "17. Changes to These Terms",
     content: "We may update these Terms from time to time. If we make material changes, we will notify you via an in-app notice. The 'Last updated' date at the top of this document reflects the most recent version. Continued use of the App after changes constitutes your acceptance of the updated Terms.",
   },
   {
-    title: "17. Contact",
+    title: "18. Contact",
     content: "For questions, concerns, or support regarding MCCompanion, please contact us:",
     list: [
-      "Email: support@mccompanion.net",
-      "Privacy inquiries: privacy@mccompanion.net",
+      "Email: jens@mccompanion.net",
+      "Privacy inquiries: jens@mccompanion.net",
       "Discord: discord.gg/xvaNzE35Rs",
       "Website: mccompanion.net",
     ],
@@ -246,7 +264,7 @@ export default function Terms() {
           </div>
 
           <p style={{ fontSize: 11, color: NL.muted, textAlign: "right", marginBottom: 32 }}>
-            Last updated: May 24, 2026
+            Last updated: June 22, 2026
           </p>
 
           <div style={{ textAlign: "center" }}>

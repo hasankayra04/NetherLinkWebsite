@@ -25,12 +25,12 @@ const sections = [
     title: "2. Account Information",
     content: "When you create an account, we collect the following information:",
     list: [
-      "Email address — used to identify your account and send important notices",
-      "Password — stored securely and encrypted by Firebase Authentication; we never have access to your plain-text password",
-      "Username — a unique name you choose (3–20 characters)",
-      "Display name — an optional name shown to other users",
-      "Profile avatar — an optional profile picture URL you provide",
-      "Biography — an optional short text you write about yourself",
+      "Email address: used to identify your account and send important notices",
+      "Password: stored securely and encrypted by Firebase Authentication; we never have access to your plain-text password",
+      "Username: a unique name you choose (3–20 characters)",
+      "Display name: an optional name shown to other users",
+      "Profile avatar: an optional profile picture URL you provide",
+      "Biography: an optional short text you write about yourself",
     ],
   },
   {
@@ -45,9 +45,9 @@ const sections = [
     title: "4. Social & Activity Data",
     content: "To provide social features, we collect and store:",
     list: [
-      "Friends list — the users you have added, accepted, blocked, or been blocked by",
-      "Online presence — your last seen timestamp and, when actively playing, the server IP and port you are connected to (only visible to accepted friends, unless you enable Appear Offline)",
-      "Direct messages — the full content of messages sent between you and your friends",
+      "Friends list: the users you have added, accepted, blocked, or been blocked by",
+      "Online presence: your last seen timestamp and, when actively playing, the server IP and port you are connected to (only visible to accepted friends, unless you enable Appear Offline)",
+      "Direct messages: the full content of messages sent between you and your friends",
     ],
   },
   {
@@ -56,60 +56,98 @@ const sections = [
   },
   {
     title: "6. Connection & Usage Data",
-    content: "When you use the relay feature to connect to a Minecraft server, we log aggregate data for service analytics:",
+    content: "When you use the relay feature to connect to a Minecraft server, we log the following data for service analytics:",
     list: [
+      "Your public IP address: temporarily stored in a Redis cache for up to 15 minutes to route your connection, and in our connection log database for up to 90 days",
       "Destination server IP address and port",
       "Connection timestamp and duration",
-      "Total connection counts per server",
+      "Total connection counts per server (aggregated)",
     ],
-    footer: "This data is not linked to your user account and is automatically deleted after 90 days. It is used to monitor service reliability and generate aggregated usage statistics.",
+    footer: "Connection log data is automatically and permanently deleted after 90 days. It is used to monitor service reliability, detect abuse, and generate the aggregated public server metrics. Your IP address is not linked to your user account.",
   },
   {
-    title: "7. Report Data",
+    title: "7. Public Server Metrics",
+    content: "MCCompanion publishes a publicly accessible metrics page that shows the top 30 most-connected Minecraft servers. This page displays:",
+    list: [
+      "Server IP addresses or hostnames",
+      "Aggregated total connection counts per server",
+    ],
+    footer: "This data is derived from relay usage and is visible to anyone without an account. It does not include any personal user information. If you are a server operator and wish to have your server's data removed from the public metrics, please contact us at privacy@mccompanion.net.",
+  },
+  {
+    title: "8. Resource Pack Caching",
+    content: "To deliver a seamless console experience, MCCompanion may automatically download and cache resource packs from Minecraft servers you connect to via the relay. The following data is stored:",
+    list: [
+      "The resource pack file itself (stored in Cloudflare R2 cloud storage)",
+      "Pack metadata: UUID, version, file size, and a SHA-256 content hash used for deduplication",
+      "The R2 storage key referencing the pack",
+    ],
+    footer: "Resource packs are cached indefinitely to avoid re-downloading them on subsequent connections. Packs are only accessible internally by the relay service and are not publicly indexed or browsable. If you upload your own resource pack for relay delivery, the pack file is stored under a hash-based path and is accessible to anyone with the direct URL. You can delete your uploaded pack at any time from within the App.",
+  },
+  {
+    title: "9. Feedback & Contact Data",
+    content: "If you submit feedback (bug reports or feature requests) through the App and provide your email address:",
+    list: [
+      "The content of your feedback (title, description, platform, and app version) is posted as a public issue on our GitHub repository (github.com/MCCORG/MCCompanion). This content is publicly visible.",
+      "Your email address is stored privately in our database and is never posted to GitHub or shared publicly.",
+      "We may use your email address to send you a confirmation and to reply to your feedback.",
+    ],
+    footer: "If you submitted feedback and wish to have your email address removed from our records, contact us at privacy@mccompanion.net.",
+  },
+  {
+    title: "10. Report Data",
     content: "If you submit a report about another user, we store the reporter's user ID, the reported user's ID, the reason, any optional context you provided, and the date of the report. This information is retained to protect the integrity of our community.",
   },
   {
-    title: "8. How We Use Your Information",
+    title: "11. How We Use Your Information",
     content: "We use your information exclusively to:",
     list: [
-      "Provide and operate the App — account management, relay connections, skin viewer, wiki, player lookup",
-      "Enable social features — friend requests, direct messaging, online presence, push notifications",
-      "Ensure security — detecting abuse, rate-limit violations, and enforcing our Terms of Service",
-      "Improve the App — aggregated, anonymised analytics on relay usage and popular servers",
-      "Respond to reports — moderating content and enforcing community rules",
+      "Provide and operate the App: account management, relay connections, skin viewer, wiki, player lookup",
+      "Enable social features: friend requests, direct messaging, online presence, push notifications",
+      "Ensure security: detecting abuse, rate-limit violations, and enforcing our Terms of Service",
+      "Improve the App: aggregated, anonymised analytics on relay usage and popular servers",
+      "Respond to reports: moderating content and enforcing community rules",
+      "Communicate with you: feedback confirmations, admin replies, and important service notices",
     ],
     footer: "We do not use your data for advertising purposes, and we do not sell your data to third parties.",
   },
   {
-    title: "9. Information Visible to Other Users",
+    title: "12. Information Visible to Other Users",
     content: "The following information is visible to other users within the App:",
     list: [
       "Your username, display name, and avatar",
-      "Your online status and, if applicable, the Minecraft server you are currently connected to — visible only to accepted friends unless Appear Offline is enabled",
+      "Your online status and, if applicable, the Minecraft server you are currently connected to: visible only to accepted friends unless Appear Offline is enabled",
       "Your linked Gamertag and Java username (shown on your public profile)",
     ],
   },
   {
-    title: "10. Third-Party Service Providers",
+    title: "13. Third-Party Service Providers",
     content: "We use the following third-party services that may process your data. These providers act as data processors and are bound by their own privacy policies.",
     list: [
-      "Google Firebase — authentication and push notifications (firebase.google.com/support/privacy)",
-      "Microsoft / Xbox — Bedrock account linking via device code flow (privacy.microsoft.com)",
-      "Mojang / Microsoft — Java account linking and player lookup (privacy.microsoft.com)",
+      "Google Firebase: authentication and push notifications (firebase.google.com/support/privacy)",
+      "Microsoft / Xbox: Bedrock account linking via device code flow (privacy.microsoft.com)",
+      "Mojang / Microsoft: Java account linking and player lookup (privacy.microsoft.com)",
+      "RevenueCat: in-app subscription management and receipt validation (revenuecat.com/privacy). Payment card data is managed by RevenueCat and your device's app store; we never receive or store your card details.",
+      "Cloudflare: cloud storage (R2) for resource packs and CDN delivery (cloudflare.com/privacypolicy)",
+      "Zoho Mail: transactional email delivery for feedback confirmations and support replies (zoho.com/privacy)",
+      "GitHub: public issue tracker for user-submitted feedback (docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)",
     ],
-    footer: "We do not share your data with any other third parties.",
+    footer: "We do not share your personal data with any other third parties.",
   },
   {
-    title: "11. Data Retention",
+    title: "14. Data Retention",
     content: "We retain your data for the following periods:",
     list: [
-      "Account and profile data — until you delete your account",
-      "Direct messages — until you delete your account",
-      "Linked gaming accounts — until you unlink them or delete your account",
-      "Friends and social data — until you delete your account",
-      "FCM device tokens — until the app is uninstalled or you delete your account",
-      "Connection logs — automatically deleted after 90 days",
-      "Abuse and report records — retained indefinitely for moderation integrity",
+      "Account and profile data: until you delete your account",
+      "Direct messages: until you delete your account",
+      "Linked gaming accounts: until you unlink them or delete your account",
+      "Friends and social data: until you delete your account",
+      "FCM device tokens: until the app is uninstalled or you delete your account",
+      "IP addresses in route cache (Redis): automatically deleted after 15 minutes",
+      "Connection logs: automatically deleted after 90 days",
+      "Feedback contact emails: retained until you request removal at privacy@mccompanion.net",
+      "Resource pack files in cloud storage: retained indefinitely for relay delivery; user-uploaded packs can be deleted in-app",
+      "Abuse and report records: retained indefinitely for moderation integrity",
     ],
   },
   {
@@ -121,27 +159,29 @@ const sections = [
       "All your friend connections and requests",
       "All your linked gaming accounts",
       "All your FCM device tokens",
+      "All your tracked servers and active sessions",
     ],
-    footer: "Abuse and moderation reports that involve your account may be retained to protect the integrity of our community.",
+    footer: "Abuse and moderation reports that involve your account may be retained to protect the integrity of our community. Connection logs are not linked to your account and will expire after 90 days as normal.",
   },
   {
-    title: "13. Your Rights",
+    title: "16. Your Rights",
     content: "Depending on your location, you may have the following rights regarding your personal data:",
     list: [
-      "Access — request a copy of the data we hold about you",
-      "Correction — update inaccurate data via in-app profile settings",
-      "Deletion — permanently delete your account and all associated data",
-      "Portability — request your data in a portable format",
-      "Objection — object to certain uses of your data",
+      "Access: request a copy of the data we hold about you",
+      "Correction: update inaccurate data via in-app profile settings",
+      "Deletion: permanently delete your account and all associated data",
+      "Portability: request your data in a portable format",
+      "Objection: object to certain uses of your data",
+      "Erasure of feedback email: contact us to remove your email from our feedback records",
     ],
     footer: "EU/EEA users (GDPR): We process your data based on contractual necessity (to provide the services you signed up for), legitimate interests (security and analytics), and your consent (for optional features such as push notifications). To exercise any of your rights, contact us at privacy@mccompanion.net.",
   },
   {
-    title: "14. Push Notifications",
+    title: "17. Push Notifications",
     content: "The App may send you push notifications for new direct messages, incoming friend requests, accepted friend requests, and friends coming online. You can disable push notifications at any time in your device's system settings without affecting your ability to use the App.",
   },
   {
-    title: "15. Children's Privacy & Parental Consent",
+    title: "18. Children's Privacy & Parental Consent",
     content: "MCCompanion can be used by players of all ages. For children under 13 (or under 16 in the EU/EEA), the following rules apply:",
     list: [
       "A parent or legal guardian must create the account on the child's behalf.",
@@ -152,18 +192,19 @@ const sections = [
     footer: "If we become aware that an account belonging to a child under 13 was created without verifiable parental consent, we will suspend the account and promptly delete all associated data. If you believe this has occurred, please contact us at privacy@mccompanion.net.",
   },
   {
-    title: "16. Security",
+    title: "19. Security",
     content: "We take appropriate technical and organisational measures to protect your data, including:",
     list: [
       "Encrypted authentication tokens via Firebase Auth",
       "HTTPS/TLS for all API communication",
       "Token-based authentication for WebSocket connections",
-      "Rate limiting and IP-based abuse detection",
+      "Rate limiting and automatic IP-based abuse detection",
+      "Encrypted at-rest storage via Cloudflare R2 for resource pack files",
     ],
-    footer: "No method of transmission over the Internet is 100% secure. While we strive to protect your data, we cannot guarantee absolute security.",
+    footer: "No method of transmission over the Internet is 100% secure. While we strive to protect your data, we cannot guarantee absolute security. In the event of a data breach that affects your personal data, we will notify you as required by applicable law.",
   },
   {
-    title: "17. Changes to This Policy",
+    title: "20. Changes to This Policy",
     content: "We may update this Privacy Policy from time to time. If we make material changes, we will notify you via an in-app notice or push notification. The 'Last updated' date at the top of this document reflects the most recent version. Continued use of the App after changes constitutes acceptance of the updated policy.",
   },
 ];
@@ -254,7 +295,7 @@ export default function Privacy() {
           </div>
 
           <p style={{ fontSize: 11, color: NL.muted, textAlign: "right", marginBottom: 32 }}>
-            Last updated: May 24, 2026
+            Last updated: June 22, 2026
           </p>
 
           <div style={{ textAlign: "center" }}>
