@@ -54,16 +54,27 @@ const config = {
       },
       navbar: {
         logo: {
-          alt: 'MCCompanion Logo',
+          alt: 'MCCompanion',
           src: 'img/icon.png',
+          href: '/',
         },
-        title: 'MCCompanion Docs',
+        title: 'MCCompanion',
         items: [
           {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
             position: 'left',
             label: 'Docs',
+          },
+          {
+            type: 'dropdown',
+            label: 'Tools',
+            position: 'left',
+            items: [
+              { to: '/lookup',   label: 'Player Lookup'  },
+              { to: '/rpeditor', label: 'RP Merger'      },
+              { to: '/metrics',  label: 'Server Metrics' },
+            ],
           },
           {
             to: '/beta',
@@ -76,8 +87,8 @@ const config = {
             position: 'right',
           },
           {
-            href: 'https://github.com/MCCORG/MCCompanionWebsite',
-            label: 'GitHub',
+            to: '/login',
+            label: 'Login',
             position: 'right',
           },
         ],

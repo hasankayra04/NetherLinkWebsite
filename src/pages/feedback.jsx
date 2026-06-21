@@ -231,7 +231,7 @@ export default function FeedbackPage() {
 
   return (
     <Layout
-      title="Feedback — MCCompanion"
+      title="Feedback: MCCompanion"
       description="Report a bug or suggest a new feature for MCCompanion. Your feedback goes directly to our team."
     >
       <div
@@ -289,12 +289,11 @@ export default function FeedbackPage() {
               Share your feedback
             </h1>
             <p style={{ fontSize: 15, color: NL.secondary, margin: 0, lineHeight: 1.6 }}>
-              Found a bug or have an idea? Let us know — every report helps make MCCompanion better.
+              Found a bug or have an idea? Let us know, every report helps make MCCompanion better.
             </p>
           </motion.div>
 
           {status === "success" ? (
-            /* Success state */
             <motion.div
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -423,7 +422,7 @@ export default function FeedbackPage() {
                 label={isBug ? "What happened?" : "Describe your idea"}
                 placeholder={
                   isBug
-                    ? "Describe the bug — what did you do, what did you expect, and what happened instead?"
+                    ? "Describe the bug: what did you do, what did you expect, and what happened instead?"
                     : "Explain what you'd like and why it would be useful."
                 }
                 value={description}

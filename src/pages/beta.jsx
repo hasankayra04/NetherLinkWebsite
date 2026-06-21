@@ -234,7 +234,7 @@ function ReleaseCard({ release, tag, index }) {
       }}>
         <FaExclamationTriangle size={12} style={{ flexShrink: 0, marginTop: 2 }} />
         <span>
-          <strong>Beta build</strong> — Google &amp; Apple sign-in won't work. May contain bugs.
+          <strong>Beta build:</strong> Google &amp; Apple sign-in won't work. May contain bugs.
           {" "}Side-load at your own risk.
         </span>
       </div>

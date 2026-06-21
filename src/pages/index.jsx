@@ -1,19 +1,21 @@
 import { useState, useEffect, useRef } from "react";
-import { FaWindows, FaApple, FaAndroid, FaServer, FaSearch, FaUser, FaRobot, FaDiscord, FaCode, FaGamepad, FaArrowRight, FaChevronDown } from "react-icons/fa";
+import {
+  FaWindows, FaApple, FaAndroid, FaSearch, FaUser, FaRobot,
+  FaDiscord, FaCode, FaGamepad, FaArrowRight, FaChevronDown,
+  FaDownload, FaBox, FaBolt, FaCheck, FaServer, FaComments,
+  FaLink, FaPalette, FaLayerGroup,
+} from "react-icons/fa";
 import { motion, useInView } from "framer-motion";
 import FeaturedServersCarousel from "../components/FeaturedServersCarousel";
-import ChangelogSection from "../components/ChangelogSection";
 import AppShowcase from "../components/AppShowcase";
 import BotStatus from "../components/BotStatus";
-import CommunitySection from "../components/CommunitySection";
 import DiscordBotSection from "../components/DiscordBotSection";
 import Layout from "@theme/Layout";
 
-const NL = {
+const C = {
   bg: "#0d0f14",
   surface: "#13161e",
   elevated: "#191c25",
-  subtle: "#1e2230",
   border: "rgba(255,255,255,0.06)",
   borderMid: "rgba(255,255,255,0.10)",
   text: "#eaebee",
@@ -21,84 +23,426 @@ const NL = {
   muted: "#4e5666",
   accent: "#67e404",
   accentDim: "rgba(103,228,4,0.08)",
-  accentBorder: "rgba(103,228,4,0.20)",
-  accentGlow: "rgba(103,228,4,0.15)",
+  accentBorder: "rgba(103,228,4,0.22)",
 };
 
-const platforms = [
-  { icon: <FaWindows size={16} />, label: "Windows", url: "https://apps.microsoft.com/detail/9NSFPT6D8PTR", color: "#60a5fa" },
-  { icon: <FaApple size={16} />, label: "macOS", url: "https://apps.apple.com/us/app/mccompanion/id6747323142?platform=mac", color: "#c0c7d4" },
-  { icon: <FaAndroid size={16} />, label: "Android", url: "https://play.google.com/store/apps/details?id=net.netherdev.netherLink", color: "#34d399" },
-  { icon: <FaApple size={16} />, label: "iOS", url: "https://apps.apple.com/be/app/netherlink/id6747323142?l=en", color: "#c0c7d4" },
+const PLATFORMS = [
+  { icon: <FaWindows size={14} />, label: "Windows", url: "https://apps.microsoft.com/detail/9NSFPT6D8PTR", color: "#60a5fa" },
+  { icon: <FaApple size={14} />, label: "macOS", url: "https://apps.apple.com/us/app/mccompanion/id6747323142?platform=mac", color: "#c0c7d4" },
+  { icon: <FaAndroid size={14} />, label: "Android", url: "https://play.google.com/store/apps/details?id=net.netherdev.netherLink", color: "#34d399" },
+  { icon: <FaApple size={14} />, label: "iOS", url: "https://apps.apple.com/be/app/netherlink/id6747323142?l=en", color: "#c0c7d4" },
 ];
 
-function AnimatedCounter({ target, suffix = "" }) {
-  const [count, setCount] = useState(0);
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true });
 
-  useEffect(() => {
-    if (!inView || !target) return;
-    const duration = 1800;
-    const steps = 60;
-    const increment = target / steps;
-    let current = 0;
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= target) { setCount(target); clearInterval(timer); }
-      else setCount(Math.floor(current));
-    }, duration / steps);
-    return () => clearInterval(timer);
-  }, [inView, target]);
-
+function Pill({ children, color = C.accent, dim = C.accentDim, border = C.accentBorder }) {
   return (
-    <span ref={ref}>
-      {count > 0 ? count.toLocaleString() : (target ? "—" : "—")}{suffix}
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 6,
+      fontSize: 10, fontWeight: 700, letterSpacing: 1.3, textTransform: "uppercase",
+      padding: "4px 12px", borderRadius: 20,
+      background: dim, border: `1px solid ${border}`, color,
+    }}>
+      <span style={{ width: 5, height: 5, borderRadius: "50%", background: color, boxShadow: `0 0 5px ${color}` }} />
+      {children}
     </span>
   );
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (i = 0) => ({
-    opacity: 1, y: 0,
-    transition: { delay: i * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-  }),
-};
-
-const stagger = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.07 } },
-};
-
-function SectionHeading({ eyebrow, title, subtitle, accent }) {
+function PlatformBtn({ icon, label, url, color, small }) {
+  const [hov, setHov] = useState(false);
   return (
-    <div style={{ marginBottom: 56, textAlign: "center" }}>
-      {eyebrow && (
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 8,
-          fontSize: 10, padding: "4px 14px", borderRadius: 20,
-          background: NL.accentDim, border: `1px solid ${NL.accentBorder}`,
-          color: NL.accent, fontFamily: "'JetBrains Mono', monospace",
-          letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 20,
-        }}>
-          <span style={{ width: 5, height: 5, borderRadius: "50%", background: NL.accent }} />
-          {eyebrow}
+    <a href={url} target="_blank" rel="noopener noreferrer"
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 7,
+        padding: small ? "8px 14px" : "10px 20px", borderRadius: 10,
+        background: hov ? C.elevated : C.surface,
+        border: `1px solid ${hov ? color + "44" : C.border}`,
+        boxShadow: hov ? `0 0 16px ${color}18` : "none",
+        textDecoration: "none", color: C.text,
+        fontSize: small ? 12 : 13, fontWeight: 500,
+        transition: "all 0.18s",
+      }}
+    >
+      <span style={{ color }}>{icon}</span>{label}
+    </a>
+  );
+}
+
+function Counter({ target }) {
+  const [n, setN] = useState(0);
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true });
+  useEffect(() => {
+    if (!inView || !target) return;
+    let cur = 0; const step = target / 60;
+    const t = setInterval(() => {
+      cur += step;
+      if (cur >= target) { setN(target); clearInterval(t); }
+      else setN(Math.floor(cur));
+    }, 30);
+    return () => clearInterval(t);
+  }, [inView, target]);
+  return <span ref={ref}>{n > 0 ? n.toLocaleString() : "0"}</span>;
+}
+
+const up = (i = 0) => ({
+  initial: { opacity: 0, y: 18 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true },
+  transition: { delay: i * 0.07, duration: 0.46, ease: [0.22, 1, 0.36, 1] },
+});
+
+function Hero({ stats }) {
+  return (
+    <section style={{
+      position: "relative", minHeight: "94vh",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      padding: "100px 24px 72px", overflow: "hidden",
+    }}>
+      <div style={{
+        position: "absolute", inset: 0,
+        backgroundImage: `linear-gradient(${C.border} 1px, transparent 1px),linear-gradient(90deg,${C.border} 1px,transparent 1px)`,
+        backgroundSize: "60px 60px",
+        maskImage: "radial-gradient(ellipse 80% 60% at 50% 50%, black 20%, transparent 100%)",
+        pointerEvents: "none",
+      }} />
+      <div style={{
+        position: "absolute", top: "36%", left: "50%",
+        transform: "translate(-50%,-50%)", width: 900, height: 600,
+        background: "radial-gradient(ellipse at center, rgba(103,228,4,0.10) 0%, transparent 65%)",
+        pointerEvents: "none",
+      }} />
+
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 820, textAlign: "center" }}>
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }} style={{ marginBottom: 22 }}>
+          <Pill>Free · 16 languages · All platforms · Resource packs</Pill>
+        </motion.div>
+
+        <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            fontSize: "clamp(38px, 8vw, 82px)", fontWeight: 800,
+            lineHeight: 1.03, letterSpacing: "-0.045em", margin: "0 0 20px", color: C.text,
+          }}>
+          Join any server<br />
+          <span style={{ background: "linear-gradient(135deg,#67e404 10%,#34d399 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            from your console.
+          </span>
+        </motion.h1>
+
+        <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.5 }}
+          style={{ fontSize: "clamp(15px, 2vw, 17px)", color: C.secondary, lineHeight: 1.8, maxWidth: 560, margin: "0 auto 40px" }}>
+          PS4, PS5, Xbox and Switch can connect to any Minecraft Java or Bedrock server
+          without port forwarding. Custom resource packs, player lookup, skin editor, server tracker and more. All free.
+        </motion.p>
+
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.22, duration: 0.5 }}
+          style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", marginBottom: 52 }}>
+          {PLATFORMS.map(p => <PlatformBtn key={p.label} {...p} />)}
+          <a href="/beta" style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            padding: "10px 18px", borderRadius: 10,
+            background: C.accentDim, border: `1px solid ${C.accentBorder}`,
+            textDecoration: "none", color: C.accent, fontSize: 13, fontWeight: 600,
+          }}>
+            <FaDownload size={12} /> Beta builds
+          </a>
+        </motion.div>
+
+        {stats && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35, duration: 0.5 }}
+            style={{ display: "flex", justifyContent: "center" }}>
+            <div style={{
+              display: "inline-flex", background: C.surface,
+              border: `1px solid ${C.border}`, borderRadius: 16, overflow: "hidden",
+            }}>
+              {[{ l: "servers tracked", v: stats.servers }, { l: "connections made", v: stats.joins }].map((s, i) => (
+                <div key={s.l} style={{
+                  padding: "18px 40px", textAlign: "center",
+                  borderLeft: i > 0 ? `1px solid ${C.border}` : "none",
+                }}>
+                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 30, fontWeight: 700, color: C.accent, lineHeight: 1, marginBottom: 7 }}>
+                    <Counter target={s.v} />
+                  </div>
+                  <div style={{ fontSize: 11, color: C.muted, letterSpacing: "0.06em" }}>{s.l}</div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2, duration: 0.6 }}
+        style={{ position: "absolute", bottom: 24, color: C.muted }}>
+        <motion.div animate={{ y: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 2.2 }}>
+          <FaChevronDown size={12} />
+        </motion.div>
+      </motion.div>
+    </section>
+  );
+}
+
+const MODES = [
+  { icon: "🎮", label: "Broadcast Mode", platforms: "PS4 · PS5 · Xbox", color: "#60a5fa", dim: "rgba(96,165,250,0.08)", border: "rgba(96,165,250,0.22)", href: "/docs/howto/playstation-xbox-howto" },
+  { icon: "🕹️", label: "DNS Mode", platforms: "Nintendo Switch", color: "#f472b6", dim: "rgba(244,114,182,0.08)", border: "rgba(244,114,182,0.22)", href: "/docs/howto/nintendo-howto" },
+  { icon: "👥", label: "Friends Mode", platforms: "All consoles", color: "#34d399", dim: "rgba(52,211,153,0.08)", border: "rgba(52,211,153,0.22)", href: "/docs/howto/friend-howto" },
+  { icon: "☕", label: "Java Mode", platforms: "Bedrock → Java Edition", color: "#f59e0b", dim: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.22)", href: "/docs/howto/java-howto" },
+];
+
+function RelayModes() {
+  return (
+    <section style={{
+      background: C.surface,
+      borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`,
+      padding: "64px 24px",
+    }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <Pill>Console connect</Pill>
+          <h2 style={{ fontSize: "clamp(22px, 3.5vw, 36px)", fontWeight: 800, color: C.text, margin: "16px 0 10px", letterSpacing: "-0.03em" }}>
+            Four ways to connect
+          </h2>
+          <p style={{ fontSize: 15, color: C.secondary, margin: 0 }}>Pick the mode that fits your setup. No mods, no port forwarding.</p>
         </div>
-      )}
-      <h2 style={{
-        fontSize: "clamp(26px, 4vw, 42px)",
-        fontWeight: 700, color: NL.text,
-        letterSpacing: "-0.03em", lineHeight: 1.15, margin: "0 0 16px",
-      }}>
-        {title}{accent && <span style={{ color: NL.accent }}> {accent}</span>}
-      </h2>
-      {subtitle && (
-        <p style={{ fontSize: 15, color: NL.secondary, maxWidth: 540, margin: "0 auto", lineHeight: 1.7 }}>
-          {subtitle}
-        </p>
-      )}
-    </div>
+
+        <div className="modes-grid">
+          {MODES.map((m, i) => (
+            <motion.a key={m.label} href={m.href} {...up(i)}
+              style={{
+                display: "block", textDecoration: "none",
+                padding: "22px 22px 20px",
+                borderRadius: 14, background: C.bg,
+                border: `1px solid ${C.border}`,
+                transition: "border-color 0.18s, background 0.18s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = m.border; e.currentTarget.style.background = m.dim; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.bg; }}
+            >
+              <div style={{ fontSize: 26, marginBottom: 12 }}>{m.icon}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 4 }}>{m.label}</div>
+              <div style={{ fontSize: 12, color: m.color, marginBottom: 14, fontWeight: 500 }}>{m.platforms}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: C.muted, fontWeight: 500 }}>
+                Setup guide <FaArrowRight size={9} />
+              </div>
+            </motion.a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const APP_FEATS = [
+  { icon: <FaSearch size={14} />, color: "#f472b6", label: "Player Lookup", desc: "Search by Java username, Bedrock gamertag or UUID. 3D skin preview." },
+  { icon: <FaServer size={14} />, color: "#60a5fa", label: "Server Tracker", desc: "Real-time status, push notifications. Free: 1 slot, up to 10 on paid plans." },
+  { icon: <FaPalette size={14} />, color: "#a78bfa", label: "Skin Editor", desc: "Browse community skins, upload your own, edit pixel by pixel, apply to your account." },
+  { icon: <FaBox size={14} />, color: C.accent, label: "Resource Packs", desc: "Apply and manage server resource packs directly from the app. Pack merger also available on the website.", beta: true },
+  { icon: <FaComments size={14} />, color: "#fb923c", label: "Friends & Chat", desc: "Add friends, see their online status and send direct messages inside the app." },
+  { icon: <FaLink size={14} />, color: "#34d399", label: "Account Linking", desc: "Link your Xbox/Bedrock and Java accounts via Microsoft device-code flow." },
+];
+
+function AppSection() {
+  return (
+    <section style={{ padding: "80px 24px" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+        <div className="app-grid">
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <AppShowcase />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <Pill>The app</Pill>
+            <h2 style={{ fontSize: "clamp(22px, 3vw, 36px)", fontWeight: 800, color: C.text, margin: "16px 0 6px", letterSpacing: "-0.03em" }}>
+              More than just a relay
+            </h2>
+            <p style={{ fontSize: 14, color: C.secondary, margin: "0 0 28px", lineHeight: 1.7 }}>
+              A full Minecraft companion, available on Windows, macOS, Android and iOS in 16 languages.
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 28 }}>
+              {APP_FEATS.map(f => (
+                <div key={f.label} style={{
+                  display: "flex", gap: 12, alignItems: "flex-start",
+                  padding: "12px 14px", borderRadius: 10,
+                  background: C.surface, border: `1px solid ${C.border}`,
+                }}>
+                  <div style={{
+                    width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                    background: f.color + "18", border: `1px solid ${f.color}30`,
+                    display: "flex", alignItems: "center", justifyContent: "center", color: f.color,
+                  }}>{f.icon}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{f.label}</span>
+                      {f.beta && <span style={{ fontSize: 9, fontWeight: 700, color: C.accent, background: C.accentDim, border: `1px solid ${C.accentBorder}`, padding: "1px 5px", borderRadius: 4 }}>BETA</span>}
+                    </div>
+                    <span style={{ fontSize: 12, color: C.secondary, lineHeight: 1.6 }}>{f.desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {PLATFORMS.map(p => <PlatformBtn key={p.label} {...p} small />)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LiveSection() {
+  return (
+    <section style={{
+      background: C.surface,
+      borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`,
+      padding: "80px 24px",
+    }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", flexDirection: "column", gap: 64 }}>
+
+        <div>
+          <div style={{ textAlign: "center", marginBottom: 36 }}>
+            <Pill color="#7289da" dim="rgba(114,137,218,0.08)" border="rgba(114,137,218,0.25)">Discord bot</Pill>
+            <h2 style={{ fontSize: "clamp(22px, 3.5vw, 36px)", fontWeight: 800, color: C.text, margin: "16px 0 8px", letterSpacing: "-0.03em" }}>
+              Server status, <span style={{ color: "#7289da" }}>always live</span>
+            </h2>
+            <p style={{ fontSize: 15, color: C.secondary, margin: "0 0 8px" }}>
+              Auto-updating embeds in any Discord channel. Java &amp; Bedrock. Direct TCP/UDP pings.
+            </p>
+            <a href="/docs/discord-bot/discord-bot-setup" style={{
+              display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600,
+              color: "#7289da", textDecoration: "none",
+            }}>
+              Setup guide <FaArrowRight size={10} />
+            </a>
+          </div>
+          <DiscordBotSection />
+        </div>
+
+        <div>
+          <div style={{ textAlign: "center", marginBottom: 36 }}>
+            <Pill color="#34d399" dim="rgba(52,211,153,0.08)" border="rgba(52,211,153,0.25)">Xbox relay network</Pill>
+            <h2 style={{ fontSize: "clamp(22px, 3.5vw, 36px)", fontWeight: 800, color: C.text, margin: "16px 0 8px", letterSpacing: "-0.03em" }}>
+              Always online, <span style={{ color: "#34d399" }}>EU &amp; US</span>
+            </h2>
+            <p style={{ fontSize: 15, color: C.secondary, margin: 0 }}>
+              Dedicated Xbox bots in Europe and the United States, used by DNS Mode and Friends Mode 24/7.
+            </p>
+          </div>
+          <BotStatus />
+        </div>
+
+      </div>
+    </section>
+  );
+}
+
+function ServersSection() {
+  return (
+    <section style={{ padding: "80px 24px" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <Pill>Featured servers</Pill>
+          <h2 style={{ fontSize: "clamp(22px, 3.5vw, 36px)", fontWeight: 800, color: C.text, margin: "16px 0 8px", letterSpacing: "-0.03em" }}>
+            Discover new worlds
+          </h2>
+
+        </div>
+        <FeaturedServersCarousel />
+      </div>
+    </section>
+  );
+}
+
+function BottomCTAs() {
+  return (
+    <section style={{
+      background: C.surface,
+      borderTop: `1px solid ${C.border}`,
+      padding: "72px 24px 80px",
+    }}>
+      <div className="cta-grid" style={{ maxWidth: 1100, margin: "0 auto" }}>
+
+        <div style={{
+          padding: "36px 36px 32px",
+          borderRadius: 18,
+          background: `linear-gradient(135deg, ${C.elevated} 0%, #0e1a0b 100%)`,
+          border: `1px solid ${C.accentBorder}`,
+          position: "relative", overflow: "hidden",
+        }}>
+          <div style={{
+            position: "absolute", top: -50, right: -50, width: 220, height: 220,
+            background: "radial-gradient(circle, rgba(103,228,4,0.09) 0%, transparent 70%)",
+            pointerEvents: "none",
+          }} />
+          <Pill>Partner program</Pill>
+          <h3 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: "14px 0 10px", letterSpacing: "-0.02em" }}>
+            Feature your server
+          </h3>
+          <p style={{ fontSize: 13, color: C.secondary, lineHeight: 1.7, margin: "0 0 20px" }}>
+            Reach thousands of players through in-app featured placement, website listings and Discord.
+            Standard $15/mo · Premium $50/mo.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 24 }}>
+            {["Rotating featured spot in app & website", "Stats dashboard with real-time visit graphs", "Premium: hero placement on the connector page"].map(b => (
+              <div key={b} style={{ display: "flex", gap: 8, fontSize: 12, color: C.secondary, alignItems: "flex-start" }}>
+                <FaCheck size={10} color={C.accent} style={{ flexShrink: 0, marginTop: 2 }} />
+                {b}
+              </div>
+            ))}
+          </div>
+          <a href="/slot" style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            padding: "10px 20px", borderRadius: 10,
+            background: C.accent, color: "#000",
+            textDecoration: "none", fontSize: 13, fontWeight: 700,
+          }}>
+            View plans <FaArrowRight size={11} />
+          </a>
+        </div>
+
+        <div style={{
+          padding: "36px 36px 32px",
+          borderRadius: 18,
+          background: C.elevated,
+          border: `1px solid ${C.border}`,
+          display: "flex", flexDirection: "column", alignItems: "flex-start",
+        }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: 16,
+            background: C.accentDim, border: `1px solid ${C.accentBorder}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            marginBottom: 18,
+          }}>
+            <img src="/img/icon.png" alt="MCCompanion" style={{ width: 36, height: 36, borderRadius: 9 }} />
+          </div>
+          <h3 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: "0 0 10px", letterSpacing: "-0.02em" }}>
+            Download MCCompanion
+          </h3>
+          <p style={{ fontSize: 13, color: C.secondary, lineHeight: 1.7, margin: "0 0 24px" }}>
+            Free on every platform. No account required to start. Available in 16 languages.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+            {PLATFORMS.map(p => <PlatformBtn key={p.label} {...p} small />)}
+          </div>
+          <a href="/beta" style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            fontSize: 12, color: C.muted, textDecoration: "none",
+            padding: "6px 12px", borderRadius: 7,
+            border: `1px solid ${C.border}`, background: C.surface,
+          }}>
+            <FaDownload size={10} /> Beta builds
+          </a>
+        </div>
+
+      </div>
+    </section>
   );
 }
 
@@ -109,631 +453,36 @@ export default function Home() {
     fetch("https://api.mccompanion.net/api/metrics")
       .then(r => r.json())
       .then(d => setStats({ servers: d.totalServers, joins: d.totalCount }))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   return (
     <Layout
-      title="MCCompanion The Complete Minecraft Companion App"
-      description="Console relay for PlayStation, Xbox & Switch, player lookup, skin editor, Discord bot, and a global Xbox relay network. Free on all platforms."
+      title="MCCompanion: Join any Minecraft server from your console"
+      description="Connect PS4, PS5, Xbox and Switch to any Minecraft server. No mods, no port forwarding. Plus player lookup, skin editor, server tracker, Discord bot and more."
     >
-      <div style={{ background: NL.bg, fontFamily: "'Inter', system-ui, sans-serif", overflowX: "hidden" }}>
+      <style>{`
+        .modes-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+        .app-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
+        .cta-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 900px) {
+          .modes-grid { grid-template-columns: repeat(2,1fr); }
+          .app-grid   { grid-template-columns: 1fr; }
+          .app-grid > div:first-child { display: none; }
+          .cta-grid   { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 500px) {
+          .modes-grid { grid-template-columns: 1fr 1fr; }
+        }
+      `}</style>
 
-        <section style={{
-          position: "relative",
-          minHeight: "92vh",
-          display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center",
-          padding: "100px 20px 80px",
-          overflow: "hidden",
-        }}>
-          <div style={{
-            position: "absolute",
-            top: "30%", left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 700, height: 500,
-            background: "radial-gradient(ellipse at center, rgba(103,228,4,0.09) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }} />
-          <div style={{
-            position: "absolute", inset: 0,
-            backgroundImage: `linear-gradient(${NL.border} 1px, transparent 1px), linear-gradient(90deg, ${NL.border} 1px, transparent 1px)`,
-            backgroundSize: "60px 60px",
-            maskImage: "radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%)",
-            pointerEvents: "none",
-          }} />
-
-          <div style={{ position: "relative", zIndex: 1, maxWidth: 800, width: "100%", textAlign: "center" }}>
-
-            <motion.div variants={fadeUp} custom={0} initial="hidden" animate="visible" style={{ marginBottom: 20 }}>
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: 8,
-                fontSize: 10, padding: "5px 16px", borderRadius: 20,
-                background: NL.accentDim, border: `1px solid ${NL.accentBorder}`,
-                color: NL.accent, fontFamily: "'JetBrains Mono', monospace",
-                letterSpacing: "0.12em", textTransform: "uppercase",
-              }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: NL.accent, boxShadow: `0 0 8px ${NL.accent}` }} />
-                Free on all platforms
-              </div>
-            </motion.div>
-
-            <motion.h1
-              variants={fadeUp} custom={1} initial="hidden" animate="visible"
-              style={{
-                fontSize: "clamp(38px, 7vw, 76px)",
-                fontWeight: 800, lineHeight: 1.05,
-                letterSpacing: "-0.04em", margin: "0 0 24px",
-                color: NL.text,
-              }}
-            >
-              Your Minecraft companion,{" "}
-              <br />
-              <span style={{
-                background: "linear-gradient(135deg, #67e404 0%, #34d399 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}>
-                on every device.
-              </span>
-            </motion.h1>
-
-            <motion.p
-              variants={fadeUp} custom={2} initial="hidden" animate="visible"
-              style={{
-                fontSize: "clamp(15px, 2vw, 18px)",
-                color: NL.secondary, lineHeight: 1.75,
-                maxWidth: 560, margin: "0 auto 40px",
-              }}
-            >
-              One free app for every platform console relay, server browser,
-              skin editor, player lookup, Discord bot, and a global Xbox relay network.
-            </motion.p>
-
-            <motion.div
-              variants={fadeUp} custom={3} initial="hidden" animate="visible"
-              style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", marginBottom: 52 }}
-            >
-              {platforms.map(p => (
-                <motion.a
-                  key={p.label}
-                  href={p.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.04, y: -2 }}
-                  whileTap={{ scale: 0.97 }}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 8,
-                    padding: "10px 20px", borderRadius: 10,
-                    background: NL.surface,
-                    border: `1px solid ${NL.border}`,
-                    textDecoration: "none", color: NL.text,
-                    fontSize: 13, fontWeight: 500,
-                    transition: "border-color 0.2s, background 0.2s, box-shadow 0.2s",
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = p.color + "44";
-                    e.currentTarget.style.background = NL.elevated;
-                    e.currentTarget.style.boxShadow = `0 0 20px ${p.color}18`;
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = NL.border;
-                    e.currentTarget.style.background = NL.surface;
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
-                >
-                  <span style={{ color: p.color }}>{p.icon}</span>
-                  {p.label}
-                </motion.a>
-              ))}
-            </motion.div>
-
-            {stats && (
-              <motion.div
-                variants={fadeUp} custom={4} initial="hidden" animate="visible"
-                style={{ display: "flex", justifyContent: "center", gap: 0 }}
-              >
-                <div style={{
-                  display: "inline-flex",
-                  background: NL.surface,
-                  border: `1px solid ${NL.border}`,
-                  borderRadius: 16, overflow: "hidden",
-                }}>
-                  {[
-                    { label: "servers tracked", value: stats.servers },
-                    { label: "connections made", value: stats.joins },
-                  ].map((s, i) => (
-                    <div key={s.label} style={{
-                      padding: "18px 36px", textAlign: "center",
-                      borderLeft: i > 0 ? `1px solid ${NL.border}` : "none",
-                    }}>
-                      <div style={{
-                        fontFamily: "'JetBrains Mono', monospace",
-                        fontSize: 28, fontWeight: 700,
-                        color: NL.accent, lineHeight: 1,
-                        marginBottom: 6,
-                      }}>
-                        <AnimatedCounter target={s.value} />
-                      </div>
-                      <div style={{ fontSize: 11, color: NL.muted, letterSpacing: "0.05em" }}>{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.5, duration: 0.6 }}
-            style={{
-              position: "absolute", bottom: 32,
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-              color: NL.muted, fontSize: 11, letterSpacing: "0.06em",
-            }}
-          >
-            <motion.div animate={{ y: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
-              <FaChevronDown size={12} />
-            </motion.div>
-          </motion.div>
-        </section>
-
-        <style>{`
-          .bento-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
-          .bento-lg { grid-column: span 7; }
-          .bento-sm { grid-column: span 5; }
-          @media (max-width: 900px) {
-            .bento-grid { grid-template-columns: 1fr 1fr; }
-            .bento-lg, .bento-sm { grid-column: span 1; }
-          }
-          @media (max-width: 580px) {
-            .bento-grid { grid-template-columns: 1fr; }
-            .bento-lg, .bento-sm { grid-column: span 1; }
-          }
-        `}</style>
-
-        <section style={{ padding: "0 20px 96px", maxWidth: 1200, margin: "0 auto" }}>
-          <SectionHeading
-            eyebrow="Everything in one place"
-            title="Four tools,"
-            accent="one ecosystem"
-            subtitle="Built for Minecraft players, server owners, and community managers. Every tool connects to the next."
-          />
-
-          <div className="bento-grid">
-
-            <motion.a
-              href="#app"
-              variants={fadeUp} custom={0} initial="hidden" whileInView="visible" viewport={{ once: true }}
-              style={{
-                textDecoration: "none",
-                display: "block",
-                position: "relative",
-                overflow: "hidden",
-                borderRadius: 20,
-                background: `linear-gradient(135deg, ${NL.surface} 0%, #161b20 100%)`,
-                border: `1px solid ${NL.border}`,
-                padding: "36px 36px 32px",
-                transition: "border-color 0.2s, box-shadow 0.2s",
-                cursor: "pointer",
-              }}
-              className="bento-lg"
-              whileHover={{ scale: 1.01 }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = "rgba(103,228,4,0.25)";
-                e.currentTarget.style.boxShadow = "0 0 40px rgba(103,228,4,0.08)";
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = NL.border;
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <div style={{
-                position: "absolute", top: -60, right: -60,
-                width: 240, height: 240,
-                background: "radial-gradient(circle, rgba(103,228,4,0.07) 0%, transparent 70%)",
-                pointerEvents: "none",
-              }} />
-              <div style={{
-                display: "inline-flex", alignItems: "center", justifyContent: "center",
-                width: 52, height: 52, borderRadius: 14,
-                background: NL.accentDim, border: `1px solid ${NL.accentBorder}`,
-                color: NL.accent, marginBottom: 20,
-              }}>
-                <FaGamepad size={22} />
-              </div>
-              <h3 style={{ fontSize: 22, fontWeight: 700, color: NL.text, margin: "0 0 10px", letterSpacing: "-0.02em" }}>
-                Mobile & Desktop App
-              </h3>
-              <p style={{ fontSize: 14, color: NL.secondary, lineHeight: 1.7, margin: "0 0 28px", maxWidth: 360 }}>
-                Console relay for PlayStation, Xbox & Switch. Server browser, skin editor, and player lookup.
-                Free on Windows, macOS, Android and iOS.
-              </p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {["Console Relay", "Server Browser", "Skin Editor", "Player Lookup"].map(tag => (
-                  <span key={tag} style={{
-                    fontSize: 11, padding: "4px 10px", borderRadius: 6,
-                    background: NL.accentDim, border: `1px solid ${NL.accentBorder}`,
-                    color: NL.accent, fontFamily: "'JetBrains Mono', monospace",
-                  }}>{tag}</span>
-                ))}
-              </div>
-              <div style={{
-                position: "absolute", bottom: 28, right: 28,
-                display: "flex", alignItems: "center", gap: 6,
-                fontSize: 12, color: NL.accent, fontWeight: 600,
-              }}>
-                Explore <FaArrowRight size={10} />
-              </div>
-            </motion.a>
-
-            <motion.a
-              href="#discord-bot"
-              variants={fadeUp} custom={1} initial="hidden" whileInView="visible" viewport={{ once: true }}
-              className="bento-sm"
-              style={{
-                textDecoration: "none",
-                display: "block",
-                position: "relative",
-                overflow: "hidden",
-                borderRadius: 20,
-                background: `linear-gradient(135deg, ${NL.surface} 0%, #14172a 100%)`,
-                border: `1px solid ${NL.border}`,
-                padding: "36px 36px 32px",
-                transition: "border-color 0.2s, box-shadow 0.2s",
-                cursor: "pointer",
-              }}
-              whileHover={{ scale: 1.01 }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = "rgba(114,137,218,0.3)";
-                e.currentTarget.style.boxShadow = "0 0 40px rgba(114,137,218,0.08)";
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = NL.border;
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <div style={{
-                position: "absolute", top: -40, right: -40,
-                width: 180, height: 180,
-                background: "radial-gradient(circle, rgba(114,137,218,0.08) 0%, transparent 70%)",
-                pointerEvents: "none",
-              }} />
-              <div style={{
-                display: "inline-flex", alignItems: "center", justifyContent: "center",
-                width: 52, height: 52, borderRadius: 14,
-                background: "rgba(114,137,218,0.10)", border: "1px solid rgba(114,137,218,0.25)",
-                color: "#7289da", marginBottom: 20,
-              }}>
-                <FaDiscord size={22} />
-              </div>
-              <h3 style={{ fontSize: 22, fontWeight: 700, color: NL.text, margin: "0 0 10px", letterSpacing: "-0.02em" }}>
-                Discord Bot
-              </h3>
-              <p style={{ fontSize: 14, color: NL.secondary, lineHeight: 1.7, margin: "0 0 28px" }}>
-                Auto-updating Minecraft server status embeds in any Discord channel.
-                Java & Bedrock, direct TCP/UDP pings. No third-party API.
-              </p>
-              <div style={{
-                display: "flex", alignItems: "center", gap: 6,
-                fontSize: 12, color: "#7289da", fontWeight: 600,
-              }}>
-                Learn more <FaArrowRight size={10} />
-              </div>
-            </motion.a>
-
-            <motion.a
-              href="#relay"
-              variants={fadeUp} custom={2} initial="hidden" whileInView="visible" viewport={{ once: true }}
-              className="bento-sm"
-              style={{
-                textDecoration: "none",
-                display: "block",
-                position: "relative",
-                overflow: "hidden",
-                borderRadius: 20,
-                background: `linear-gradient(135deg, ${NL.surface} 0%, #0f1a16 100%)`,
-                border: `1px solid ${NL.border}`,
-                padding: "36px 36px 32px",
-                transition: "border-color 0.2s, box-shadow 0.2s",
-                cursor: "pointer",
-              }}
-              whileHover={{ scale: 1.01 }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = "rgba(52,211,153,0.25)";
-                e.currentTarget.style.boxShadow = "0 0 40px rgba(52,211,153,0.07)";
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = NL.border;
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <div style={{
-                position: "absolute", top: -40, right: -40,
-                width: 180, height: 180,
-                background: "radial-gradient(circle, rgba(52,211,153,0.07) 0%, transparent 70%)",
-                pointerEvents: "none",
-              }} />
-              <div style={{
-                display: "inline-flex", alignItems: "center", justifyContent: "center",
-                width: 52, height: 52, borderRadius: 14,
-                background: "rgba(52,211,153,0.10)", border: "1px solid rgba(52,211,153,0.22)",
-                color: "#34d399", marginBottom: 20,
-              }}>
-                <FaRobot size={22} />
-              </div>
-              <h3 style={{ fontSize: 22, fontWeight: 700, color: NL.text, margin: "0 0 10px", letterSpacing: "-0.02em" }}>
-                Xbox Relay Network
-              </h3>
-              <p style={{ fontSize: 14, color: NL.secondary, lineHeight: 1.7, margin: "0 0 28px" }}>
-                Always-online Xbox bots in EU and US regions for stable Bedrock server connections from any console.
-              </p>
-              <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-                {["EU Region", "US Region", "24/7 Online"].map(tag => (
-                  <span key={tag} style={{
-                    fontSize: 11, padding: "4px 10px", borderRadius: 6,
-                    background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.18)",
-                    color: "#34d399", fontFamily: "'JetBrains Mono', monospace",
-                  }}>{tag}</span>
-                ))}
-              </div>
-              <div style={{
-                display: "flex", alignItems: "center", gap: 6,
-                fontSize: 12, color: "#34d399", fontWeight: 600,
-              }}>
-                View live status <FaArrowRight size={10} />
-              </div>
-            </motion.a>
-
-            <motion.a
-              href="/api-docs"
-              variants={fadeUp} custom={3} initial="hidden" whileInView="visible" viewport={{ once: true }}
-              className="bento-lg"
-              style={{
-                textDecoration: "none",
-                display: "block",
-                position: "relative",
-                overflow: "hidden",
-                borderRadius: 20,
-                background: `linear-gradient(135deg, ${NL.surface} 0%, #16131f 100%)`,
-                border: `1px solid ${NL.border}`,
-                padding: "36px 36px 32px",
-                transition: "border-color 0.2s, box-shadow 0.2s",
-                cursor: "pointer",
-              }}
-              whileHover={{ scale: 1.01 }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = "rgba(167,139,250,0.25)";
-                e.currentTarget.style.boxShadow = "0 0 40px rgba(167,139,250,0.07)";
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = NL.border;
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <div style={{
-                position: "absolute", top: -50, right: -50,
-                width: 200, height: 200,
-                background: "radial-gradient(circle, rgba(167,139,250,0.07) 0%, transparent 70%)",
-                pointerEvents: "none",
-              }} />
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    display: "inline-flex", alignItems: "center", justifyContent: "center",
-                    width: 52, height: 52, borderRadius: 14,
-                    background: "rgba(167,139,250,0.10)", border: "1px solid rgba(167,139,250,0.22)",
-                    color: "#a78bfa", marginBottom: 20,
-                  }}>
-                    <FaCode size={22} />
-                  </div>
-                  <h3 style={{ fontSize: 22, fontWeight: 700, color: NL.text, margin: "0 0 10px", letterSpacing: "-0.02em" }}>
-                    Public API
-                  </h3>
-                  <p style={{ fontSize: 14, color: NL.secondary, lineHeight: 1.7, margin: "0 0 20px", maxWidth: 380 }}>
-                    Integrate MCCompanion data into your own projects. Server metrics, player lookup, relay status, and more.
-                  </p>
-                </div>
-                <div style={{
-                  flexShrink: 0, background: NL.elevated,
-                  border: `1px solid ${NL.border}`, borderRadius: 12,
-                  padding: "16px 18px",
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 12, color: NL.secondary,
-                  lineHeight: 1.8, whiteSpace: "pre",
-                  display: "none",
-                }}>
-                  {`GET /api/server/:ip\nGET /api/player/:name\nGET /api/relay/status`}
-                </div>
-              </div>
-              <div style={{
-                display: "flex", alignItems: "center", gap: 6,
-                fontSize: 12, color: "#a78bfa", fontWeight: 600,
-              }}>
-                Read the docs <FaArrowRight size={10} />
-              </div>
-            </motion.a>
-
-          </div>
-        </section>
-
-        <section id="app" style={{ padding: "0 20px 96px", maxWidth: 1200, margin: "0 auto" }}>
-          <SectionHeading
-            eyebrow="The app"
-            title="Everything you need,"
-            accent="on every device"
-            subtitle="Connect, manage, and explore Minecraft from your phone, tablet, or desktop."
-          />
-          <AppShowcase />
-
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: 10,
-            marginTop: 40,
-          }}>
-            {[
-              {
-                icon: <FaGamepad size={18} />,
-                color: "#67e404",
-                colorDim: "rgba(103,228,4,0.08)",
-                colorBorder: "rgba(103,228,4,0.20)",
-                title: "Console Relay",
-                desc: "Connect PlayStation, Xbox, and Switch to any Java or Bedrock server via our relay network.",
-              },
-              {
-                icon: <FaServer size={18} />,
-                color: "#60a5fa",
-                colorDim: "rgba(96,165,250,0.08)",
-                colorBorder: "rgba(96,165,250,0.20)",
-                title: "Server Browser",
-                desc: "Save, organize and connect to any Bedrock or Java server. Switch between them instantly.",
-              },
-              {
-                icon: <FaSearch size={18} />,
-                color: "#f472b6",
-                colorDim: "rgba(244,114,182,0.08)",
-                colorBorder: "rgba(244,114,182,0.20)",
-                title: "Player Lookup",
-                desc: "Look up any player by Xbox gamertag, Java username, or XUID. See their skin, UUID, and linked accounts.",
-                href: "/lookup",
-              },
-              {
-                icon: <FaUser size={18} />,
-                color: "#a78bfa",
-                colorDim: "rgba(167,139,250,0.08)",
-                colorBorder: "rgba(167,139,250,0.20)",
-                title: "Skin Editor",
-                desc: "Browse thousands of community skins, customize your own, and apply them to your Minecraft account.",
-              },
-            ].map((f, i) => {
-              const card = (
-                <motion.div
-                  key={f.title}
-                  variants={fadeUp} custom={i}
-                  style={{
-                    padding: "26px 24px",
-                    borderRadius: 16,
-                    background: NL.surface,
-                    border: `1px solid ${NL.border}`,
-                    transition: "border-color 0.2s, background 0.2s, box-shadow 0.2s",
-                    height: "100%", boxSizing: "border-box",
-                    cursor: f.href ? "pointer" : "default",
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = f.colorBorder;
-                    e.currentTarget.style.background = NL.elevated;
-                    e.currentTarget.style.boxShadow = `0 0 24px ${f.colorDim}`;
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = NL.border;
-                    e.currentTarget.style.background = NL.surface;
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
-                >
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                    background: f.colorDim, border: `1px solid ${f.colorBorder}`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: f.color, marginBottom: 16,
-                  }}>
-                    {f.icon}
-                  </div>
-                  <p style={{ fontSize: 15, fontWeight: 600, color: NL.text, margin: "0 0 8px" }}>
-                    {f.title}
-                    {f.href && <span style={{ fontSize: 12, color: f.color, marginLeft: 6 }}>→</span>}
-                  </p>
-                  <p style={{ fontSize: 13, color: NL.secondary, margin: 0, lineHeight: 1.7 }}>{f.desc}</p>
-                </motion.div>
-              );
-              return f.href
-                ? <a key={f.title} href={f.href} style={{ textDecoration: "none" }}>{card}</a>
-                : <div key={f.title}>{card}</div>;
-            })}
-          </div>
-        </section>
-
-        <section style={{
-          position: "relative",
-          background: `linear-gradient(180deg, transparent 0%, rgba(88,101,242,0.04) 50%, transparent 100%)`,
-          borderTop: `1px solid ${NL.border}`,
-          borderBottom: `1px solid ${NL.border}`,
-          padding: "96px 20px",
-        }}>
-          <div id="discord-bot" style={{ maxWidth: 1100, margin: "0 auto" }}>
-            <SectionHeading
-              eyebrow="Discord bot"
-              title="Server status,"
-              accent="always live"
-              subtitle="Auto-updating embeds in any channel. Java & Bedrock. No setup required."
-            />
-            <DiscordBotSection />
-          </div>
-        </section>
-
-        <section style={{ padding: "96px 20px" }}>
-          <div id="relay" style={{ maxWidth: 1100, margin: "0 auto" }}>
-            <SectionHeading
-              eyebrow="Xbox relay network"
-              title="Always online,"
-              accent="globally distributed"
-              subtitle="Dedicated Xbox bots in EU and US regions keep your Bedrock server accessible from any console, 24/7."
-            />
-            <BotStatus />
-          </div>
-        </section>
-
-        <section style={{
-          background: NL.surface,
-          borderTop: `1px solid ${NL.border}`,
-          borderBottom: `1px solid ${NL.border}`,
-          padding: "96px 20px",
-        }}>
-          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-            <SectionHeading
-              eyebrow="Community"
-              title="Featured"
-              accent="servers"
-              subtitle="Discover and join the best Minecraft servers, hand-picked by the community."
-            />
-            <FeaturedServersCarousel />
-          </div>
-        </section>
-
-        <section style={{ padding: "96px 20px 120px" }}>
-          <div style={{
-            maxWidth: 1100, margin: "0 auto",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
-            gap: 40,
-            alignItems: "start",
-          }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
-                <span style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 10, letterSpacing: "0.12em",
-                  textTransform: "uppercase", color: NL.muted,
-                }}>Recent changes</span>
-                <div style={{ flex: 1, height: 1, background: NL.border }} />
-              </div>
-              <ChangelogSection />
-            </div>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
-                <span style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 10, letterSpacing: "0.12em",
-                  textTransform: "uppercase", color: NL.muted,
-                }}>Community</span>
-                <div style={{ flex: 1, height: 1, background: NL.border }} />
-              </div>
-              <CommunitySection />
-            </div>
-          </div>
-        </section>
-
+      <div style={{ background: C.bg, fontFamily: "'Inter',system-ui,sans-serif", overflowX: "hidden" }}>
+        <Hero stats={stats} />
+        <RelayModes />
+        <AppSection />
+        <LiveSection />
+        <ServersSection />
+        <BottomCTAs />
       </div>
     </Layout>
   );

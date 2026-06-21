@@ -952,12 +952,169 @@ function ModerationPanel({ bans, bansLoading, banError, loadBans, handleBan, han
   );
 }
 
+function FeedbackItem({ c, onDelete }) {
+  const [expanded, setExpanded] = useState(false);
+  const [ghIssue, setGhIssue] = useState(null);
+  const [ghLoading, setGhLoading] = useState(false);
+  const [reply, setReply] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [replyError, setReplyError] = useState(null);
+
+  async function loadIssue() {
+    if (ghIssue || ghLoading) return;
+    setGhLoading(true);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${c.issue_number}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      const ghRes = await fetch(`https://api.github.com/repos/MCCORG/MCCompanion/issues/${c.issue_number}`, {
+        headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
+      });
+      if (ghRes.ok) setGhIssue(await ghRes.json());
+    } catch (_) {}
+    finally { setGhLoading(false); }
+  }
+
+  function toggle() {
+    setExpanded(v => !v);
+    if (!expanded) loadIssue();
+  }
+
+  async function sendReply() {
+    if (!reply.trim() || sending) return;
+    setSending(true); setReplyError(null);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${c.issue_number}/reply`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ message: reply.trim(), issueTitle: ghIssue?.title }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || `${res.status}`);
+      setSent(true);
+      setReply("");
+      setTimeout(() => setSent(false), 4000);
+    } catch (e) {
+      setReplyError(e.message);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm(`Remove contact for issue #${c.issue_number}?`)) return;
+    setDeleting(true);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${c.issue_number}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      onDelete(c.issue_number);
+    } catch (e) {
+      alert("Failed: " + e.message);
+      setDeleting(false);
+    }
+  }
+
+  const isBug = ghIssue?.labels?.some(l => l.name === "bug");
+  const labelColor = isBug ? NL.danger : NL.accent;
+  const labelDim = isBug ? NL.dangerDim : NL.accentDim;
+  const labelBorder = isBug ? NL.dangerBorder : NL.accentBorder;
+  const stateColor = ghIssue?.state === "closed" ? NL.muted : NL.success;
+
+  return (
+    <div style={{ border: `1px solid ${expanded ? NL.borderMid : NL.border}`, borderRadius: 12, background: NL.elevated, overflow: "hidden", transition: "border-color 0.15s" }}>
+      <div
+        onClick={toggle}
+        style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}
+      >
+        <span style={{ fontFamily: mono, fontSize: 11, color: NL.muted, flexShrink: 0 }}>#{c.issue_number}</span>
+        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: NL.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {ghIssue?.title || `Issue #${c.issue_number}`}
+        </span>
+        {ghIssue && (
+          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: labelDim, color: labelColor, border: `1px solid ${labelBorder}`, fontFamily: mono, flexShrink: 0 }}>
+            {isBug ? "BUG" : "FEATURE"}
+          </span>
+        )}
+        {ghIssue && (
+          <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: "transparent", color: stateColor, border: `1px solid ${stateColor}22`, fontFamily: mono, flexShrink: 0 }}>
+            {ghIssue.state}
+          </span>
+        )}
+        <span style={{ fontSize: 11, color: NL.muted, flexShrink: 0 }}>
+          {new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+        </span>
+        <span style={{ color: NL.muted, fontSize: 12, flexShrink: 0 }}>{expanded ? "▲" : "▼"}</span>
+      </div>
+
+      {expanded && (
+        <div style={{ borderTop: `1px solid ${NL.border}`, padding: "16px", display: "flex", flexDirection: "column", gap: 14 }}>
+          {ghLoading ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13 }}><Spinner size={13} /> Loading issue…</div>
+          ) : ghIssue ? (
+            <div style={{ background: NL.subtle, borderRadius: 8, padding: "12px 14px", fontSize: 13, color: NL.secondary, lineHeight: 1.6, whiteSpace: "pre-wrap", maxHeight: 160, overflow: "auto", fontFamily: mono, fontSize: 12 }}>
+              {ghIssue.body || "(no description)"}
+            </div>
+          ) : null}
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ fontFamily: mono, fontSize: 12, color: NL.text, background: NL.subtle, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.borderMid}` }}>
+              ✉ {c.email}
+            </span>
+            <a href={`https://github.com/MCCORG/MCCompanion/issues/${c.issue_number}`} target="_blank" rel="noreferrer"
+              style={{ fontSize: 12, color: NL.accent, textDecoration: "none", padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.accentBorder}`, background: NL.accentDim }}>
+              GitHub ↗
+            </a>
+            <div style={{ flex: 1 }} />
+            <button onClick={handleDelete} disabled={deleting}
+              style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.dangerBorder}`, background: NL.dangerDim, color: NL.danger, cursor: "pointer", fontFamily: font, opacity: deleting ? 0.5 : 1 }}>
+              {deleting ? "…" : "Remove contact"}
+            </button>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: NL.secondary, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: mono }}>
+              Reply via email
+            </label>
+            <textarea
+              value={reply}
+              onChange={e => setReply(e.target.value)}
+              placeholder="Write your response to the user…"
+              rows={4}
+              style={{ width: "100%", padding: "10px 12px", background: NL.surface, border: `1px solid ${NL.borderMid}`, borderRadius: 8, color: NL.text, fontSize: 13, fontFamily: font, resize: "vertical", outline: "none", boxSizing: "border-box", lineHeight: 1.6 }}
+            />
+            {replyError && (
+              <p style={{ margin: 0, fontSize: 12, color: NL.danger }}>{replyError}</p>
+            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {sent && <span style={{ fontSize: 12, color: NL.success }}>✓ Email sent!</span>}
+              <div style={{ flex: 1 }} />
+              <button
+                onClick={sendReply}
+                disabled={sending || !reply.trim()}
+                style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, padding: "7px 16px", borderRadius: 8, background: reply.trim() && !sending ? NL.accent : NL.elevated, border: `1px solid ${reply.trim() && !sending ? NL.accent : NL.border}`, color: reply.trim() && !sending ? "#000" : NL.muted, cursor: reply.trim() && !sending ? "pointer" : "not-allowed", fontFamily: font, transition: "all 0.15s" }}>
+                {sending ? <><Spinner size={12} /> Sending…</> : "Send reply ✉"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FeedbackPanel() {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [revealedEmails, setRevealedEmails] = useState({});
-  const [deleting, setDeleting] = useState({});
 
   const loadContacts = useCallback(async () => {
     setLoading(true); setError(null);
@@ -974,36 +1131,14 @@ function FeedbackPanel() {
 
   useEffect(() => { loadContacts(); }, [loadContacts]);
 
-  function toggleEmail(issueNumber) {
-    setRevealedEmails(prev => ({ ...prev, [issueNumber]: !prev[issueNumber] }));
+  function handleDelete(issueNumber) {
+    setContacts(prev => prev.filter(c => c.issue_number !== issueNumber));
   }
-
-  async function deleteContact(issueNumber) {
-    if (!window.confirm(`Remove contact for issue #${issueNumber}? This cannot be undone.`)) return;
-    setDeleting(prev => ({ ...prev, [issueNumber]: true }));
-    try {
-      const token = await fetchIdToken();
-      const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${issueNumber}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error(`${res.status}`);
-      setContacts(prev => prev.filter(c => c.issue_number !== issueNumber));
-    } catch (e) {
-      alert("Failed to delete: " + e.message);
-    } finally {
-      setDeleting(prev => ({ ...prev, [issueNumber]: false }));
-    }
-  }
-
-  const ghUrl = (n) => `https://github.com/MCCORG/MCCompanion/issues/${n}`;
-  const mailtoUrl = (email, issueNumber) =>
-    `mailto:${email}?subject=${encodeURIComponent(`Re: your feedback (issue #${issueNumber})`)}`;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <Card
-        title="Feedback contacts"
+        title="Feedback"
         subtitle={`${contacts.length} issue${contacts.length !== 1 ? "s" : ""} with contact info`}
         action={iconBtn(loadContacts, "Refresh", <IC.Refresh />)}
       >
@@ -1014,42 +1149,9 @@ function FeedbackPanel() {
         ) : contacts.length === 0 ? (
           <p style={{ fontSize: 13, color: NL.muted, textAlign: "center", padding: "32px 0" }}>No feedback with contact info yet.</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {contacts.map(c => (
-              <div key={c.issue_number} style={{ border: `1px solid ${NL.border}`, borderRadius: 10, background: NL.elevated, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <span style={{ fontFamily: mono, fontSize: 11, color: NL.muted, flexShrink: 0 }}>#{c.issue_number}</span>
-                <a href={ghUrl(c.issue_number)} target="_blank" rel="noreferrer"
-                  style={{ fontSize: 12, color: NL.accent, textDecoration: "none", flexShrink: 0 }}>
-                  GitHub ↗
-                </a>
-                <div style={{ flex: 1 }} />
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {revealedEmails[c.issue_number] ? (
-                    <span style={{ fontFamily: mono, fontSize: 12, color: NL.text, background: NL.subtle, padding: "3px 8px", borderRadius: 6, border: `1px solid ${NL.borderMid}` }}>
-                      {c.email}
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: 12, color: NL.muted }}>●●●●●●●●</span>
-                  )}
-                  <button onClick={() => toggleEmail(c.issue_number)}
-                    style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, border: `1px solid ${NL.borderMid}`, background: NL.subtle, color: NL.secondary, cursor: "pointer", fontFamily: font }}>
-                    {revealedEmails[c.issue_number] ? "Hide" : "Reveal"}
-                  </button>
-                  <a href={mailtoUrl(c.email, c.issue_number)}
-                    style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, background: NL.accentDim, color: NL.accent, textDecoration: "none", border: `1px solid ${NL.accentBorder}`, fontFamily: font }}>
-                    Reply ✉
-                  </a>
-                  <button
-                    onClick={() => deleteContact(c.issue_number)}
-                    disabled={deleting[c.issue_number]}
-                    style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6, border: `1px solid ${NL.dangerBorder ?? "#5a2020"}`, background: NL.dangerDim ?? "rgba(220,53,69,0.12)", color: NL.danger, cursor: "pointer", fontFamily: font, opacity: deleting[c.issue_number] ? 0.5 : 1 }}>
-                    {deleting[c.issue_number] ? "…" : "Delete"}
-                  </button>
-                </div>
-                <span style={{ fontSize: 11, color: NL.muted, flexShrink: 0 }}>
-                  {new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                </span>
-              </div>
+              <FeedbackItem key={c.issue_number} c={c} onDelete={handleDelete} />
             ))}
           </div>
         )}

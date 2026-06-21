@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FaDiscord, FaStar, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaCircle } from "react-icons/fa";
+import { FaDiscord, FaStar, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaCircle, FaLayerGroup, FaFlask } from "react-icons/fa";
 import { useHistory, useLocation } from "@docusaurus/router";
 import sidebars from "../../../sidebars.js";
 import { signOut } from "firebase/auth";
@@ -72,11 +72,14 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [wikiDrop, setWikiDrop] = useState(false);
   const [wikiDropMobile, setWikiDropMobile] = useState(false);
+  const [toolsDrop, setToolsDrop] = useState(false);
+  const [toolsDropMobile, setToolsDropMobile] = useState(false);
   const [moreDrop, setMoreDrop] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const menuRef = useRef();
   const hamburgerRef = useRef();
   const wikiRef = useRef();
+  const toolsRef = useRef();
   const moreRef = useRef();
   const history = useHistory();
   const location = useLocation();
@@ -102,6 +105,12 @@ export default function Navbar() {
     if (wikiDrop) document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [wikiDrop]);
+
+  useEffect(() => {
+    const h = e => { if (toolsRef.current && !toolsRef.current.contains(e.target)) setToolsDrop(false); };
+    if (toolsDrop) document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [toolsDrop]);
 
   useEffect(() => {
     const h = e => { if (moreRef.current && !moreRef.current.contains(e.target)) setMoreDrop(false); };
@@ -212,11 +221,50 @@ export default function Navbar() {
               )}
             </div>
 
+            <div ref={toolsRef} style={{ position: "relative" }}>
+              <button onClick={() => setToolsDrop(x => !x)} style={{
+                ...btnReset,
+                display: "inline-flex", alignItems: "center", gap: 5,
+                padding: "6px 10px", borderRadius: 8,
+                fontSize: 13, fontWeight: 500,
+                color: toolsDrop ? NL.text : NL.secondary,
+                background: toolsDrop ? NL.elevated : "none",
+              }}
+                onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
+                onMouseLeave={e => { if (!toolsDrop) { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; } }}
+              >
+                Tools
+                <FaChevronDown size={9} style={{ transition: "transform 0.2s", transform: toolsDrop ? "rotate(180deg)" : "none" }} />
+              </button>
+              {toolsDrop && (
+                <div style={{
+                  position: "absolute", left: 0, top: "calc(100% + 8px)", minWidth: 180,
+                  background: NL.surface, border: `1px solid ${NL.borderMid}`,
+                  borderRadius: 12, padding: 6,
+                  boxShadow: "0 12px 40px rgba(0,0,0,0.4)", zIndex: 1001,
+                }}>
+                  {[
+                    { label: "Player Lookup", path: "/lookup", icon: <FaSearch size={12} /> },
+                    { label: "RP Merger", path: "/rpeditor", icon: <FaLayerGroup size={12} /> },
+                    { label: "Server Metrics", path: "/metrics", icon: <FaCode size={12} /> },
+                  ].map(item => (
+                    <button key={item.path} onClick={() => { navigate(item.path); setToolsDrop(false); }}
+                      style={{ ...btnReset, display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 10px", borderRadius: 6, fontSize: 13, color: NL.secondary }}
+                      onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "transparent"; }}
+                    >
+                      {item.icon} {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {[
-              { label: "Lookup", path: "/lookup" },
               { label: "Bug Report", path: "/feedback" },
               { label: "API", path: "/api-docs" },
-              { label: "Featured Slot", path: "/slot" },
+              { label: "Partner Program", path: "/slot" },
+              { label: "Beta", path: "/beta", icon: <FaFlask size={11} /> },
               { label: "Status", path: "/status", dot: true },
             ].map(item => (
               <button key={item.path} onClick={() => navigate(item.path)}
@@ -225,6 +273,7 @@ export default function Navbar() {
                 onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; }}
               >
                 {item.dot && <FaCircle size={7} style={{ color: "#67e404" }} />}
+                {item.icon && item.icon}
                 {item.label}
               </button>
             ))}
@@ -318,9 +367,29 @@ export default function Navbar() {
               </div>
             )}
 
-            <button onClick={() => navigate("/lookup")} style={drawerBtn()}
+            <button onClick={() => setToolsDropMobile(x => !x)} style={drawerBtn()}
               onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
-            ><FaSearch size={13} /> Lookup</button>
+            >
+              <FaLayerGroup size={13} /> Tools
+              <FaChevronDown size={10} style={{ marginLeft: "auto", transform: toolsDropMobile ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
+            </button>
+            {toolsDropMobile && (
+              <div style={{ paddingLeft: 12, borderLeft: `2px solid ${NL.border}`, marginLeft: 12, marginBottom: 4 }}>
+                {[
+                  { label: "Player Lookup", path: "/lookup" },
+                  { label: "RP Merger", path: "/rpeditor" },
+                  { label: "Server Metrics", path: "/metrics" },
+                ].map(item => (
+                  <button key={item.path} onClick={() => navigate(item.path)} style={drawerBtn()}
+                    onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
+                  >{item.label}</button>
+                ))}
+              </div>
+            )}
+
+            <button onClick={() => navigate("/beta")} style={drawerBtn()}
+              onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
+            ><FaFlask size={13} /> Beta</button>
 
             <button onClick={() => navigate("/feedback")} style={drawerBtn()}
               onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
@@ -332,7 +401,7 @@ export default function Navbar() {
 
             <button onClick={() => navigate("/slot")} style={drawerBtn()}
               onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
-            ><FaStar size={14} /> Featured Slot</button>
+            ><FaStar size={14} /> Partner Program</button>
 
             <button onClick={() => navigate("/status")} style={drawerBtn()}
               onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
