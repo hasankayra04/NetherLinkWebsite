@@ -48,7 +48,7 @@ function PodiumCard({ row, rank, total }) {
   const pct = isFirst ? 100 : Math.round((Math.log1p(row.count) / Math.log1p(total)) * 100);
 
   return (
-    <div style={{
+    <div className="podium-card" style={{
       flex: 1,
       background: NL.surface,
       border: `1px solid ${isFirst ? m.border : NL.border}`,
@@ -145,6 +145,8 @@ export default function MetricsPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap');
         .metric-row:hover { background: ${NL.elevated} !important; }
+        .podium-grid { display: flex; gap: 10; }
+        @media (max-width: 540px) { .podium-grid { flex-direction: column; } .podium-card { margin-top: 0 !important; } }
       `}</style>
       <div style={{
         minHeight: "100vh", background: NL.bg,
@@ -200,7 +202,7 @@ export default function MetricsPage() {
           ) : (
             <>
               {podium.length > 0 && (
-                <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+                <div className="podium-grid" style={{ marginBottom: 16 }}>
                   {podium.map((row, i) => (
                     <PodiumCard key={row.ip} row={row} rank={i} total={top[0]?.count || 1} />
                   ))}
