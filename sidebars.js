@@ -31,6 +31,7 @@ const sidebars = {
         { type: 'doc', id: 'features/server-tracker', label: 'Server Tracker' },
         { type: 'doc', id: 'features/skins', label: 'Skins' },
         { type: 'doc', id: 'features/friends-chat', label: 'Friends & Chat' },
+        { type: 'doc', id: 'features/resource-packs', label: 'Resource Packs' },
       ],
     },
     {
