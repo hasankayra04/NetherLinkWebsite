@@ -267,19 +267,12 @@ export default function AppShowcase() {
     return (
         <section style={{
             width: "100%", boxSizing: "border-box",
-            background: NL.bg,
+            background: "transparent",
             padding: "64px 24px 72px",
             display: "flex", flexDirection: "column", alignItems: "center",
             fontFamily: "'Inter', system-ui, sans-serif",
             position: "relative", overflow: "hidden",
         }}>
-            <div style={{
-                position: "absolute", inset: 0, pointerEvents: "none",
-                backgroundImage: `radial-gradient(circle, ${NL.border} 1px, transparent 1px)`,
-                backgroundSize: "28px 28px",
-                maskImage: "radial-gradient(ellipse 70% 80% at 50% 50%, black 30%, transparent 100%)",
-                WebkitMaskImage: "radial-gradient(ellipse 70% 80% at 50% 50%, black 30%, transparent 100%)",
-            }} />
 
             <div style={{ textAlign: "center", marginBottom: 56, position: "relative", zIndex: 1 }}>
                 <span style={{
