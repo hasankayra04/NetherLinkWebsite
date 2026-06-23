@@ -93,7 +93,7 @@ export default function UserPage() {
   const shareProfile = useCallback(() => {
     const url = `https://mccompanion.net/u?name=${username}`;
     if (navigator.share) {
-      navigator.share({ title: `${displayName} · MCCompanion`, url });
+      navigator.share({ title: `${displayName} · MCCompanion`, url }).catch(() => {});
     } else {
       navigator.clipboard.writeText(url).then(() => {
         setCopied(true);
@@ -155,7 +155,6 @@ export default function UserPage() {
 
           {!loading && user && (
             <>
-              {/* Profile header */}
               <div style={{
                 background: NL.surface, border: `1px solid ${NL.border}`,
                 borderRadius: 16, padding: 28, marginBottom: 16,
@@ -194,7 +193,6 @@ export default function UserPage() {
                 </div>
               </div>
 
-              {/* Minecraft accounts */}
               {(user.javaAccounts?.length > 0 || user.bedrockAccounts?.length > 0) && (
                 <div style={{
                   background: NL.surface, border: `1px solid ${NL.border}`,
@@ -242,7 +240,6 @@ export default function UserPage() {
                 </div>
               )}
 
-              {/* CTA */}
               <div style={{
                 background: NL.accentDim, border: `1px solid ${NL.accentBorder}`,
                 borderRadius: 16, padding: 24, textAlign: "center",
@@ -281,7 +278,6 @@ export default function UserPage() {
                 </div>
               </div>
 
-              {/* Member since */}
               {user.createdAt && (
                 <div style={{ textAlign: "center", marginTop: 20, color: NL.muted, fontSize: 12 }}>
                   MCCompanion member since {new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })}

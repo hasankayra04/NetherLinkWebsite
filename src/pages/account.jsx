@@ -97,6 +97,7 @@ export default function AccountPage() {
   const [profileError, setProfileError] = useState(null);
   const [profileSuccess, setProfileSuccess] = useState(false);
 
+  const [inviteCopied, setInviteCopied] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
@@ -382,6 +383,50 @@ export default function AccountPage() {
                 </Card>
               )}
             </div>
+
+            {profile && (
+              <div style={{ marginTop: 16 }}>
+                <div style={{
+                  background: NL.surface, border: `1px solid ${NL.accentBorder}`,
+                  borderRadius: 14, padding: "16px 20px",
+                  display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
+                }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                    background: NL.accentDim, display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <span style={{ fontSize: 20 }}>👋</span>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 160 }}>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: NL.text }}>Invite a friend</p>
+                    <p style={{ margin: 0, fontSize: 11, color: NL.muted }}>Share your profile link so friends can find you on MCCompanion</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const url = `https://mccompanion.net/u?name=${profile.username}`;
+                      if (navigator.share) {
+                        navigator.share({ title: "Check out my MCCompanion profile!", url }).catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(url).then(() => {
+                          setInviteCopied(true);
+                          setTimeout(() => setInviteCopied(false), 2000);
+                        });
+                      }
+                    }}
+                    style={{
+                      background: inviteCopied ? NL.accentDim : NL.accent,
+                      color: inviteCopied ? NL.accent : "#000",
+                      border: inviteCopied ? `1px solid ${NL.accentBorder}` : "none",
+                      borderRadius: 8, padding: "8px 18px", fontWeight: 700,
+                      fontSize: 13, cursor: "pointer", fontFamily: font, flexShrink: 0,
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {inviteCopied ? "✓ Copied!" : "Share link"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
