@@ -88,6 +88,8 @@ export default function UserPage() {
   const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const displayName = user?.displayName || user?.username || username;
+
   const shareProfile = useCallback(() => {
     const url = `https://mccompanion.net/u?name=${username}`;
     if (navigator.share) {
@@ -110,7 +112,6 @@ export default function UserPage() {
       .catch(() => { setNotFound(true); setLoading(false); });
   }, [username]);
 
-  const displayName = user?.displayName || user?.username || username;
   const pageTitle = loading ? "Profile · MCCompanion" : notFound ? "User not found · MCCompanion" : `${displayName} · MCCompanion`;
 
   return (
