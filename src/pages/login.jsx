@@ -331,7 +331,7 @@ export default function LoginPage() {
                             <span style={{
                                 fontFamily: "'JetBrains Mono', monospace",
                                 fontWeight: 700, fontSize: 18, color: NL.accent,
-                            }}>NL</span>
+                            }}>MCC</span>
                         </div>
                         <h1 style={{ fontSize: 20, fontWeight: 700, color: NL.text, margin: "0 0 4px", letterSpacing: "-0.02em" }}>
                             MCCompanion

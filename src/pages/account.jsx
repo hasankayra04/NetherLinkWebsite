@@ -97,6 +97,11 @@ export default function AccountPage() {
   const [profileError, setProfileError] = useState(null);
   const [profileSuccess, setProfileSuccess] = useState(false);
 
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const avatarInputRef = React.useRef();
+
   useEffect(() => {
     function check() { setIsMobile(window.innerWidth < 768); }
     check();
@@ -156,6 +161,49 @@ export default function AccountPage() {
     finally { setProfileSaving(false); }
   }
 
+  async function uploadAvatar(file) {
+    if (!file) return;
+    setAvatarError(null);
+    setAvatarUploading(true);
+    const preview = URL.createObjectURL(file);
+    setAvatarPreview(preview);
+    try {
+      const token = await fetchIdToken();
+      const form = new FormData();
+      form.append("avatar", file);
+      const res = await fetch(`${API_BASE}/api/users/me/avatar`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || `${res.status}`);
+      setProfile(p => ({ ...p, avatarUrl: data.avatarUrl }));
+    } catch (e) {
+      setAvatarError("Upload failed: " + e.message);
+      setAvatarPreview(null);
+    } finally {
+      setAvatarUploading(false);
+    }
+  }
+
+  async function removeAvatar() {
+    if (!confirm("Remove your avatar?")) return;
+    setAvatarError(null);
+    setAvatarUploading(true);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/users/me/avatar`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`${res.status}`);
+      setProfile(p => ({ ...p, avatarUrl: null }));
+      setAvatarPreview(null);
+    } catch (e) {
+      setAvatarError("Failed: " + e.message);
+    } finally {
+      setAvatarUploading(false);
+    }
+  }
+
   const inputStyle = {
     padding: "9px 12px", borderRadius: 9, border: `1px solid ${NL.borderMid}`,
     background: NL.subtle, color: NL.text, fontSize: 13, fontFamily: font,
@@ -194,20 +242,48 @@ export default function AccountPage() {
               ) : (
                 <Card title="Profile">
                   <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 16 }}>
-                    {profile.avatarUrl ? (
-                      <img src={profile.avatarUrl} alt="avatar" style={{ width: 56, height: 56, borderRadius: 12, objectFit: "cover", border: `1px solid ${NL.borderMid}`, flexShrink: 0 }} onError={e => e.currentTarget.style.display = "none"} />
-                    ) : (
-                      <div style={{ width: 56, height: 56, borderRadius: 12, background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: NL.accent, flexShrink: 0 }}>
-                        {(profile.username || "?")[0].toUpperCase()}
-                      </div>
-                    )}
+                    {/* Avatar with upload overlay */}
+                    <div style={{ position: "relative", flexShrink: 0 }}>
+                      <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+                        style={{ display: "none" }} onChange={e => uploadAvatar(e.target.files[0])} />
+                      {(avatarPreview || profile.avatarUrl) ? (
+                        <img src={avatarPreview || profile.avatarUrl} alt="avatar"
+                          style={{ width: 64, height: 64, borderRadius: 14, objectFit: "cover", border: `1px solid ${NL.borderMid}`, display: "block" }}
+                          onError={e => e.currentTarget.style.display = "none"} />
+                      ) : (
+                        <div style={{ width: 64, height: 64, borderRadius: 14, background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, color: NL.accent }}>
+                          {(profile.username || "?")[0].toUpperCase()}
+                        </div>
+                      )}
+                      {/* Hover overlay */}
+                      <button onClick={() => avatarInputRef.current?.click()} disabled={avatarUploading}
+                        style={{ position: "absolute", inset: 0, borderRadius: 14, background: "rgba(0,0,0,0.55)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.15s", fontSize: 11, color: "#fff", fontFamily: font, fontWeight: 600 }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                        onMouseLeave={e => e.currentTarget.style.opacity = 0}
+                        title="Upload photo">
+                        {avatarUploading ? <Spinner size={16} /> : "Change"}
+                      </button>
+                    </div>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontSize: 17, fontWeight: 700, color: NL.text, margin: "0 0 2px", fontFamily: mono }}>{profile.username}</p>
                       {profile.displayName && <p style={{ fontSize: 12, color: NL.secondary, margin: "0 0 4px" }}>{profile.displayName}</p>}
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                         {profile.createdAt && <span style={{ fontSize: 11, color: NL.muted }}>Member since {new Date(profile.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span>}
                         {profile.lastSeenAt && <span style={{ fontSize: 11, color: NL.muted }}>· Active {new Date(profile.lastSeenAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>}
                       </div>
+                      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                        <button onClick={() => avatarInputRef.current?.click()} disabled={avatarUploading}
+                          style={{ fontSize: 11, padding: "3px 8px", borderRadius: 6, border: `1px solid ${NL.border}`, background: NL.elevated, color: NL.secondary, cursor: "pointer", fontFamily: font }}>
+                          {avatarUploading ? "Uploading…" : "Upload photo"}
+                        </button>
+                        {(profile.avatarUrl || avatarPreview) && (
+                          <button onClick={removeAvatar} disabled={avatarUploading}
+                            style={{ fontSize: 11, padding: "3px 8px", borderRadius: 6, border: `1px solid ${NL.dangerBorder}`, background: NL.dangerDim, color: NL.danger, cursor: "pointer", fontFamily: font }}>
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      {avatarError && <p style={{ fontSize: 11, color: NL.danger, margin: "4px 0 0" }}>{avatarError}</p>}
                     </div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

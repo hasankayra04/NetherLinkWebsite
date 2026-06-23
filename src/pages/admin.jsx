@@ -147,7 +147,7 @@ function RelayStatsCard() {
     setLoading(true);
     try {
       const token = await fetchIdToken();
-      const res = await fetch(`${API_BASE}/api/admin/connections/stats`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API_BASE}/api/admin/stats/connections`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setStats(await res.json());
     } catch (_) {}
     finally { setLoading(false); }

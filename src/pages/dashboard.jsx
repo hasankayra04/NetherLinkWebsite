@@ -39,7 +39,6 @@ const REGION_BASES = {
 const REGION_PARAMS = { EU: "eu", US: "us" };
 const EVENTS_CAP = 1500;
 const ALL_TABS = [
-  { id: "account", label: "My Account", roles: null },
   { id: "partner-servers", label: "Partner", roles: ["partner"] },
   { id: "overview", label: "Admin", roles: ["admin"] },
   { id: "moderation", label: "Moderation", roles: ["admin"] },
@@ -1162,7 +1161,7 @@ export default function DashboardPage() {
         if (qTab && validTabs.includes(qTab)) setActiveTab(qTab);
         else if ((r || []).includes("admin")) setActiveTab("overview");
         else if ((r || []).includes("partner")) setActiveTab("partner-servers");
-        else setActiveTab("account");
+        else history.replace("/account");
       } catch (_) { history.replace("/login"); return; }
       setChecking(false);
     });
