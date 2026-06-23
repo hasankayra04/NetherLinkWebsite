@@ -397,7 +397,7 @@ function BottomCTAs() {
               </div>
             ))}
           </div>
-          <a href="/slot" style={{
+          <a href="/partner" style={{
             display: "inline-flex", alignItems: "center", gap: 7,
             padding: "10px 20px", borderRadius: 10,
             background: C.accent, color: "#000",

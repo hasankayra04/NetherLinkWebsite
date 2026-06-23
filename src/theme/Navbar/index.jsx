@@ -147,9 +147,11 @@ export default function Navbar() {
 
   const portalLink = role === "admin"
     ? { label: "Dashboard", path: "/dashboard", icon: <FaTachometerAlt size={13} /> }
-    : role === "member"
-      ? { label: "Partner Portal", path: "/partner", icon: <FaHandshake size={13} /> }
-      : null;
+    : role === "partner"
+      ? { label: "Dashboard", path: "/dashboard", icon: <FaHandshake size={13} /> }
+      : role === "user"
+        ? { label: "Dashboard", path: "/dashboard", icon: <FaTachometerAlt size={13} /> }
+        : null;
 
   const drawerBtn = (color = NL.secondary) => ({
     ...btnReset,
@@ -263,7 +265,7 @@ export default function Navbar() {
             {[
               { label: "Bug Report", path: "/feedback" },
               { label: "API", path: "/api-docs" },
-              { label: "Partner Program", path: "/slot" },
+              { label: "Partner Program", path: "/partner" },
               { label: "Beta", path: "/beta", icon: <FaFlask size={11} /> },
               { label: "Status", path: "/status", dot: true },
             ].map(item => (
@@ -399,7 +401,7 @@ export default function Navbar() {
               onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
             ><FaCode size={13} /> API</button>
 
-            <button onClick={() => navigate("/slot")} style={drawerBtn()}
+            <button onClick={() => navigate("/partner")} style={drawerBtn()}
               onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
             ><FaStar size={14} /> Partner Program</button>
 

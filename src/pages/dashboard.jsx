@@ -40,9 +40,8 @@ const REGION_PARAMS = { EU: "eu", US: "us" };
 const EVENTS_CAP = 1500;
 const ALL_TABS = [
   { id: "account", label: "My Account", roles: null },
-  { id: "partner-servers", label: "Partner Servers", roles: ["partner"] },
-  { id: "overview", label: "Overview", roles: ["admin"] },
-  { id: "partners", label: "Partners", roles: ["admin"] },
+  { id: "partner-servers", label: "Partner", roles: ["partner"] },
+  { id: "overview", label: "Admin", roles: ["admin"] },
   { id: "moderation", label: "Moderation", roles: ["admin"] },
   { id: "feedback", label: "Feedback", roles: ["admin"] },
 ];
@@ -220,7 +219,7 @@ function SlotEditor({ uid, current, onUpdate }) {
     setSaving(true);
     try {
       const token = await fetchIdToken();
-      const res = await fetch(`${API_BASE}/api/admin/members/${encodeURIComponent(uid)}/slots`, {
+      const res = await fetch(`${API_BASE}/api/admin/partners/${encodeURIComponent(uid)}/slots`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ slots: n }),
@@ -281,14 +280,6 @@ function PartnersPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [searchQ, setSearchQ] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [searching, setSearching] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [serverSlots, setServerSlots] = useState(1);
-  const [formError, setFormError] = useState(null);
-  const [promoting, setPromoting] = useState(false);
   const [expandedUid, setExpandedUid] = useState(null);
   const [memberServers, setMemberServers] = useState({});
   const [loadingServers, setLoadingServers] = useState({});
@@ -297,65 +288,26 @@ function PartnersPanel() {
     setLoading(true); setError(null);
     try {
       const token = await fetchIdToken();
-      const res = await fetch(`${API_BASE}/api/admin/members`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API_BASE}/api/admin/partners`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error(`${res.status}`);
-      setMembers((await res.json()).members || []);
+      setMembers((await res.json()).partners || []);
     } catch (e) { setError("Failed: " + e.message); }
     finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  function resetForm() {
-    setSearchQ(""); setSearchResults([]); setSelectedUser(null);
-    setServerSlots(1); setFormError(null);
-  }
-
-  const searchTimer = useRef(null);
-  async function handleSearchChange(q) {
-    setSearchQ(q); setSelectedUser(null);
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (q.trim().length < 2) { setSearchResults([]); return; }
-    searchTimer.current = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const token = await fetchIdToken();
-        const res = await fetch(`${API_BASE}/api/admin/users/search?q=${encodeURIComponent(q.trim())}`, { headers: { Authorization: `Bearer ${token}` } });
-        const json = await res.json();
-        setSearchResults(res.ok ? (json.users || []) : []);
-      } catch (_) { setSearchResults([]); }
-      finally { setSearching(false); }
-    }, 300);
-  }
-
-  async function handlePromote(e) {
-    e.preventDefault();
-    if (!selectedUser) return;
-    setFormError(null); setPromoting(true);
-    try {
-      const token = await fetchIdToken();
-      const res = await fetch(`${API_BASE}/api/admin/members/promote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ firebaseUid: selectedUser.firebaseUid, serverSlots: Number(serverSlots) || 1 }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || `${res.status}`);
-      setShowForm(false); resetForm(); await load();
-    } catch (e) { setFormError(e.message); }
-    finally { setPromoting(false); }
-  }
 
   async function handleDelete(uid, email) {
     if (!confirm(`Remove partner ${email}? This also deletes all their servers.`)) return;
     setDeleting(uid);
     try {
       const token = await fetchIdToken();
-      const res = await fetch(`${API_BASE}/api/admin/members/${encodeURIComponent(uid)}`, {
+      const res = await fetch(`${API_BASE}/api/admin/partners/${encodeURIComponent(uid)}`, {
         method: "DELETE", headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`${res.status}`);
-      setMembers(p => p.filter(m => m.firebase_uid !== uid));
+      setMembers(p => p.filter(m => m.firebaseUid !== uid));
     } catch (e) { alert("Failed: " + e.message); }
     finally { setDeleting(null); }
   }
@@ -409,79 +361,8 @@ function PartnersPanel() {
     <Card
       title="Partner accounts"
       subtitle={`${members.length} registered`}
-      action={
-        <div style={{ display: "flex", gap: 8 }}>
-          {iconBtn(load, "Refresh", <IC.Refresh />)}
-          <Btn size="sm" onClick={() => { setShowForm(p => !p); resetForm(); }}>
-            <IC.Plus /> {showForm ? "Cancel" : "Add partner"}
-          </Btn>
-        </div>
-      }
+      action={iconBtn(load, "Refresh", <IC.Refresh />)}
     >
-      {showForm && (
-        <form onSubmit={handlePromote} style={{ marginBottom: 16, padding: 14, background: NL.elevated, border: `1px solid ${NL.accentBorder}`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 12 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: NL.accent, margin: 0 }}>Promote user to partner</p>
-
-          <div>
-            <label style={labelStyle}>Search user by username</label>
-            <input
-              type="text"
-              value={searchQ}
-              onChange={e => handleSearchChange(e.target.value)}
-              placeholder="Start typing a username…"
-              style={inputStyle}
-              autoFocus
-            />
-            {searching && <p style={{ fontSize: 11, color: NL.muted, margin: "4px 0 0" }}>Searching…</p>}
-            {!searching && searchResults.length > 0 && !selectedUser && (
-              <div style={{ marginTop: 6, border: `1px solid ${NL.border}`, borderRadius: 8, overflow: "hidden" }}>
-                {searchResults.map(u => (
-                  <button key={u.firebaseUid} type="button" onClick={() => { setSelectedUser(u); setSearchQ(u.username); setSearchResults([]); }}
-                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: NL.subtle, border: "none", borderBottom: `1px solid ${NL.border}`, cursor: "pointer", textAlign: "left" }}
-                    onMouseEnter={e => e.currentTarget.style.background = NL.elevated}
-                    onMouseLeave={e => e.currentTarget.style.background = NL.subtle}
-                  >
-                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: NL.accent, flexShrink: 0 }}>
-                      {u.username[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: NL.text, margin: 0 }}>{u.username}</p>
-                      {u.displayName && <p style={{ fontSize: 11, color: NL.muted, margin: 0 }}>{u.displayName}</p>}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-            {selectedUser && (
-              <div style={{ marginTop: 6, padding: "8px 10px", background: NL.successDim, border: "1px solid rgba(52,211,153,0.25)", borderRadius: 8, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 12, color: NL.success }}>✓</span>
-                <span style={{ fontSize: 12, color: NL.text }}><strong>{selectedUser.username}</strong></span>
-                <span style={{ fontFamily: mono, fontSize: 10, color: NL.muted }}>{selectedUser.firebaseUid}</span>
-                <button type="button" onClick={() => { setSelectedUser(null); setSearchQ(""); }} style={{ marginLeft: "auto", background: "none", border: "none", color: NL.muted, cursor: "pointer", fontSize: 13 }}>✕</button>
-              </div>
-            )}
-          </div>
-
-          <div style={{ maxWidth: 160 }}>
-            <label style={labelStyle}>Server slots</label>
-            <input type="number" min="1" max="100" value={serverSlots}
-              onChange={e => setServerSlots(Number(e.target.value))}
-              style={{ ...inputStyle, fontFamily: mono }}
-            />
-          </div>
-
-          {formError && (
-            <p style={{ fontSize: 11, color: NL.danger, background: NL.dangerDim, border: `1px solid ${NL.dangerBorder}`, borderRadius: 6, padding: "8px 10px", margin: 0 }}>⚠ {formError}</p>
-          )}
-
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, paddingTop: 4, borderTop: `1px solid ${NL.border}` }}>
-            <Btn type="button" variant="ghost" size="sm" onClick={() => { setShowForm(false); resetForm(); }}>Cancel</Btn>
-            <Btn type="submit" variant="success" size="sm" disabled={promoting || !selectedUser}>
-              {promoting ? <><Spinner size={12} /> Promoting…</> : <><IC.Plus /> Promote to partner</>}
-            </Btn>
-          </div>
-        </form>
-      )}
 
       {loading ? (
         <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13, padding: "24px 0", justifyContent: "center" }}>
@@ -500,18 +381,18 @@ function PartnersPanel() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {members.map(m => {
-            const uid = m.firebase_uid;
+            const uid = m.firebaseUid;
             const isExpanded = expandedUid === uid;
             return (
               <div key={uid} style={{ border: `1px solid ${NL.border}`, borderRadius: 10, background: NL.elevated, overflow: "hidden" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", flexWrap: "wrap" }}>
                   <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: NL.accent }}>
-                    {(m.email || "?")[0].toUpperCase()}
+                    {(m.username || "?")[0].toUpperCase()}
                   </div>
 
                   <div style={{ flex: 1, minWidth: 120 }}>
                     <p style={{ fontSize: 13, fontWeight: 500, color: NL.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {m.email}
+                      {m.displayName || m.username}
                     </p>
                     <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 1 }}>
                       <span style={{ fontFamily: mono, fontSize: 10, color: NL.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 140 }}>
@@ -523,8 +404,8 @@ function PartnersPanel() {
 
                   <SlotEditor
                     uid={uid}
-                    current={m.server_slots ?? 1}
-                    onUpdate={n => setMembers(p => p.map(x => x.firebase_uid === uid ? { ...x, server_slots: n } : x))}
+                    current={m.serverSlots ?? 0}
+                    onUpdate={n => setMembers(p => p.map(x => x.firebaseUid === uid ? { ...x, serverSlots: n } : x))}
                   />
 
                   <button
@@ -535,7 +416,7 @@ function PartnersPanel() {
                   </button>
 
                   <button
-                    onClick={() => handleDelete(uid, m.email)}
+                    onClick={() => handleDelete(uid, m.username)}
                     disabled={deleting === uid}
                     style={{ background: "none", border: "none", cursor: "pointer", color: NL.muted, padding: 5, borderRadius: 6, flexShrink: 0, opacity: deleting === uid ? 0.4 : 1 }}
                     onMouseEnter={e => { e.currentTarget.style.color = NL.danger; e.currentTarget.style.background = NL.dangerDim; }}
@@ -1160,6 +1041,51 @@ function FeedbackPanel() {
   );
 }
 
+function AdminPartnersCard({ isMobile }) {
+  const [partners, setPartners] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/admin/partners`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error();
+      setPartners((await res.json()).partners || []);
+    } catch (_) {}
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  return (
+    <Card title="Partners" subtitle={`${partners.length} active`} action={iconBtn(load, "Refresh", <IC.Refresh />)}>
+      {loading ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13, padding: "16px 0", justifyContent: "center" }}><Spinner /> Loading…</div>
+      ) : partners.length === 0 ? (
+        <p style={{ fontSize: 13, color: NL.muted, textAlign: "center", padding: "16px 0" }}>No partners yet.</p>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(220px, 1fr))", gap: 8 }}>
+          {partners.map(p => (
+            <div key={p.firebaseUid} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, background: NL.elevated, border: `1px solid ${NL.border}` }}>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: NL.accent }}>
+                {(p.username || "?")[0].toUpperCase()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: NL.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.displayName || p.username}</p>
+                <div style={{ display: "flex", gap: 5, marginTop: 3, alignItems: "center" }}>
+                  <Badge color={p.partnerPlan === "premium" ? "warn" : "accent"}>{p.partnerPlan || "standard"}</Badge>
+                  <span style={{ fontSize: 11, color: NL.muted }}>{p.serverSlots ?? 0} server{p.serverSlots !== 1 ? "s" : ""}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export default function DashboardPage() {
   const history = useHistory();
 
@@ -1195,6 +1121,7 @@ export default function DashboardPage() {
   const [showOnly, setShowOnly] = useState("all");
   const [autoStart, setAutoStart] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
+  const [hideTracker, setHideTracker] = useState(true);
 
   const [bans, setBans] = useState([]);
   const [bansLoading, setBansLoading] = useState(false);
@@ -1447,12 +1374,13 @@ export default function DashboardPage() {
   const filtered = useMemo(() => {
     return [...eventsFeed].reverse().filter(ev => {
       if (showOnly !== "all" && ev.type !== showOnly) return false;
+      if (hideTracker && ev.key && (ev.key.startsWith("tracker:") || ev.key.startsWith("bots:") || ev.key.startsWith("fcm_"))) return false;
       if (!filter) return true;
       const s = filter.toLowerCase();
       const v = ev.value || {};
       return [v.publicIp, v.publicIP, v.public, v.remoteServerIp, v.remoteServerIP, v.remote, String(v.remoteServerPort || v.remotePort || v.port || ""), v.playerName, ev.key].some(x => (x || "").toLowerCase().includes(s));
     });
-  }, [eventsFeed, filter, showOnly]);
+  }, [eventsFeed, filter, showOnly, hideTracker]);
 
   function isIpLocallyBanned(ip) { return ip ? bans.some(b => String(b.ip).toLowerCase() === String(ip).toLowerCase()) : false; }
   function fmtTime(t) { return t ? new Date(t).toLocaleString() : ""; }
@@ -1469,11 +1397,11 @@ export default function DashboardPage() {
 
   const rightColumn = (
     <>
-      <Card title="Live players" subtitle={`${Object.keys(currentMap).length} in cache`}>
+      <Card title="Live players" subtitle={`${Object.entries(currentMap).filter(([, v]) => v?.playerName).length} in cache`}>
         <div style={{ display: "flex", flexDirection: "column", gap: 5, maxHeight: 260, overflowY: "auto" }}>
-          {Object.keys(currentMap).length === 0 ? (
+          {Object.entries(currentMap).filter(([, v]) => v?.playerName).length === 0 ? (
             <p style={{ fontSize: 13, color: NL.muted, textAlign: "center", padding: "16px 0" }}>No players in cache</p>
-          ) : Object.entries(currentMap).map(([key, val]) => {
+          ) : Object.entries(currentMap).filter(([, v]) => v?.playerName).map(([key, val]) => {
             const player = val?.playerName || "—";
             const remote = val?.remoteServerIp || val?.remote || "—";
             const port = val?.remoteServerPort || val?.remotePort || val?.port || "";
@@ -1494,25 +1422,6 @@ export default function DashboardPage() {
         </div>
       </Card>
 
-      <Card title="Active bans" subtitle={`${bans.length} total`}>
-        {bansLoading ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13, padding: "16px 0", justifyContent: "center" }}><Spinner /> Loading…</div>
-        ) : bans.length === 0 ? (
-          <p style={{ fontSize: 13, color: NL.muted, textAlign: "center", padding: "16px 0" }}>No active bans</p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 5, maxHeight: 210, overflowY: "auto" }}>
-            {bans.map(b => (
-              <div key={b.ip} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, background: NL.dangerDim, border: `1px solid ${NL.dangerBorder}` }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontFamily: mono, fontSize: 12, fontWeight: 600, color: NL.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.ip}</p>
-                  <p style={{ fontSize: 10, color: NL.muted, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.reason || "No reason"}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-
       <Card title="Quick actions">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {[{ label: "Metrics", action: () => window.open("/metrics", "_blank") }, { label: "Panel", action: () => window.open("https://panel.mccompanion.net", "_blank") }].map(a => (
@@ -1521,6 +1430,23 @@ export default function DashboardPage() {
               onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.borderColor = NL.border; }}
             >{a.label} ↗</button>
           ))}
+          <button
+            onClick={async () => {
+              try {
+                const token = await fetchIdToken();
+                const res = await fetch(`${API_BASE}/api/admin/servers/export`, { headers: { Authorization: `Bearer ${token}` } });
+                const data = await res.json();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = "servers.json"; a.click();
+                URL.revokeObjectURL(url);
+              } catch (e) { alert("Failed: " + e.message); }
+            }}
+            style={{ gridColumn: "1 / -1", padding: "10px", borderRadius: 8, background: NL.elevated, border: `1px solid ${NL.border}`, fontSize: 12, fontWeight: 500, color: NL.secondary, cursor: "pointer", fontFamily: font, transition: "color 0.15s, border-color 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.borderColor = NL.borderMid; }}
+            onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.borderColor = NL.border; }}
+          >⬇ Download servers.json</button>
         </div>
       </Card>
     </>
@@ -1545,29 +1471,6 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        <Card title="App Version" subtitle="Flutter app update check">
-          <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-            <input value={editingVersion} onChange={e => { setEditingVersion(e.target.value); setIsVersionDirty(e.target.value !== currentVersion); setVersionError(null); }} placeholder="e.g. 1.0.2" style={{ ...inputStyle, flex: 1, fontFamily: mono }} />
-            <Btn onClick={handleSaveVersion} disabled={!isVersionDirty || savingVersion} size="sm">{savingVersion ? <Spinner size={12} /> : "Publish"}</Btn>
-            {iconBtn(loadCurrentVersion, "Reload", <IC.Refresh />)}
-          </div>
-          {versionError && <p style={{ fontSize: 11, color: NL.danger, margin: "0 0 8px" }}>{versionError}</p>}
-          <div style={{ marginTop: "auto" }}>
-            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-              <div>
-                <p style={{ fontSize: 11, color: NL.muted, margin: "0 0 2px" }}>Current version</p>
-                <p style={{ fontFamily: mono, fontSize: 28, fontWeight: 700, color: NL.text, margin: 0, lineHeight: 1 }}>{currentVersion || "—"}</p>
-              </div>
-              {versionUpdatedAt && (
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ fontSize: 10, color: NL.muted, margin: "0 0 2px" }}>Last published</p>
-                  <p style={{ fontSize: 11, color: NL.secondary, margin: 0, fontFamily: mono }}>{fmtTime(versionUpdatedAt)}</p>
-                </div>
-              )}
-            </div>
-            <p style={{ fontSize: 11, color: NL.muted, margin: "8px 0 0" }}>Format: <code style={{ fontFamily: mono, color: NL.secondary }}>1.0.0</code> or <code style={{ fontFamily: mono, color: NL.secondary }}>1.0.0+1</code></p>
-          </div>
-        </Card>
       </div>
 
       <Card
@@ -1600,7 +1503,7 @@ export default function DashboardPage() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 10, flexWrap: "wrap" }}>
-          {[{ label: "Auto-start", checked: autoStart, set: setAutoStart }, { label: "Auto-scroll", checked: autoScroll, set: setAutoScroll }].map(({ label, checked, set }) => (
+          {[{ label: "Auto-start", checked: autoStart, set: setAutoStart }, { label: "Auto-scroll", checked: autoScroll, set: setAutoScroll }, { label: "Hide system entries", checked: hideTracker, set: setHideTracker }].map(({ label, checked, set }) => (
             <label key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: NL.secondary, cursor: "pointer" }}>
               <input type="checkbox" checked={checked} onChange={e => set(e.target.checked)} style={{ accentColor: NL.accent }} />
               {label}
@@ -1774,8 +1677,6 @@ export default function DashboardPage() {
 
           {activeTab === "partner-servers" && isPartner && <PartnerPanel />}
 
-          {activeTab === "partners" && isAdmin && <PartnersPanel />}
-
           {activeTab === "feedback" && isAdmin && <FeedbackPanel />}
 
           {activeTab === "moderation" && isAdmin && (
@@ -1791,21 +1692,7 @@ export default function DashboardPage() {
           )}
 
           {activeTab === "overview" && isAdmin && (<>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
-              {[
-                { label: "Live players", value: Object.keys(currentMap).length, sub: "In cache" },
-                { label: "Active bans", value: bans.length, sub: "Shared DB" },
-                { label: "Feed events", value: eventsFeed.length, sub: `Cap ${EVENTS_CAP}` },
-              ].map(s => (
-                <div key={s.label} style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 12, padding: "14px 16px" }}>
-                  <p style={{ fontSize: 11, color: NL.muted, margin: "0 0 4px" }}>{s.label}</p>
-                  <p style={{ fontFamily: mono, fontSize: 26, fontWeight: 700, color: NL.text, lineHeight: 1, margin: "0 0 4px" }}>{s.value}</p>
-                  <p style={{ fontSize: 11, color: NL.muted, margin: 0 }}>{s.sub}</p>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 16, padding: "16px 18px", marginBottom: 20 }}>
+            <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 16, padding: "16px 18px", marginBottom: 16 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                 <div>
                   <h3 style={{ fontSize: 13, fontWeight: 600, color: NL.text, margin: 0 }}>Relay connections</h3>
@@ -1813,11 +1700,10 @@ export default function DashboardPage() {
                 </div>
                 {iconBtn(loadConnStats, "Refresh", <IC.Refresh />)}
               </div>
-
               {connStatsLoading ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13, padding: "24px 0", justifyContent: "center" }}><Spinner /> Loading…</div>
               ) : connStats ? (<>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 10, marginBottom: 18 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
                   {[
                     { label: "Today", value: connStats.today },
                     { label: "Last 7 days", value: connStats.thisWeek },
@@ -1825,9 +1711,7 @@ export default function DashboardPage() {
                   ].map(s => (
                     <div key={s.label} style={{ background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 10, padding: "12px 14px" }}>
                       <p style={{ fontSize: 11, color: NL.muted, margin: "0 0 4px" }}>{s.label}</p>
-                      <p style={{ fontFamily: mono, fontSize: 22, fontWeight: 700, color: NL.accent, lineHeight: 1, margin: 0 }}>
-                        {s.value.toLocaleString()}
-                      </p>
+                      <p style={{ fontFamily: mono, fontSize: 22, fontWeight: 700, color: NL.accent, lineHeight: 1, margin: 0 }}>{s.value.toLocaleString()}</p>
                     </div>
                   ))}
                 </div>
@@ -1836,12 +1720,7 @@ export default function DashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke={NL.border} />
                     <XAxis dataKey="day" tick={{ fontSize: 10, fill: NL.muted, fontFamily: mono }} tickFormatter={d => d.slice(5)} interval="preserveStartEnd" />
                     <YAxis tick={{ fontSize: 10, fill: NL.muted, fontFamily: mono }} allowDecimals={false} />
-                    <Tooltip
-                      contentStyle={{ background: NL.elevated, border: `1px solid ${NL.borderMid}`, borderRadius: 8, fontSize: 12, fontFamily: mono }}
-                      labelStyle={{ color: NL.secondary }}
-                      itemStyle={{ color: NL.accent }}
-                      formatter={v => [v.toLocaleString(), "connections"]}
-                    />
+                    <Tooltip contentStyle={{ background: NL.elevated, border: `1px solid ${NL.borderMid}`, borderRadius: 8, fontSize: 12, fontFamily: mono }} labelStyle={{ color: NL.secondary }} itemStyle={{ color: NL.accent }} formatter={v => [v.toLocaleString(), "connections"]} />
                     <Line type="monotone" dataKey="count" stroke={NL.accent} strokeWidth={2} dot={false} activeDot={{ r: 4, fill: NL.accent }} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -1850,14 +1729,18 @@ export default function DashboardPage() {
               )}
             </div>
 
+            <div style={{ marginBottom: 16 }}>
+              <AdminPartnersCard isMobile={isMobile} />
+            </div>
+
             {isMobile ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {mainColumn}
                 {rightColumn}
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 16 }}>
-                <div style={{ gridColumn: isMobile ? "1" : "1 / 3", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+                <div style={{ gridColumn: "1 / 3", display: "flex", flexDirection: "column", gap: 16 }}>
                   {mainColumn}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
