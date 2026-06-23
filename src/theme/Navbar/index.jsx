@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FaDiscord, FaStar, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaCircle, FaLayerGroup, FaFlask } from "react-icons/fa";
+import { FaDiscord, FaStar, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaCircle, FaLayerGroup, FaFlask, FaUser, FaSignOutAlt } from "react-icons/fa";
 import { useHistory, useLocation } from "@docusaurus/router";
 import sidebars from "../../../sidebars.js";
 import { signOut } from "firebase/auth";
@@ -75,12 +75,14 @@ export default function Navbar() {
   const [toolsDrop, setToolsDrop] = useState(false);
   const [toolsDropMobile, setToolsDropMobile] = useState(false);
   const [moreDrop, setMoreDrop] = useState(false);
+  const [userDrop, setUserDrop] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const menuRef = useRef();
   const hamburgerRef = useRef();
   const wikiRef = useRef();
   const toolsRef = useRef();
   const moreRef = useRef();
+  const userRef = useRef();
   const history = useHistory();
   const location = useLocation();
   const { user, role } = useAuth();
@@ -117,6 +119,12 @@ export default function Navbar() {
     if (moreDrop) document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [moreDrop]);
+
+  useEffect(() => {
+    const h = e => { if (userRef.current && !userRef.current.contains(e.target)) setUserDrop(false); };
+    if (userDrop) document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [userDrop]);
 
   useEffect(() => {
     const h = e => {
@@ -280,16 +288,6 @@ export default function Navbar() {
               </button>
             ))}
 
-            {portalLink && (
-              <button onClick={() => navigate(portalLink.path)}
-                style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: NL.secondary }}
-                onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
-                onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; }}
-              >
-                {portalLink.label}
-              </button>
-            )}
-
             <a href="https://discord.gg/xvaNzE35Rs" target="_blank" rel="noopener noreferrer" title="Discord"
               style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 8, color: "#7289da", textDecoration: "none" }}
               onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
@@ -309,10 +307,49 @@ export default function Navbar() {
             <span style={{ width: 1, height: 18, background: NL.border, margin: "0 4px" }} />
 
             {user ? (
-              <button onClick={handleSignOut} style={{ ...btnReset, padding: "6px 10px", borderRadius: 7, fontSize: 12, color: NL.muted }}
-                onMouseEnter={e => e.currentTarget.style.color = NL.secondary}
-                onMouseLeave={e => e.currentTarget.style.color = NL.muted}
-              >Sign out</button>
+              <div ref={userRef} style={{ position: "relative" }}>
+                <button onClick={() => setUserDrop(x => !x)} style={{
+                  ...btnReset,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: 32, height: 32, borderRadius: "50%",
+                  background: userDrop ? "rgba(103,228,4,0.15)" : "rgba(103,228,4,0.08)",
+                  border: `1px solid ${userDrop ? "rgba(103,228,4,0.4)" : "rgba(103,228,4,0.2)"}`,
+                  color: NL.accent, fontSize: 13, fontWeight: 700,
+                  transition: "background 0.15s, border-color 0.15s",
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(103,228,4,0.15)"; e.currentTarget.style.borderColor = "rgba(103,228,4,0.4)"; }}
+                  onMouseLeave={e => { if (!userDrop) { e.currentTarget.style.background = "rgba(103,228,4,0.08)"; e.currentTarget.style.borderColor = "rgba(103,228,4,0.2)"; } }}
+                  title="Account"
+                >
+                  {(user.displayName || user.email || "?")[0].toUpperCase()}
+                </button>
+                {userDrop && (
+                  <div style={{
+                    position: "absolute", right: 0, top: "calc(100% + 8px)", minWidth: 160,
+                    background: NL.surface, border: `1px solid ${NL.borderMid}`,
+                    borderRadius: 10, padding: 6,
+                    boxShadow: "0 12px 40px rgba(0,0,0,0.4)", zIndex: 1001,
+                  }}>
+                    {[
+                      { label: "Profile", path: "/account", icon: <FaUser size={11} /> },
+                      (role === "partner" || role === "admin") && { label: "Partner", path: "/partner-portal", icon: <FaHandshake size={11} /> },
+                      role === "admin" && { label: "Admin", path: "/admin", icon: <FaTachometerAlt size={11} /> },
+                    ].filter(Boolean).map(item => (
+                      <button key={item.path} onClick={() => { navigate(item.path); setUserDrop(false); }}
+                        style={{ ...btnReset, display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 10px", borderRadius: 6, fontSize: 13, color: NL.secondary }}
+                        onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "transparent"; }}
+                      >{item.icon} {item.label}</button>
+                    ))}
+                    <div style={{ height: 1, background: NL.border, margin: "4px 0" }} />
+                    <button onClick={() => { handleSignOut(); setUserDrop(false); }}
+                      style={{ ...btnReset, display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 10px", borderRadius: 6, fontSize: 13, color: NL.muted }}
+                      onMouseEnter={e => { e.currentTarget.style.color = "#f87171"; e.currentTarget.style.background = NL.elevated; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = NL.muted; e.currentTarget.style.background = "transparent"; }}
+                    ><FaSignOutAlt size={11} /> Sign out</button>
+                  </div>
+                )}
+              </div>
             ) : (
               <button onClick={() => navigate("/login")} style={{ ...btnReset, display: "inline-flex", alignItems: "center", padding: "6px 14px", borderRadius: 7, fontSize: 13, fontWeight: 500, color: NL.secondary, background: NL.elevated, border: `1px solid ${NL.border}` }}
                 onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.borderColor = NL.borderMid; }}
@@ -409,12 +446,6 @@ export default function Navbar() {
               onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
             ><FaCircle size={9} style={{ color: "#67e404" }} /> Status</button>
 
-            {portalLink && (
-              <button onClick={() => navigate(portalLink.path)} style={drawerBtn()}
-                onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
-              >{portalLink.icon} {portalLink.label}</button>
-            )}
-
             <a href="https://discord.gg/xvaNzE35Rs" target="_blank" rel="noopener noreferrer"
               onClick={() => setDrawerOpen(false)}
               style={{ ...drawerBtn("#7289da"), textDecoration: "none" }}
@@ -430,7 +461,21 @@ export default function Navbar() {
             <div style={{ height: 1, background: NL.border, margin: "4px 0" }} />
 
             {user ? (
-              <button onClick={handleSignOut} style={{ ...drawerBtn(NL.muted) }}>Sign out</button>
+              <>
+                {[
+                  { label: "Profile", path: "/account", icon: <FaUser size={13} /> },
+                  (role === "partner" || role === "admin") && { label: "Partner", path: "/partner-portal", icon: <FaHandshake size={13} /> },
+                  role === "admin" && { label: "Admin", path: "/admin", icon: <FaTachometerAlt size={13} /> },
+                ].filter(Boolean).map(item => (
+                  <button key={item.path} onClick={() => navigate(item.path)} style={drawerBtn()}
+                    onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
+                  >{item.icon} {item.label}</button>
+                ))}
+                <button onClick={handleSignOut} style={{ ...drawerBtn("#f87171") }}
+                  onMouseEnter={e => { e.currentTarget.style.color = "#fca5a5"; e.currentTarget.style.background = NL.elevated; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "#f87171"; e.currentTarget.style.background = "none"; }}
+                ><FaSignOutAlt size={13} /> Sign out</button>
+              </>
             ) : (
               <button onClick={() => navigate("/login")} style={drawerBtn()}
                 onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}

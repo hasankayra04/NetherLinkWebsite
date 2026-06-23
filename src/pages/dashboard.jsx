@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { useHistory } from "@docusaurus/router";
+import { useHistory, useLocation } from "@docusaurus/router";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../firebaseClient";
 import { fetchIdToken } from "../firebaseAuthHelpers";
@@ -1088,6 +1088,7 @@ function AdminPartnersCard({ isMobile }) {
 
 export default function DashboardPage() {
   const history = useHistory();
+  const location = useLocation();
 
   const [region, setRegion] = useState("EU");
   const apiBase = REGION_BASES[region];
@@ -1156,7 +1157,10 @@ export default function DashboardPage() {
         if (!res.ok) { history.replace("/login"); return; }
         const { roles: r } = await res.json();
         setRoles(r || []);
-        if ((r || []).includes("admin")) setActiveTab("overview");
+        const qTab = new URLSearchParams(location.search).get("tab");
+        const validTabs = (ALL_TABS || []).filter(t => !t.roles || (t.roles || []).some(role => (r || []).includes(role))).map(t => t.id);
+        if (qTab && validTabs.includes(qTab)) setActiveTab(qTab);
+        else if ((r || []).includes("admin")) setActiveTab("overview");
         else if ((r || []).includes("partner")) setActiveTab("partner-servers");
         else setActiveTab("account");
       } catch (_) { history.replace("/login"); return; }
