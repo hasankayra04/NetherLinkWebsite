@@ -321,10 +321,23 @@ export default function PartnerProgramPage() {
   useEffect(() => {
     if (!authReady) return;
     if (successParam) {
-      toast("Welcome to the Partner Program! Your plan is now active.", "success");
       window.history.replaceState({}, "", "/partner");
-      const t = setTimeout(fetchPlan, 3000);
-      return () => clearTimeout(t);
+      let attempts = 0;
+      const poll = async () => {
+        try {
+          const data = await apiFetch("/api/partner/plan");
+          if (data.plan) {
+            setPlan(data.plan);
+            toast("Welcome to the Partner Program! Your plan is now active.", "success");
+          } else if (attempts < 10) {
+            attempts++;
+            setTimeout(poll, 2000);
+          } else {
+            toast("Payment received — your plan may take a moment to activate.", "success");
+          }
+        } catch { }
+      };
+      setTimeout(poll, 2000);
     }
     if (cancelledParam) {
       toast("Checkout cancelled. No charge was made.");
