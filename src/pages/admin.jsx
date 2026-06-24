@@ -908,20 +908,20 @@ function FeaturedPacksPanel() {
     setUploading(true); setError(null);
     try {
       const token = await fetchIdToken();
-      const fd = new FormData();
-      fd.append("pack", file);
       const res = await fetch(`${API_BASE}/api/featured-packs/admin`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/octet-stream",
           "x-pack-name": form.name.trim(),
           "x-pack-description": form.description.trim(),
           "x-pack-thumbnail": form.thumbnailUrl.trim(),
           "x-pack-sort": form.sortOrder,
         },
-        body: fd,
+        body: file,
       });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.error || res.status); }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.status);
       setForm({ name: "", description: "", thumbnailUrl: "", sortOrder: "0" });
       if (fileRef.current) fileRef.current.value = "";
       await load();
