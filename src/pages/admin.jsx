@@ -880,12 +880,25 @@ function FeedbackPanel() {
   );
 }
 
+function formatBytes(bytes) {
+  if (!bytes) return "";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+}
+
 function FeaturedPacksPanel() {
   const [packs, setPacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
-  const [form, setForm] = useState({ name: "", description: "", thumbnailUrl: "", sortOrder: "0" });
+  const [form, setForm] = useState({ name: "", description: "", tags: "", thumbnailUrl: "", sortOrder: "0", category: "", longDescription: "", creatorWebsite: "", creatorDiscord: "" });
+  const [packEditTags, setPackEditTags] = useState({});
+  const [packEditCategory, setPackEditCategory] = useState({});
+  const [editingPack, setEditingPack] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState(null);
+  const CATEGORIES = ["realism","faithful","pvp","cartoon","dark","medieval","nature","themed","other"];
   const fileRef = useRef();
 
   const load = useCallback(async () => {
@@ -917,16 +930,77 @@ function FeaturedPacksPanel() {
           "x-pack-description": form.description.trim(),
           "x-pack-thumbnail": form.thumbnailUrl.trim(),
           "x-pack-sort": form.sortOrder,
+          "x-pack-tags": form.tags.trim(),
+          "x-pack-category": form.category,
+          "x-pack-creator-website": form.creatorWebsite.trim(),
+          "x-pack-creator-discord": form.creatorDiscord.trim(),
         },
         body: file,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || res.status);
-      setForm({ name: "", description: "", thumbnailUrl: "", sortOrder: "0" });
+
+      if (form.longDescription.trim() && data.pack?.id) {
+        const patchRes = await fetch(`${API_BASE}/api/featured-packs/admin/${data.pack.id}`, {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ longDescription: form.longDescription.trim() }),
+        });
+        if (!patchRes.ok) throw new Error("Pack uploaded but failed to save description");
+      }
+
+      setForm({ name: "", description: "", tags: "", thumbnailUrl: "", sortOrder: "0", category: "", longDescription: "", creatorWebsite: "", creatorDiscord: "" });
       if (fileRef.current) fileRef.current.value = "";
       await load();
     } catch (e) { setError(e.message); }
     finally { setUploading(false); }
+  }
+
+  function openEdit(pack) {
+    setEditingPack(pack);
+    setEditForm({
+      name: pack.name || "",
+      slug: pack.slug || "",
+      description: pack.description || "",
+      thumbnailUrl: pack.thumbnailUrl || "",
+      sortOrder: String(pack.sortOrder ?? 0),
+      tags: (pack.tags || []).join(", "),
+      category: pack.category || "",
+      longDescription: pack.longDescription || "",
+      creatorWebsite: pack.creatorWebsite || "",
+      creatorDiscord: pack.creatorDiscord || "",
+    });
+    setEditError(null);
+  }
+
+  async function saveEdit() {
+    if (!editingPack) return;
+    setEditSaving(true); setEditError(null);
+    try {
+      const token = await fetchIdToken();
+      const body = {
+        name: editForm.name.trim() || undefined,
+        slug: editForm.slug.trim() || undefined,
+        description: editForm.description.trim() || null,
+        thumbnailUrl: editForm.thumbnailUrl.trim() || null,
+        sortOrder: parseInt(editForm.sortOrder, 10) || 0,
+        tags: editForm.tags.split(",").map(t => t.trim()).filter(Boolean),
+        category: editForm.category || null,
+        longDescription: editForm.longDescription.trim() || null,
+        creatorWebsite: editForm.creatorWebsite.trim() || null,
+        creatorDiscord: editForm.creatorDiscord.trim() || null,
+      };
+      const res = await fetch(`${API_BASE}/api/featured-packs/admin/${editingPack.id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.status);
+      setPacks(p => p.map(x => x.id === editingPack.id ? { ...x, ...body, tags: body.tags } : x));
+      setEditingPack(null);
+    } catch (e) { setEditError(e.message); }
+    finally { setEditSaving(false); }
   }
 
   async function toggleActive(pack) {
@@ -950,6 +1024,34 @@ function FeaturedPacksPanel() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPacks(p => p.filter(x => x.id !== pack.id));
+    } catch (e) { setError(e.message); }
+  }
+
+  async function savePackTags(pack) {
+    const tagArray = (packEditTags[pack.id]?.value ?? "").split(",").map(t => t.trim()).filter(Boolean);
+    try {
+      const token = await fetchIdToken();
+      await fetch(`${API_BASE}/api/featured-packs/admin/${pack.id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ tags: tagArray }),
+      });
+      setPacks(p => p.map(x => x.id === pack.id ? { ...x, tags: tagArray } : x));
+      setPackEditTags(m => { const n = { ...m }; delete n[pack.id]; return n; });
+    } catch (e) { setError(e.message); }
+  }
+
+  async function savePackCategory(pack) {
+    const category = packEditCategory[pack.id]?.value || null;
+    try {
+      const token = await fetchIdToken();
+      await fetch(`${API_BASE}/api/featured-packs/admin/${pack.id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ category }),
+      });
+      setPacks(p => p.map(x => x.id === pack.id ? { ...x, category } : x));
+      setPackEditCategory(m => { const n = { ...m }; delete n[pack.id]; return n; });
     } catch (e) { setError(e.message); }
   }
 
@@ -977,8 +1079,34 @@ function FeaturedPacksPanel() {
             <input placeholder="A short description…" {...inp("description")} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1 / -1" }}>
+            <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>TAGS (comma-separated)</label>
+            <input placeholder="pvp, medieval, 32x…" {...inp("tags")} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1 / -1" }}>
+            <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>CATEGORY</label>
+            <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+              style={{ width: "100%", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 8, padding: "8px 12px", color: form.category ? NL.text : NL.muted, fontSize: 13, fontFamily: font, outline: "none", boxSizing: "border-box", cursor: "pointer" }}>
+              <option value="">— Select category —</option>
+              {CATEGORIES.map(c => (
+                <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1 / -1" }}>
             <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>THUMBNAIL URL</label>
             <input placeholder="https://…/thumb.png" {...inp("thumbnailUrl")} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1 / -1" }}>
+            <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>LONG DESCRIPTION (Markdown + images supported)</label>
+            <textarea value={form.longDescription} onChange={e => setForm(f => ({ ...f, longDescription: e.target.value }))} rows={6} placeholder={"## About this pack\n\nA detailed description with **markdown** support.\n\n![Screenshot](https://...)"} style={{ width: "100%", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 8, padding: "8px 12px", color: NL.text, fontSize: 13, fontFamily: mono, outline: "none", resize: "vertical", boxSizing: "border-box", lineHeight: 1.5 }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>CREATOR WEBSITE</label>
+            <input placeholder="https://creator.com" {...inp("creatorWebsite")} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>DISCORD INVITE</label>
+            <input placeholder="https://discord.gg/..." {...inp("creatorDiscord")} />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1 / -1" }}>
             <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>PACK FILE (.mcpack or .zip) *</label>
@@ -987,7 +1115,7 @@ function FeaturedPacksPanel() {
         </div>
         {error && <p style={{ color: NL.danger, fontSize: 12, margin: "12px 0 0" }}>{error}</p>}
         <button onClick={upload} disabled={uploading} style={{ marginTop: 16, padding: "9px 20px", background: uploading ? NL.elevated : NL.accent, color: uploading ? NL.muted : "#000", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: uploading ? "not-allowed" : "pointer", fontFamily: font }}>
-          {uploading ? "Uploading…" : "Upload Pack"}
+          {uploading ? "Uploading… (this may take a moment)" : "Upload Pack"}
         </button>
       </section>
 
@@ -1000,25 +1128,135 @@ function FeaturedPacksPanel() {
         ) : packs.length === 0 ? (
           <div style={{ padding: 32, textAlign: "center", color: NL.muted, fontSize: 13 }}>No packs yet</div>
         ) : packs.map(pack => (
-          <div key={pack.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 24px", borderBottom: `1px solid ${NL.border}` }}>
+          <div key={pack.id} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 24px", borderBottom: `1px solid ${NL.border}` }}>
             {pack.thumbnailUrl
               ? <img src={pack.thumbnailUrl} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
               : <div style={{ width: 44, height: 44, borderRadius: 8, background: NL.elevated, flexShrink: 0 }} />
             }
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ margin: 0, fontWeight: 600, color: NL.text, fontSize: 13 }}>{pack.name}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <p style={{ margin: 0, fontWeight: 600, color: NL.text, fontSize: 13 }}>{pack.name}</p>
+                {pack.category && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: NL.warnDim, color: NL.warn, border: `1px solid rgba(251,191,36,0.22)`, fontFamily: mono }}>{pack.category}</span>}
+              </div>
+              {pack.slug && (
+                <span style={{ fontFamily: mono, fontSize: 10, color: NL.muted }}>/packs?slug={pack.slug}</span>
+              )}
               {pack.description && <p style={{ margin: "2px 0 0", color: NL.muted, fontSize: 12 }}>{pack.description}</p>}
               <p style={{ margin: "2px 0 0", color: NL.muted, fontSize: 11, fontFamily: mono }}>{pack.r2Key}</p>
+              <p style={{ margin: "2px 0 0", color: NL.muted, fontSize: 11, fontFamily: mono }}>{pack.sha256 ? pack.sha256.slice(0, 12) + "…" : ""}</p>
+              {pack.fileSize > 0 && <p style={{ margin: "2px 0 0", color: NL.muted, fontSize: 11 }}>{formatBytes(pack.fileSize)}</p>}
+              {pack.tags?.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                  {pack.tags.map(t => (
+                    <span key={t} style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: NL.accentDim, color: NL.accent, border: `1px solid ${NL.accentBorder}`, fontFamily: mono }}>{t}</span>
+                  ))}
+                </div>
+              )}
+              {packEditTags[pack.id] ? (
+                <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
+                  <input
+                    value={packEditTags[pack.id].value}
+                    onChange={e => setPackEditTags(m => ({ ...m, [pack.id]: { value: e.target.value } }))}
+                    placeholder="tag1, tag2…"
+                    style={{ fontSize: 11, padding: "4px 8px", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 6, color: NL.text, fontFamily: mono, outline: "none" }}
+                  />
+                  <button onClick={() => savePackTags(pack)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, cursor: "pointer", fontFamily: font, background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, color: NL.accent }}>Save</button>
+                  <button onClick={() => setPackEditTags(m => { const n = { ...m }; delete n[pack.id]; return n; })} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, cursor: "pointer", fontFamily: font, background: NL.elevated, border: `1px solid ${NL.border}`, color: NL.muted }}>Cancel</button>
+                </div>
+              ) : (
+                <button onClick={() => setPackEditTags(m => ({ ...m, [pack.id]: { value: (pack.tags || []).join(", ") } }))} style={{ marginTop: 4, fontSize: 10, padding: "2px 8px", borderRadius: 4, cursor: "pointer", fontFamily: font, background: "transparent", border: `1px solid ${NL.border}`, color: NL.muted }}>Edit tags</button>
+              )}
+              {packEditCategory[pack.id] ? (
+                <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
+                  <select value={packEditCategory[pack.id].value} onChange={e => setPackEditCategory(m => ({ ...m, [pack.id]: { value: e.target.value } }))}
+                    style={{ fontSize: 11, padding: "4px 8px", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 6, color: NL.text, fontFamily: mono, outline: "none", cursor: "pointer" }}>
+                    <option value="">— None —</option>
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+                  </select>
+                  <button onClick={() => savePackCategory(pack)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, cursor: "pointer", fontFamily: font, background: NL.warnDim, border: `1px solid rgba(251,191,36,0.22)`, color: NL.warn }}>Save</button>
+                  <button onClick={() => setPackEditCategory(m => { const n = { ...m }; delete n[pack.id]; return n; })} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, cursor: "pointer", fontFamily: font, background: NL.elevated, border: `1px solid ${NL.border}`, color: NL.muted }}>Cancel</button>
+                </div>
+              ) : (
+                <button onClick={() => setPackEditCategory(m => ({ ...m, [pack.id]: { value: pack.category || "" } }))} style={{ marginTop: 4, fontSize: 10, padding: "2px 8px", borderRadius: 4, cursor: "pointer", fontFamily: font, background: "transparent", border: `1px solid ${NL.border}`, color: NL.muted }}>Edit category</button>
+              )}
             </div>
-            <button onClick={() => toggleActive(pack)} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, cursor: "pointer", fontFamily: font, background: pack.isActive ? NL.accentDim : NL.elevated, border: `1px solid ${pack.isActive ? NL.accentBorder : NL.border}`, color: pack.isActive ? NL.accent : NL.muted }}>
-              {pack.isActive ? "Active" : "Inactive"}
-            </button>
-            <button onClick={() => deletePack(pack)} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, cursor: "pointer", fontFamily: font, background: NL.dangerDim, border: `1px solid ${NL.dangerBorder}`, color: NL.danger }}>
-              Delete
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <span style={{ fontSize: 11, color: NL.muted }}>↓ {pack.downloadCount ?? 0}</span>
+                <button onClick={() => openEdit(pack)} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, cursor: "pointer", fontFamily: font, background: NL.elevated, border: `1px solid ${NL.borderMid}`, color: NL.secondary }}
+                  onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.borderColor = NL.border; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.borderColor = NL.borderMid; }}>
+                  Edit
+                </button>
+                <button onClick={() => toggleActive(pack)} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, cursor: "pointer", fontFamily: font, background: pack.isActive ? NL.accentDim : NL.elevated, border: `1px solid ${pack.isActive ? NL.accentBorder : NL.border}`, color: pack.isActive ? NL.accent : NL.muted }}>
+                  {pack.isActive ? "Active" : "Inactive"}
+                </button>
+                <button onClick={() => deletePack(pack)} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, cursor: "pointer", fontFamily: font, background: NL.dangerDim, border: `1px solid ${NL.dangerBorder}`, color: NL.danger }}>
+                  Delete
+                </button>
+              </div>
+            </div>
           </div>
         ))}
       </section>
+      {editingPack && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onClick={e => { if (e.target === e.currentTarget) setEditingPack(null); }}>
+          <div style={{ background: NL.surface, border: `1px solid ${NL.borderMid}`, borderRadius: 16, padding: 24, width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 16, maxHeight: "90vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: NL.text, margin: 0 }}>Edit pack</p>
+              <button onClick={() => setEditingPack(null)} style={{ background: "none", border: "none", cursor: "pointer", color: NL.muted, fontSize: 18, lineHeight: 1 }}>✕</button>
+            </div>
+            {editForm.thumbnailUrl && (
+              <img src={editForm.thumbnailUrl} alt="" style={{ width: 80, height: 80, borderRadius: 10, objectFit: "cover", border: `1px solid ${NL.border}` }} onError={e => e.currentTarget.style.display = "none"} />
+            )}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {[
+                { label: "NAME *", field: "name", full: false },
+                { label: "SORT ORDER", field: "sortOrder", full: false, type: "number" },
+                { label: "SLUG", field: "slug", full: true },
+                { label: "DESCRIPTION", field: "description", full: true },
+                { label: "THUMBNAIL URL", field: "thumbnailUrl", full: true },
+                { label: "TAGS (comma-separated)", field: "tags", full: true },
+              ].map(({ label, field, full, type }) => (
+                <div key={field} style={{ display: "flex", flexDirection: "column", gap: 5, gridColumn: full ? "1 / -1" : undefined }}>
+                  <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>{label}</label>
+                  <input type={type || "text"} value={editForm[field]}
+                    onChange={e => setEditForm(f => ({ ...f, [field]: e.target.value }))}
+                    style={{ width: "100%", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 8, padding: "8px 12px", color: NL.text, fontSize: 13, fontFamily: font, outline: "none", boxSizing: "border-box" }} />
+                </div>
+              ))}
+              <div style={{ display: "flex", flexDirection: "column", gap: 5, gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>CATEGORY</label>
+                <select value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+                  style={{ width: "100%", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 8, padding: "8px 12px", color: editForm.category ? NL.text : NL.muted, fontSize: 13, fontFamily: font, outline: "none", boxSizing: "border-box", cursor: "pointer" }}>
+                  <option value="">— No category —</option>
+                  {["realism","faithful","pvp","cartoon","dark","medieval","nature","themed","other"].map(c => (
+                    <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5, gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>LONG DESCRIPTION (Markdown + images supported)</label>
+                <textarea value={editForm.longDescription} onChange={e => setEditForm(f => ({ ...f, longDescription: e.target.value }))} rows={6} placeholder={"## About this pack\n\nA detailed description with **markdown** support.\n\n![Screenshot](https://...)"} style={{ width: "100%", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 8, padding: "8px 12px", color: NL.text, fontSize: 13, fontFamily: mono, outline: "none", resize: "vertical", boxSizing: "border-box", lineHeight: 1.5 }} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>CREATOR WEBSITE</label>
+                <input placeholder="https://creator.com" value={editForm.creatorWebsite} onChange={e => setEditForm(f => ({ ...f, creatorWebsite: e.target.value }))} style={{ width: "100%", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 8, padding: "8px 12px", color: NL.text, fontSize: 13, fontFamily: font, outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>DISCORD INVITE</label>
+                <input placeholder="https://discord.gg/..." value={editForm.creatorDiscord} onChange={e => setEditForm(f => ({ ...f, creatorDiscord: e.target.value }))} style={{ width: "100%", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 8, padding: "8px 12px", color: NL.text, fontSize: 13, fontFamily: font, outline: "none", boxSizing: "border-box" }} />
+              </div>
+            </div>
+            {editError && <p style={{ color: NL.danger, fontSize: 12, margin: 0 }}>{editError}</p>}
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <Btn variant="secondary" onClick={() => setEditingPack(null)}>Cancel</Btn>
+              <Btn onClick={saveEdit} disabled={editSaving}>{editSaving ? <><Spinner size={12} /> Saving…</> : "Save changes"}</Btn>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

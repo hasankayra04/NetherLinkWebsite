@@ -254,6 +254,7 @@ export default function Navbar() {
                   boxShadow: "0 12px 40px rgba(0,0,0,0.4)", zIndex: 1001,
                 }}>
                   {[
+                    { label: "Resource Packs", path: "/packs", icon: <FaLayerGroup size={12} /> },
                     { label: "Player Lookup", path: "/lookup", icon: <FaSearch size={12} /> },
                     { label: "RP Merger", path: "/rpeditor", icon: <FaLayerGroup size={12} /> },
                     { label: "Server Metrics", path: "/metrics", icon: <FaCode size={12} /> },
@@ -415,6 +416,7 @@ export default function Navbar() {
             {toolsDropMobile && (
               <div style={{ paddingLeft: 12, borderLeft: `2px solid ${NL.border}`, marginLeft: 12, marginBottom: 4 }}>
                 {[
+                  { label: "Resource Packs", path: "/packs" },
                   { label: "Player Lookup", path: "/lookup" },
                   { label: "RP Merger", path: "/rpeditor" },
                   { label: "Server Metrics", path: "/metrics" },
