@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "net.netherdev.netherLink",
+      "sha256_cert_fingerprints": [
+        "13:72:D7:7C:C7:5D:BA:A3:48:1F:08:E3:97:0E:C1:2D:4D:E5:53:43:6C:7D:3A:24:B5:25:5F:2C:65:8C:D1:8B"
+      ]
+    }
+  }
+]

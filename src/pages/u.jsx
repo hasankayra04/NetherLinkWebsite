@@ -256,9 +256,9 @@ export default function UserPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
-                      display: "inline-block", background: NL.accent, color: "#000",
-                      borderRadius: 8, padding: "10px 20px", fontWeight: 700,
-                      textDecoration: "none", fontSize: 14,
+                      display: "inline-block", background: NL.elevated, color: NL.text,
+                      border: `1px solid ${NL.border}`, borderRadius: 8, padding: "10px 20px",
+                      fontWeight: 600, textDecoration: "none", fontSize: 14,
                     }}
                   >
                     Download for iOS
