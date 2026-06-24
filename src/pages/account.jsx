@@ -170,16 +170,30 @@ export default function AccountPage() {
     setAvatarPreview(preview);
     try {
       const token = await fetchIdToken();
-      const form = new FormData();
-      form.append("avatar", file);
-      const res = await fetch(`${API_BASE}/api/users/me/avatar`, {
+
+      const presignRes = await fetch(`${API_BASE}/api/users/me/avatar/presign`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: form,
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ mime: file.type }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || `${res.status}`);
-      setProfile(p => ({ ...p, avatarUrl: data.avatarUrl }));
+      const presignData = await presignRes.json();
+      if (!presignRes.ok) throw new Error(presignData.message || `presign ${presignRes.status}`);
+
+      const putRes = await fetch(presignData.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!putRes.ok) throw new Error(`upload ${putRes.status}`);
+
+      const confirmRes = await fetch(`${API_BASE}/api/users/me/avatar/confirm`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ r2Key: presignData.r2Key }),
+      });
+      const confirmData = await confirmRes.json();
+      if (!confirmRes.ok) throw new Error(confirmData.message || `confirm ${confirmRes.status}`);
+      setProfile(p => ({ ...p, avatarUrl: confirmData.avatarUrl }));
     } catch (e) {
       setAvatarError("Upload failed: " + e.message);
       setAvatarPreview(null);
