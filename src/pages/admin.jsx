@@ -33,11 +33,11 @@ function Spinner({ size = 16 }) {
 function Badge({ children, color = "default" }) {
   const s = {
     default: { color: NL.secondary, background: NL.subtle, border: `1px solid ${NL.border}` },
-    accent:  { color: NL.accent,    background: NL.accentDim, border: `1px solid ${NL.accentBorder}` },
-    success: { color: NL.success,   background: NL.successDim, border: "1px solid rgba(52,211,153,0.22)" },
-    danger:  { color: NL.danger,    background: NL.dangerDim,  border: `1px solid ${NL.dangerBorder}` },
-    warn:    { color: NL.warn,      background: NL.warnDim,    border: "1px solid rgba(251,191,36,0.22)" },
-    blue:    { color: "#60a5fa",    background: "rgba(96,165,250,0.10)", border: "1px solid rgba(96,165,250,0.22)" },
+    accent: { color: NL.accent, background: NL.accentDim, border: `1px solid ${NL.accentBorder}` },
+    success: { color: NL.success, background: NL.successDim, border: "1px solid rgba(52,211,153,0.22)" },
+    danger: { color: NL.danger, background: NL.dangerDim, border: `1px solid ${NL.dangerBorder}` },
+    warn: { color: NL.warn, background: NL.warnDim, border: "1px solid rgba(251,191,36,0.22)" },
+    blue: { color: "#60a5fa", background: "rgba(96,165,250,0.10)", border: "1px solid rgba(96,165,250,0.22)" },
   }[color] || {};
   return <span style={{ display: "inline-flex", alignItems: "center", fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, fontFamily: mono, letterSpacing: "0.04em", ...s }}>{children}</span>;
 }
@@ -46,11 +46,11 @@ function Btn({ children, onClick, variant = "primary", size = "md", disabled, ti
   const base = { display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600, borderRadius: 8, cursor: disabled ? "not-allowed" : "pointer", fontFamily: font, border: "none", transition: "opacity 0.15s", opacity: disabled ? 0.4 : 1 };
   const sizes = { sm: { padding: "6px 10px", fontSize: 12 }, md: { padding: "8px 14px", fontSize: 13 } };
   const variants = {
-    primary:   { background: NL.accent, color: "#0d1a18" },
+    primary: { background: NL.accent, color: "#0d1a18" },
     secondary: { background: NL.elevated, color: NL.secondary, border: `1px solid ${NL.borderMid}` },
-    danger:    { background: NL.dangerDim, color: NL.danger, border: `1px solid ${NL.dangerBorder}` },
-    ghost:     { background: "transparent", color: NL.secondary, border: `1px solid ${NL.border}` },
-    success:   { background: NL.successDim, color: NL.success, border: "1px solid rgba(52,211,153,0.22)" },
+    danger: { background: NL.dangerDim, color: NL.danger, border: `1px solid ${NL.dangerBorder}` },
+    ghost: { background: "transparent", color: NL.secondary, border: `1px solid ${NL.border}` },
+    success: { background: NL.successDim, color: NL.success, border: "1px solid rgba(52,211,153,0.22)" },
   };
   return <button title={title} onClick={onClick} disabled={disabled} style={{ ...base, ...sizes[size], ...variants[variant], ...extra }}>{children}</button>;
 }
@@ -85,11 +85,11 @@ function TabBar({ active, onChange, tabs }) {
 }
 
 const IC = {
-  Copy:    () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 9H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="9" y="3" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  Refresh: () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M1 4v6h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M3.51 15a9 9 0 1 0 .49-4.95" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  Ban:     () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.6"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>,
-  Trash:   () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 6V4h6v2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  Users:   () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.6"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Copy: () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 9H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><rect x="9" y="3" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>,
+  Refresh: () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M1 4v6h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /><path d="M3.51 15a9 9 0 1 0 .49-4.95" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>,
+  Ban: () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.6" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>,
+  Trash: () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /><path d="M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /><path d="M9 6V4h6v2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>,
+  Users: () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /><circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.6" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>,
 };
 
 const iconBtn = (onClick, title, children) => (
@@ -149,7 +149,7 @@ function RelayStatsCard() {
       const token = await fetchIdToken();
       const res = await fetch(`${API_BASE}/api/admin/stats/connections`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setStats(await res.json());
-    } catch (_) {}
+    } catch (_) { }
     finally { setLoading(false); }
   }, []);
 
@@ -194,7 +194,7 @@ function PartnersOverviewCard({ isMobile }) {
       const token = await fetchIdToken();
       const res = await fetch(`${API_BASE}/api/admin/partners`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setPartners((await res.json()).partners || []);
-    } catch (_) {}
+    } catch (_) { }
     finally { setLoading(false); }
   }, []);
 
@@ -237,7 +237,7 @@ function NotificationCard() {
   useEffect(() => {
     fetch(`${API_BASE}/notification`).then(r => r.json()).then(d => {
       setCurrent(d.message || ""); setEditing(d.message || "");
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   async function save() {
@@ -246,7 +246,7 @@ function NotificationCard() {
       const token = await fetchIdToken();
       await fetch(`${API_BASE}/notification`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ message: editing || "" }) });
       setCurrent(editing); setDirty(false);
-    } catch (_) {}
+    } catch (_) { }
     finally { setSaving(false); }
   }
 
@@ -257,7 +257,7 @@ function NotificationCard() {
       const token = await fetchIdToken();
       await fetch(`${API_BASE}/notification`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       setCurrent(""); setEditing(""); setDirty(false);
-    } catch (_) {}
+    } catch (_) { }
     finally { setSaving(false); }
   }
 
@@ -769,7 +769,7 @@ function FeedbackItem({ c, onDelete }) {
       await fetchIdToken();
       const ghRes = await fetch(`https://api.github.com/repos/MCCORG/MCCompanion/issues/${c.issue_number}`, { headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" } });
       if (ghRes.ok) setGhIssue(await ghRes.json());
-    } catch (_) {}
+    } catch (_) { }
     finally { setGhLoading(false); }
   }
 
@@ -816,7 +816,7 @@ function FeedbackItem({ c, onDelete }) {
         <div style={{ borderTop: `1px solid ${NL.border}`, padding: "16px", display: "flex", flexDirection: "column", gap: 14 }}>
           {ghLoading ? <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13 }}><Spinner size={13} /> Loading issue…</div>
             : ghIssue ? <div style={{ background: NL.subtle, borderRadius: 8, padding: "12px 14px", fontSize: 12, color: NL.secondary, lineHeight: 1.6, whiteSpace: "pre-wrap", maxHeight: 160, overflow: "auto", fontFamily: mono }}>{ghIssue.body || "(no description)"}</div>
-            : null}
+              : null}
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <span style={{ fontFamily: mono, fontSize: 12, color: NL.text, background: NL.subtle, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.borderMid}` }}>✉ {c.email}</span>
             <a href={`https://github.com/MCCORG/MCCompanion/issues/${c.issue_number}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: NL.accent, textDecoration: "none", padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.accentBorder}`, background: NL.accentDim }}>GitHub ↗</a>
@@ -880,11 +880,155 @@ function FeedbackPanel() {
   );
 }
 
+function FeaturedPacksPanel() {
+  const [packs, setPacks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState(null);
+  const [form, setForm] = useState({ name: "", description: "", thumbnailUrl: "", sortOrder: "0" });
+  const fileRef = useRef();
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/featured-packs/admin`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      setPacks(data.packs || []);
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function upload() {
+    const file = fileRef.current?.files?.[0];
+    if (!file) return setError("Select a .mcpack or .zip file first");
+    if (!form.name.trim()) return setError("Pack name is required");
+    setUploading(true); setError(null);
+    try {
+      const token = await fetchIdToken();
+      const fd = new FormData();
+      fd.append("pack", file);
+      const res = await fetch(`${API_BASE}/api/featured-packs/admin`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "x-pack-name": form.name.trim(),
+          "x-pack-description": form.description.trim(),
+          "x-pack-thumbnail": form.thumbnailUrl.trim(),
+          "x-pack-sort": form.sortOrder,
+        },
+        body: fd,
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || res.status); }
+      setForm({ name: "", description: "", thumbnailUrl: "", sortOrder: "0" });
+      if (fileRef.current) fileRef.current.value = "";
+      await load();
+    } catch (e) { setError(e.message); }
+    finally { setUploading(false); }
+  }
+
+  async function toggleActive(pack) {
+    try {
+      const token = await fetchIdToken();
+      await fetch(`${API_BASE}/api/featured-packs/admin/${pack.id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !pack.isActive }),
+      });
+      setPacks(p => p.map(x => x.id === pack.id ? { ...x, isActive: !x.isActive } : x));
+    } catch (e) { setError(e.message); }
+  }
+
+  async function deletePack(pack) {
+    if (!confirm(`Delete "${pack.name}"? This removes the file from R2.`)) return;
+    try {
+      const token = await fetchIdToken();
+      await fetch(`${API_BASE}/api/featured-packs/admin/${pack.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setPacks(p => p.filter(x => x.id !== pack.id));
+    } catch (e) { setError(e.message); }
+  }
+
+  const inp = (field) => ({
+    value: form[field],
+    onChange: e => setForm(f => ({ ...f, [field]: e.target.value })),
+    style: { width: "100%", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 8, padding: "8px 12px", color: NL.text, fontSize: 13, fontFamily: font, outline: "none", boxSizing: "border-box" },
+  });
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <section style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, padding: "20px 24px" }}>
+        <p style={{ fontSize: 15, fontWeight: 700, color: NL.text, margin: "0 0 16px" }}>Upload Featured Pack</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>NAME *</label>
+            <input placeholder="Cool Texture Pack" {...inp("name")} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>SORT ORDER</label>
+            <input type="number" placeholder="0" {...inp("sortOrder")} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1 / -1" }}>
+            <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>DESCRIPTION</label>
+            <input placeholder="A short description…" {...inp("description")} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1 / -1" }}>
+            <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>THUMBNAIL URL</label>
+            <input placeholder="https://…/thumb.png" {...inp("thumbnailUrl")} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: "1 / -1" }}>
+            <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>PACK FILE (.mcpack or .zip) *</label>
+            <input ref={fileRef} type="file" accept=".mcpack,.zip" style={{ color: NL.secondary, fontSize: 13 }} />
+          </div>
+        </div>
+        {error && <p style={{ color: NL.danger, fontSize: 12, margin: "12px 0 0" }}>{error}</p>}
+        <button onClick={upload} disabled={uploading} style={{ marginTop: 16, padding: "9px 20px", background: uploading ? NL.elevated : NL.accent, color: uploading ? NL.muted : "#000", border: "none", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: uploading ? "not-allowed" : "pointer", fontFamily: font }}>
+          {uploading ? "Uploading…" : "Upload Pack"}
+        </button>
+      </section>
+
+      <section style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, overflow: "hidden" }}>
+        <div style={{ padding: "16px 24px", borderBottom: `1px solid ${NL.border}` }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: NL.text, margin: 0 }}>Packs ({packs.length})</p>
+        </div>
+        {loading ? (
+          <div style={{ padding: 32, textAlign: "center" }}><Spinner size={20} /></div>
+        ) : packs.length === 0 ? (
+          <div style={{ padding: 32, textAlign: "center", color: NL.muted, fontSize: 13 }}>No packs yet</div>
+        ) : packs.map(pack => (
+          <div key={pack.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 24px", borderBottom: `1px solid ${NL.border}` }}>
+            {pack.thumbnailUrl
+              ? <img src={pack.thumbnailUrl} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
+              : <div style={{ width: 44, height: 44, borderRadius: 8, background: NL.elevated, flexShrink: 0 }} />
+            }
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontWeight: 600, color: NL.text, fontSize: 13 }}>{pack.name}</p>
+              {pack.description && <p style={{ margin: "2px 0 0", color: NL.muted, fontSize: 12 }}>{pack.description}</p>}
+              <p style={{ margin: "2px 0 0", color: NL.muted, fontSize: 11, fontFamily: mono }}>{pack.r2Key}</p>
+            </div>
+            <button onClick={() => toggleActive(pack)} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, cursor: "pointer", fontFamily: font, background: pack.isActive ? NL.accentDim : NL.elevated, border: `1px solid ${pack.isActive ? NL.accentBorder : NL.border}`, color: pack.isActive ? NL.accent : NL.muted }}>
+              {pack.isActive ? "Active" : "Inactive"}
+            </button>
+            <button onClick={() => deletePack(pack)} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, cursor: "pointer", fontFamily: font, background: NL.dangerDim, border: `1px solid ${NL.dangerBorder}`, color: NL.danger }}>
+              Delete
+            </button>
+          </div>
+        ))}
+      </section>
+    </div>
+  );
+}
+
 const TABS = [
-  { id: "overview",   label: "Overview" },
-  { id: "partners",   label: "Partners" },
+  { id: "overview", label: "Overview" },
+  { id: "partners", label: "Partners" },
+  { id: "featured-packs", label: "Featured Packs" },
   { id: "moderation", label: "Moderation" },
-  { id: "feedback",   label: "Feedback" },
+  { id: "feedback", label: "Feedback" },
 ];
 
 export default function AdminPage() {
@@ -946,6 +1090,7 @@ export default function AdminPage() {
             </div>
           )}
           {activeTab === "partners" && <PartnersManagementPanel />}
+          {activeTab === "featured-packs" && <FeaturedPacksPanel />}
           {activeTab === "moderation" && <ModerationPanel isMobile={isMobile} />}
           {activeTab === "feedback" && <FeedbackPanel />}
         </div>
