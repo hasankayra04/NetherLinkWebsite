@@ -891,7 +891,14 @@ function FeaturedPacksPanel() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 768);
   const [form, setForm] = useState({ name: "", description: "", tags: "", thumbnailUrl: "", sortOrder: "0", category: "", longDescription: "", creatorWebsite: "", creatorDiscord: "" });
+
+  useEffect(() => {
+    function check() { setIsMobile(window.innerWidth < 768); }
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
   const [packEditTags, setPackEditTags] = useState({});
   const [packEditCategory, setPackEditCategory] = useState({});
   const [editingPack, setEditingPack] = useState(null);
@@ -1065,7 +1072,7 @@ function FeaturedPacksPanel() {
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <section style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, padding: "20px 24px" }}>
         <p style={{ fontSize: 15, fontWeight: 700, color: NL.text, margin: "0 0 16px" }}>Upload Featured Pack</p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>NAME *</label>
             <input placeholder="Cool Texture Pack" {...inp("name")} />
@@ -1128,12 +1135,12 @@ function FeaturedPacksPanel() {
         ) : packs.length === 0 ? (
           <div style={{ padding: 32, textAlign: "center", color: NL.muted, fontSize: 13 }}>No packs yet</div>
         ) : packs.map(pack => (
-          <div key={pack.id} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 24px", borderBottom: `1px solid ${NL.border}` }}>
+          <div key={pack.id} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: isMobile ? "14px 16px" : "14px 24px", borderBottom: `1px solid ${NL.border}`, flexWrap: isMobile ? "wrap" : "nowrap" }}>
             {pack.thumbnailUrl
               ? <img src={pack.thumbnailUrl} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
               : <div style={{ width: 44, height: 44, borderRadius: 8, background: NL.elevated, flexShrink: 0 }} />
             }
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: isMobile ? "calc(100% - 58px)" : 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 <p style={{ margin: 0, fontWeight: 600, color: NL.text, fontSize: 13 }}>{pack.name}</p>
                 {pack.category && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: NL.warnDim, color: NL.warn, border: `1px solid rgba(251,191,36,0.22)`, fontFamily: mono }}>{pack.category}</span>}
@@ -1179,8 +1186,8 @@ function FeaturedPacksPanel() {
                 <button onClick={() => setPackEditCategory(m => ({ ...m, [pack.id]: { value: pack.category || "" } }))} style={{ marginTop: 4, fontSize: 10, padding: "2px 8px", borderRadius: 4, cursor: "pointer", fontFamily: font, background: "transparent", border: `1px solid ${NL.border}`, color: NL.muted }}>Edit category</button>
               )}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "flex-start" : "flex-end", gap: 6, width: isMobile ? "100%" : "auto" }}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                 <span style={{ fontSize: 11, color: NL.muted }}>↓ {pack.downloadCount ?? 0}</span>
                 <button onClick={() => openEdit(pack)} style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, cursor: "pointer", fontFamily: font, background: NL.elevated, border: `1px solid ${NL.borderMid}`, color: NL.secondary }}
                   onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.borderColor = NL.border; }}
@@ -1201,7 +1208,7 @@ function FeaturedPacksPanel() {
       {editingPack && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
           onClick={e => { if (e.target === e.currentTarget) setEditingPack(null); }}>
-          <div style={{ background: NL.surface, border: `1px solid ${NL.borderMid}`, borderRadius: 16, padding: 24, width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 16, maxHeight: "90vh", overflowY: "auto" }}>
+          <div style={{ background: NL.surface, border: `1px solid ${NL.borderMid}`, borderRadius: 16, padding: isMobile ? 16 : 24, width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 16, maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <p style={{ fontSize: 15, fontWeight: 700, color: NL.text, margin: 0 }}>Edit pack</p>
               <button onClick={() => setEditingPack(null)} style={{ background: "none", border: "none", cursor: "pointer", color: NL.muted, fontSize: 18, lineHeight: 1 }}>✕</button>
@@ -1209,7 +1216,7 @@ function FeaturedPacksPanel() {
             {editForm.thumbnailUrl && (
               <img src={editForm.thumbnailUrl} alt="" style={{ width: 80, height: 80, borderRadius: 10, objectFit: "cover", border: `1px solid ${NL.border}` }} onError={e => e.currentTarget.style.display = "none"} />
             )}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
               {[
                 { label: "NAME *", field: "name", full: false },
                 { label: "SORT ORDER", field: "sortOrder", full: false, type: "number" },
@@ -1239,11 +1246,11 @@ function FeaturedPacksPanel() {
                 <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>LONG DESCRIPTION (Markdown + images supported)</label>
                 <textarea value={editForm.longDescription} onChange={e => setEditForm(f => ({ ...f, longDescription: e.target.value }))} rows={6} placeholder={"## About this pack\n\nA detailed description with **markdown** support.\n\n![Screenshot](https://...)"} style={{ width: "100%", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 8, padding: "8px 12px", color: NL.text, fontSize: 13, fontFamily: mono, outline: "none", resize: "vertical", boxSizing: "border-box", lineHeight: 1.5 }} />
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5, gridColumn: isMobile ? "1 / -1" : undefined }}>
                 <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>CREATOR WEBSITE</label>
                 <input placeholder="https://creator.com" value={editForm.creatorWebsite} onChange={e => setEditForm(f => ({ ...f, creatorWebsite: e.target.value }))} style={{ width: "100%", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 8, padding: "8px 12px", color: NL.text, fontSize: 13, fontFamily: font, outline: "none", boxSizing: "border-box" }} />
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5, gridColumn: isMobile ? "1 / -1" : undefined }}>
                 <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>DISCORD INVITE</label>
                 <input placeholder="https://discord.gg/..." value={editForm.creatorDiscord} onChange={e => setEditForm(f => ({ ...f, creatorDiscord: e.target.value }))} style={{ width: "100%", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 8, padding: "8px 12px", color: NL.text, fontSize: 13, fontFamily: font, outline: "none", boxSizing: "border-box" }} />
               </div>
