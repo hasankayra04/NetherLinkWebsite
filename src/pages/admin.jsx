@@ -1142,7 +1142,6 @@ function FeaturedPacksPanel() {
                 <span style={{ fontFamily: mono, fontSize: 10, color: NL.muted }}>/packs?slug={pack.slug}</span>
               )}
               {pack.description && <p style={{ margin: "2px 0 0", color: NL.muted, fontSize: 12 }}>{pack.description}</p>}
-              <p style={{ margin: "2px 0 0", color: NL.muted, fontSize: 11, fontFamily: mono }}>{pack.r2Key}</p>
               <p style={{ margin: "2px 0 0", color: NL.muted, fontSize: 11, fontFamily: mono }}>{pack.sha256 ? pack.sha256.slice(0, 12) + "…" : ""}</p>
               {pack.fileSize > 0 && <p style={{ margin: "2px 0 0", color: NL.muted, fontSize: 11 }}>{formatBytes(pack.fileSize)}</p>}
               {pack.tags?.length > 0 && (
