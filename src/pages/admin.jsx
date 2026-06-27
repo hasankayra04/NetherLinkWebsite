@@ -74,9 +74,10 @@ function Card({ title, subtitle, children, action, style: extra }) {
 
 function TabBar({ active, onChange, tabs }) {
   return (
-    <div style={{ display: "flex", gap: 2, background: NL.subtle, borderRadius: 10, padding: 3, border: `1px solid ${NL.border}`, width: "fit-content" }}>
+    <div style={{ display: "flex", gap: 2, background: NL.subtle, borderRadius: 10, padding: 3, border: `1px solid ${NL.border}` }}>
       {tabs.map(t => (
-        <button key={t.id} onClick={() => onChange(t.id)} style={{ padding: "6px 14px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: font, background: active === t.id ? NL.accent : "transparent", color: active === t.id ? "#0d1a18" : NL.secondary, transition: "background 0.15s, color 0.15s", whiteSpace: "nowrap" }}>
+        <button key={t.id} onClick={() => onChange(t.id)}
+          style={{ flex: 1, padding: "6px 10px", fontSize: 12, fontWeight: 600, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: font, background: active === t.id ? NL.accent : "transparent", color: active === t.id ? "#0d1a18" : NL.secondary, transition: "background 0.15s, color 0.15s", whiteSpace: "nowrap" }}>
           {t.label}
         </button>
       ))}
@@ -752,13 +753,52 @@ function ModerationPanel({ isMobile }) {
   );
 }
 
+function FeedbackBubble({ r, email }) {
+  const isAdmin = r.direction === "admin_to_user";
+  const [translation, setTranslation] = useState(null);
+  const [translating, setTranslating] = useState(false);
+
+  async function translate() {
+    if (translation || translating) return;
+    setTranslating(true);
+    try {
+      const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(r.message)}&langpair=auto|en`);
+      const data = await res.json();
+      setTranslation(data?.responseData?.translatedText || null);
+    } catch (_) {}
+    finally { setTranslating(false); }
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: isAdmin ? "flex-end" : "flex-start" }}>
+      <div style={{ maxWidth: "80%", background: isAdmin ? NL.accentDim : NL.subtle, border: `1px solid ${isAdmin ? NL.accentBorder : NL.border}`, borderRadius: isAdmin ? "12px 12px 4px 12px" : "12px 12px 12px 4px", padding: "8px 12px" }}>
+        <p style={{ margin: 0, fontSize: 13, color: NL.text, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{r.message}</p>
+        {translation && (
+          <p style={{ margin: "6px 0 0", fontSize: 12, color: NL.secondary, lineHeight: 1.5, whiteSpace: "pre-wrap", borderTop: `1px solid ${NL.border}`, paddingTop: 6, fontStyle: "italic" }}>🌐 {translation}</p>
+        )}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
+        <span style={{ fontSize: 10, color: NL.muted, fontFamily: mono }}>
+          {isAdmin ? (r.admin_email || "admin") : email} · {new Date(r.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+        </span>
+        {!isAdmin && !translation && (
+          <button onClick={translate} disabled={translating} style={{ fontSize: 10, padding: "1px 7px", borderRadius: 4, border: `1px solid ${NL.border}`, background: "transparent", color: NL.muted, cursor: translating ? "default" : "pointer", fontFamily: mono }}>
+            {translating ? "…" : "Translate"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function FeedbackItem({ c, onDelete }) {
   const [expanded, setExpanded] = useState(false);
   const [ghIssue, setGhIssue] = useState(null);
   const [ghLoading, setGhLoading] = useState(false);
+  const [replies, setReplies] = useState([]);
+  const [repliesLoading, setRepliesLoading] = useState(false);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [replyError, setReplyError] = useState(null);
 
@@ -766,14 +806,26 @@ function FeedbackItem({ c, onDelete }) {
     if (ghIssue || ghLoading) return;
     setGhLoading(true);
     try {
-      await fetchIdToken();
       const ghRes = await fetch(`https://api.github.com/repos/MCCORG/MCCompanion/issues/${c.issue_number}`, { headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" } });
       if (ghRes.ok) setGhIssue(await ghRes.json());
     } catch (_) { }
     finally { setGhLoading(false); }
   }
 
-  function toggle() { setExpanded(v => !v); if (!expanded) loadIssue(); }
+  async function loadReplies() {
+    setRepliesLoading(true);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${c.issue_number}/replies`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) setReplies((await res.json()).replies || []);
+    } catch (_) { }
+    finally { setRepliesLoading(false); }
+  }
+
+  function toggle() {
+    setExpanded(v => !v);
+    if (!expanded) { loadIssue(); loadReplies(); }
+  }
 
   async function sendReply() {
     if (!reply.trim() || sending) return;
@@ -783,7 +835,8 @@ function FeedbackItem({ c, onDelete }) {
       const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${c.issue_number}/reply`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ message: reply.trim(), issueTitle: ghIssue?.title }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || `${res.status}`);
-      setSent(true); setReply(""); setTimeout(() => setSent(false), 4000);
+      setReply("");
+      await loadReplies();
     } catch (e) { setReplyError(e.message); }
     finally { setSending(false); }
   }
@@ -807,6 +860,7 @@ function FeedbackItem({ c, onDelete }) {
       <div onClick={toggle} style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
         <span style={{ fontFamily: mono, fontSize: 11, color: NL.muted, flexShrink: 0 }}>#{c.issue_number}</span>
         <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: NL.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ghIssue?.title || `Issue #${c.issue_number}`}</span>
+        {replies.length > 0 && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: NL.subtle, color: NL.secondary, border: `1px solid ${NL.border}`, fontFamily: mono, flexShrink: 0 }}>{replies.length} msg{replies.length !== 1 ? "s" : ""}</span>}
         {ghIssue && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: isBug ? NL.dangerDim : NL.accentDim, color: isBug ? NL.danger : NL.accent, border: `1px solid ${isBug ? NL.dangerBorder : NL.accentBorder}`, fontFamily: mono, flexShrink: 0 }}>{isBug ? "BUG" : "FEATURE"}</span>}
         {ghIssue && <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: "transparent", color: stateColor, border: `1px solid ${stateColor}22`, fontFamily: mono, flexShrink: 0 }}>{ghIssue.state}</span>}
         <span style={{ fontSize: 11, color: NL.muted, flexShrink: 0 }}>{new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>
@@ -823,17 +877,30 @@ function FeedbackItem({ c, onDelete }) {
             <div style={{ flex: 1 }} />
             <button onClick={handleDelete} disabled={deleting} style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.dangerBorder}`, background: NL.dangerDim, color: NL.danger, cursor: "pointer", fontFamily: font, opacity: deleting ? 0.5 : 1 }}>{deleting ? "…" : "Remove contact"}</button>
           </div>
+
+          {/* Conversation thread */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, color: NL.secondary, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: mono }}>Conversation</label>
+            {repliesLoading ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, color: NL.muted, fontSize: 12 }}><Spinner size={11} /> Loading…</div>
+            ) : replies.length === 0 ? (
+              <p style={{ margin: 0, fontSize: 12, color: NL.muted }}>No messages yet.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {replies.map(r => <FeedbackBubble key={r.id} r={r} email={c.email} />)}
+              </div>
+            )}
+          </div>
+
+          {/* Reply box */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: NL.secondary, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: mono }}>Reply via email</label>
-            <textarea value={reply} onChange={e => setReply(e.target.value)} placeholder="Write your response to the user…" rows={4}
+            <textarea value={reply} onChange={e => setReply(e.target.value)} placeholder="Write your reply…" rows={3}
               style={{ width: "100%", padding: "10px 12px", background: NL.surface, border: `1px solid ${NL.borderMid}`, borderRadius: 8, color: NL.text, fontSize: 13, fontFamily: font, resize: "vertical", outline: "none", boxSizing: "border-box", lineHeight: 1.6 }} />
             {replyError && <p style={{ margin: 0, fontSize: 12, color: NL.danger }}>{replyError}</p>}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {sent && <span style={{ fontSize: 12, color: NL.success }}>✓ Email sent!</span>}
-              <div style={{ flex: 1 }} />
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button onClick={sendReply} disabled={sending || !reply.trim()}
                 style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, padding: "7px 16px", borderRadius: 8, background: reply.trim() && !sending ? NL.accent : NL.elevated, border: `1px solid ${reply.trim() && !sending ? NL.accent : NL.border}`, color: reply.trim() && !sending ? "#000" : NL.muted, cursor: reply.trim() && !sending ? "pointer" : "not-allowed", fontFamily: font, transition: "all 0.15s" }}>
-                {sending ? <><Spinner size={12} /> Sending…</> : "Send reply ✉"}
+                {sending ? <><Spinner size={12} /> Sending…</> : "Send ✉"}
               </button>
             </div>
           </div>
@@ -852,6 +919,7 @@ function FeedbackPanel() {
     setLoading(true); setError(null);
     try {
       const token = await fetchIdToken();
+      fetch(`${API_BASE}/api/admin/feedback-contacts/sync-inbox`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
       const res = await fetch(`${API_BASE}/api/admin/feedback-contacts`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error(`${res.status}`);
       setContacts((await res.json()).contacts || []);
@@ -1270,8 +1338,8 @@ function FeaturedPacksPanel() {
 const TABS = [
   { id: "overview", label: "Overview" },
   { id: "partners", label: "Partners" },
-  { id: "featured-packs", label: "Featured Packs" },
-  { id: "moderation", label: "Moderation" },
+  { id: "featured-packs", label: "Packs" },
+  { id: "moderation", label: "Mod" },
   { id: "feedback", label: "Feedback" },
 ];
 
@@ -1318,7 +1386,7 @@ export default function AdminPage() {
         <header style={{ borderBottom: `1px solid ${NL.border}`, background: NL.surface }}>
           <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? "16px 16px 0" : "20px 24px 0", display: "flex", flexDirection: "column", gap: 12 }}>
             <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: NL.text, margin: 0 }}>Admin</h1>
-            <TabBar active={activeTab} onChange={setActiveTab} tabs={TABS} />
+            <TabBar active={activeTab} onChange={setActiveTab} tabs={TABS} mobile={isMobile} />
           </div>
         </header>
 
