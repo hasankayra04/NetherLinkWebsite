@@ -242,7 +242,7 @@ function ActivePlanBanner({ plan, onCancel, cancelling, multipleServers }) {
         <span style={{ fontSize: 20 }}>✅</span>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: NL.text }}>Active Partner — {planInfo?.label ?? plan}</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: NL.text }}>Active Partner: {planInfo?.label ?? plan}</span>
             <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 4, fontFamily: mono, letterSpacing: "0.08em", textTransform: "uppercase", background: NL.accentDim, color: NL.accent, border: `1px solid ${NL.accentBorder}` }}>
               {planInfo?.price}/mo
             </span>
@@ -333,7 +333,7 @@ export default function PartnerProgramPage() {
             attempts++;
             setTimeout(poll, 2000);
           } else {
-            toast("Payment received — your plan may take a moment to activate.", "success");
+            toast("Payment received, your plan may take a moment to activate.", "success");
           }
         } catch { }
       };
@@ -353,7 +353,7 @@ export default function PartnerProgramPage() {
       window.location.href = data.url;
     } catch (err) {
       if (err.data?.error === "no_account") {
-        toast("You need an MCCompanion account first — download the app and register.", "error");
+        toast("You need an MCCompanion account first. Download the app and register.", "error");
       } else {
         toast(err.message || "Failed to start checkout", "error");
       }

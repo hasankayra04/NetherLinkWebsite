@@ -157,7 +157,7 @@ function RelayStatsCard() {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <Card title="Relay connections" subtitle="All servers combined — last 30 days" action={iconBtn(load, "Refresh", <IC.Refresh />)}>
+    <Card title="Relay connections" subtitle="All servers combined, last 30 days" action={iconBtn(load, "Refresh", <IC.Refresh />)}>
       {loading ? (
         <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13, padding: "24px 0", justifyContent: "center" }}><Spinner /> Loading…</div>
       ) : stats ? (
@@ -878,7 +878,6 @@ function FeedbackItem({ c, onDelete }) {
             <button onClick={handleDelete} disabled={deleting} style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.dangerBorder}`, background: NL.dangerDim, color: NL.danger, cursor: "pointer", fontFamily: font, opacity: deleting ? 0.5 : 1 }}>{deleting ? "…" : "Remove contact"}</button>
           </div>
 
-          {/* Conversation thread */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={{ fontSize: 11, fontWeight: 600, color: NL.secondary, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: mono }}>Conversation</label>
             {repliesLoading ? (
@@ -892,7 +891,6 @@ function FeedbackItem({ c, onDelete }) {
             )}
           </div>
 
-          {/* Reply box */}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <textarea value={reply} onChange={e => setReply(e.target.value)} placeholder="Write your reply…" rows={3}
               style={{ width: "100%", padding: "10px 12px", background: NL.surface, border: `1px solid ${NL.borderMid}`, borderRadius: 8, color: NL.text, fontSize: 13, fontFamily: font, resize: "vertical", outline: "none", boxSizing: "border-box", lineHeight: 1.6 }} />

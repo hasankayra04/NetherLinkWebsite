@@ -121,8 +121,6 @@ function Badge({ color, dimColor, borderColor, children }) {
   );
 }
 
-// ─── 3D Viewer ────────────────────────────────────────────────────────────────
-
 const VIEWER_W = 180;
 const VIEWER_H = 300;
 
@@ -203,7 +201,6 @@ function SkinViewer3D({ skinUrl }) {
         )}
       </div>
 
-      {/* Controls */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <button onClick={togglePlay} title={playing ? "Pause" : "Play"} style={ctrlBtn(playing)}>
           {playing
@@ -224,8 +221,6 @@ function SkinViewer3D({ skinUrl }) {
   );
 }
 
-// ─── Card shell ───────────────────────────────────────────────────────────────
-
 function PlayerCard({ panelBg, glowColor, accentBorder, skinUrl, skinLoading, children }) {
   return (
     <div style={{
@@ -235,7 +230,6 @@ function PlayerCard({ panelBg, glowColor, accentBorder, skinUrl, skinLoading, ch
       display: "flex",
       flexWrap: "wrap",
     }}>
-      {/* Left: viewer panel */}
       <div style={{
         width: VIEWER_W + 40,
         flexShrink: 0,
@@ -247,14 +241,12 @@ function PlayerCard({ panelBg, glowColor, accentBorder, skinUrl, skinLoading, ch
         position: "relative",
         minHeight: 360,
       }}>
-        {/* Floor glow */}
         <div style={{
           position: "absolute", bottom: "12%", left: "50%",
           transform: "translateX(-50%)",
           width: 140, height: 60, borderRadius: "50%",
           background: glowColor, filter: "blur(22px)", pointerEvents: "none",
         }} />
-        {/* Top vignette */}
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0, height: 80,
           background: "linear-gradient(to bottom, rgba(0,0,0,0.3), transparent)",
@@ -274,15 +266,12 @@ function PlayerCard({ panelBg, glowColor, accentBorder, skinUrl, skinLoading, ch
         }
       </div>
 
-      {/* Right: info */}
       <div style={{ flex: 1, minWidth: 220, padding: "28px 24px 24px", display: "flex", flexDirection: "column" }}>
         {children}
       </div>
     </div>
   );
 }
-
-// ─── Java Card ────────────────────────────────────────────────────────────────
 
 function JavaCard({ data }) {
   return (
@@ -293,7 +282,6 @@ function JavaCard({ data }) {
       skinUrl={data.skinUrl}
       skinLoading={false}
     >
-      {/* Avatar + name */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
         <img
           src={data.headUrl} alt={data.username}
@@ -311,21 +299,17 @@ function JavaCard({ data }) {
         </div>
       </div>
 
-      {/* Fields */}
       <div style={{ flex: 1 }}>
         <FieldRow label="Username" value={data.username} mono={false} />
         <FieldRow label="UUID"     value={data.uuid} />
       </div>
 
-      {/* Footer tag */}
       <p style={{ fontSize: 10, color: NL.muted, margin: "16px 0 0", fontFamily: "'JetBrains Mono', monospace" }}>
         via Mojang API
       </p>
     </PlayerCard>
   );
 }
-
-// ─── Bedrock Card ─────────────────────────────────────────────────────────────
 
 function BedrockCard({ data }) {
   const tierColor = data.tier === "Gold" ? "#f59e0b" : NL.secondary;
@@ -338,7 +322,6 @@ function BedrockCard({ data }) {
       skinUrl={data.skinUrl}
       skinLoading={false}
     >
-      {/* Gamerpic + name */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
         {data.gamerpicUrl ? (
           <img
@@ -364,7 +347,6 @@ function BedrockCard({ data }) {
         </div>
       </div>
 
-      {/* Fields */}
       <div style={{ flex: 1 }}>
         <FieldRow label="Gamertag"  value={data.gamertag} mono={false} />
         <FieldRow label="XUID"      value={data.xuid} />
@@ -379,15 +361,12 @@ function BedrockCard({ data }) {
         )}
       </div>
 
-      {/* Footer tag */}
       <p style={{ fontSize: 10, color: NL.muted, margin: "16px 0 0", fontFamily: "'JetBrains Mono', monospace" }}>
         via Xbox Live · skin via GeyserMC
       </p>
     </PlayerCard>
   );
 }
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 function EmptyState() {
   return (
@@ -434,7 +413,7 @@ export default function LookupPage() {
   return (
     <Layout
       title="Player Lookup"
-      description="Look up any Minecraft Java or Bedrock player — 3D skin viewer, UUID, XUID and more."
+      description="Look up any Minecraft Java or Bedrock player. 3D skin viewer, UUID, XUID and more."
     >
       <div style={{
         minHeight: "100vh", background: NL.bg,
@@ -443,7 +422,6 @@ export default function LookupPage() {
       }}>
         <div style={{ maxWidth: 820, margin: "0 auto" }}>
 
-          {/* Page header */}
           <div style={{ textAlign: "center", marginBottom: 36 }}>
             <div style={{
               display: "inline-flex", alignItems: "center", gap: 8,
@@ -463,7 +441,6 @@ export default function LookupPage() {
             </p>
           </div>
 
-          {/* Search bar */}
           <form onSubmit={handleSubmit} style={{ marginBottom: 32 }}>
             <div style={{
               display: "flex", gap: 8, alignItems: "center",
@@ -507,7 +484,6 @@ export default function LookupPage() {
             </div>
           </form>
 
-          {/* Loading */}
           {loading && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "60px 0", color: NL.muted }}>
               <Spinner size={30} />
@@ -515,7 +491,6 @@ export default function LookupPage() {
             </div>
           )}
 
-          {/* Error */}
           {!loading && error && (
             <div style={{ background: NL.surface, border: "1px solid rgba(248,113,113,0.22)", borderRadius: 16, padding: "28px 24px", textAlign: "center" }}>
               <div style={{ fontSize: 30, marginBottom: 10 }}>⚠️</div>
@@ -524,7 +499,6 @@ export default function LookupPage() {
             </div>
           )}
 
-          {/* Not found */}
           {!loading && result === false && (
             <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 16, padding: "40px 24px", textAlign: "center" }}>
               <div style={{ fontSize: 34, marginBottom: 12 }}>🕵️</div>
@@ -536,7 +510,6 @@ export default function LookupPage() {
             </div>
           )}
 
-          {/* Results */}
           {!loading && hasResult && (
             <>
               {result.linked && (
@@ -548,7 +521,7 @@ export default function LookupPage() {
                 }}>
                   <span style={{ width: 7, height: 7, borderRadius: "50%", background: NL.geyser, flexShrink: 0 }} />
                   <span style={{ fontSize: 12, color: NL.geyser, fontWeight: 600 }}>Linked via GeyserMC</span>
-                  <span style={{ fontSize: 11, color: NL.muted }}>— same person on Java &amp; Bedrock</span>
+                  <span style={{ fontSize: 11, color: NL.muted }}>same person on Java &amp; Bedrock</span>
                 </div>
               )}
 

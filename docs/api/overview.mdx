@@ -12,8 +12,6 @@ The MCCompanion REST API powers the app and is partially available for public in
 https://api.mccompanion.net
 ```
 
----
-
 ## Authentication
 
 Most endpoints require a **Firebase ID token** passed as a Bearer token in the `Authorization` header:
@@ -26,8 +24,6 @@ To get a token, sign in with Firebase Authentication using your MCCompanion emai
 
 Unauthenticated requests to protected endpoints return `401 Unauthorized`.
 
----
-
 ## Public endpoints
 
 These endpoints do not require authentication:
@@ -36,15 +32,16 @@ These endpoints do not require authentication:
 |---|---|---|
 | `GET` | `/api/version` | Current app version string |
 | `GET` | `/api/health` | API health check |
-| `GET` | `/api/metrics` | Public stats (top servers, total connections) |
-| `GET` | `/lookup/java/:identifier` | Look up a Java player by username or UUID |
-| `GET` | `/lookup/bedrock/:identifier` | Look up a Bedrock player by gamertag or XUID |
-| `GET` | `/lookup/bedrock-java/:identifier` | Auto-detect and cross-link Java ↔ Bedrock profiles |
-| `GET` | `/featured-servers` | List all featured servers |
-| `GET` | `/users/:username` | Get a user's public profile |
+| `GET` | `/api/metrics` | Global stats (top servers, total connections) |
+| `GET` | `/api/lookup/java/:identifier` | Look up a Java player by username or UUID |
+| `GET` | `/api/lookup/bedrock/:identifier` | Look up a Bedrock player by gamertag or XUID |
+| `GET` | `/api/lookup/bedrock-java/:identifier` | Auto-detect and cross-link Java and Bedrock profiles |
+| `GET` | `/api/featured-servers` | List all featured servers |
+| `GET` | `/api/featured-packs` | List all featured resource packs |
+| `GET` | `/api/packs/lookup?url=` | Look up a resource pack by download URL |
+| `GET` | `/api/bots` | Xbox relay bot status and friend counts |
+| `GET` | `/api/users/:username` | Get a user's public profile |
 | `GET` | `/notification` | Current in-app notification banner |
-
----
 
 ## User endpoints
 
@@ -64,10 +61,10 @@ Require a valid Firebase token for any registered MCCompanion user.
 | `DELETE` | `/api/users/me/friends/:username` | Remove a friend |
 | `POST` | `/api/users/me/block/:username` | Block a user |
 | `GET` | `/api/users/search?q=` | Search users by username (min 2 chars) |
-| `GET` | `/api/tracker` | List your tracked servers |
-| `POST` | `/api/tracker` | Add a server to track |
-| `PATCH` | `/api/tracker/:id` | Update a tracked server |
-| `DELETE` | `/api/tracker/:id` | Remove a tracked server |
+| `GET` | `/api/tracker/servers` | List your tracked servers |
+| `POST` | `/api/tracker/servers` | Add a server to track |
+| `PATCH` | `/api/tracker/servers/:id` | Update a tracked server |
+| `DELETE` | `/api/tracker/servers/:id` | Remove a tracked server |
 | `GET` | `/api/messages/conversations` | List your conversations |
 | `GET` | `/api/messages/:username` | Get message history with a user |
 | `POST` | `/api/messages/:username` | Send a message |
@@ -75,33 +72,28 @@ Require a valid Firebase token for any registered MCCompanion user.
 | `POST` | `/api/feedback` | Submit a bug report or feature request |
 | `POST` | `/api/reports` | Report a user |
 
----
-
 ## Xbox and Java account linking
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/xbox/me/xbox/start` | Start Xbox account linking (device code flow) |
-| `GET` | `/api/xbox/me/xbox/status` | Poll linking status |
-| `DELETE` | `/api/xbox/me/xbox/:xuid` | Unlink a specific Xbox account |
-| `POST` | `/api/java/me/java/start` | Start Java account linking (device code flow) |
-| `GET` | `/api/java/me/java/status` | Poll linking status |
-| `DELETE` | `/api/java/me/java/:uuid` | Unlink a specific Java account |
-
----
+| `POST` | `/api/users/me/xbox/start` | Start Xbox account linking (device code flow) |
+| `GET` | `/api/users/me/xbox/status` | Poll Xbox linking status |
+| `DELETE` | `/api/users/me/xbox/:xuid` | Unlink a specific Xbox account |
+| `POST` | `/api/users/me/java/start` | Start Java account linking (device code flow) |
+| `GET` | `/api/users/me/java/status` | Poll Java linking status |
+| `DELETE` | `/api/users/me/java/:uuid` | Unlink a specific Java account |
 
 ## Rate limiting
 
-The API applies rate limits per IP and per authenticated user. Hitting a limit returns `429 Too Many Requests` with a `Retry-After` header.
+The API applies rate limits per IP. Hitting a limit returns `429 Too Many Requests`.
 
 | Endpoint group | Limit |
 |---|---|
-| General user endpoints | 60 requests / 60 seconds |
-| Fast read endpoints (e.g. `/users/me`) | 120 requests / 60 seconds |
-| Feedback | 5 requests / 10 minutes |
-| WebSocket upgrades | 10 connections / 60 seconds per IP |
+| General public endpoints | 60 req / min per IP |
+| Fast read endpoints (e.g. `/api/users/me`) | 120 req / min per IP |
+| Feedback submission | 5 req / 10 min per IP |
 
----
+After 3 violations within 10 minutes, the IP is banned. To appeal, join our [Discord](https://discord.gg/xvaNzE35Rs).
 
 ## Error format
 
@@ -114,8 +106,6 @@ All errors follow a consistent JSON format:
 }
 ```
 
-Common error codes:
-
 | Code | HTTP status | Meaning |
 |---|---|---|
 | `unauthorized` | 401 | Missing or invalid token |
@@ -124,8 +114,6 @@ Common error codes:
 | `not_found` | 404 | Resource does not exist |
 | `conflict` | 409 | Resource already exists (e.g. duplicate username) |
 | `internal_error` | 500 | Unexpected server error |
-
----
 
 :::info
 The API is primarily designed to serve the MCCompanion app. Third-party usage is allowed for non-commercial integrations, but there is no formal SLA. Breaking changes may occur with prior notice in the [Discord server](https://discord.gg/xvaNzE35Rs).

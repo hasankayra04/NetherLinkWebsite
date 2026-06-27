@@ -99,7 +99,7 @@ const ENDPOINTS = [
       { name: "floodgateuid", desc: "Floodgate UUID derived from the XUID (used by GeyserMC)" },
       { name: "skinUrl", desc: "Full skin texture URL via GeyserMC" },
       { name: "gamerscore", desc: "Xbox Gamerscore" },
-      { name: "tier", desc: 'Xbox account tier — "Gold", "Silver", etc.' },
+      { name: "tier", desc: 'Xbox account tier: "Gold", "Silver", etc.' },
       { name: "gamerpicUrl", desc: "Xbox Live profile picture URL" },
     ],
   },
@@ -160,7 +160,7 @@ const ENDPOINTS = [
       { name: "bedrock.floodgateuid", desc: "Floodgate UUID derived from the XUID (used by GeyserMC)" },
       { name: "bedrock.skinUrl", desc: "Full skin texture URL via GeyserMC" },
       { name: "bedrock.gamerscore", desc: "Xbox Gamerscore" },
-      { name: "bedrock.tier", desc: 'Xbox account tier — "Gold", "Silver", etc.' },
+      { name: "bedrock.tier", desc: 'Xbox account tier: "Gold", "Silver", etc.' },
       { name: "bedrock.gamerpicUrl", desc: "Xbox Live profile picture URL" },
       { name: "linked", desc: "true when both Java and Bedrock were resolved together" },
     ],
@@ -225,6 +225,68 @@ const ENDPOINTS = [
     },
   },
   {
+    id: "featured-packs",
+    method: "GET",
+    path: "/api/featured-packs",
+    title: "Featured Packs",
+    rateLimit: "60 req / min",
+    description: "List of curated Minecraft Bedrock resource packs shown in the MCCompanion app and website.",
+    params: [],
+    example: {
+      request: `GET ${API_BASE}/api/featured-packs`,
+      response: `{
+  "packs": [
+    {
+      "id": 1,
+      "name": "Faithful 32x",
+      "slug": "faithful-32x",
+      "description": "A clean faithful texture pack for Bedrock.",
+      "iconUrl": "https://...",
+      "downloadUrl": "https://...",
+      "downloadCount": 1842,
+      "isActive": true,
+      "createdAt": "2026-04-01T00:00:00.000Z"
+    }
+  ]
+}`,
+    },
+    responseFields: [
+      { name: "id", desc: "Unique pack ID" },
+      { name: "name", desc: "Display name of the resource pack" },
+      { name: "slug", desc: "URL-friendly identifier" },
+      { name: "description", desc: "Short description of the pack" },
+      { name: "iconUrl", desc: "Pack icon image URL" },
+      { name: "downloadUrl", desc: "Direct download URL for the .mcpack file" },
+      { name: "downloadCount", desc: "Number of times this pack was applied via the app" },
+      { name: "isActive", desc: "Whether the pack is currently listed publicly" },
+    ],
+  },
+  {
+    id: "packs-lookup",
+    method: "GET",
+    path: "/api/packs/lookup",
+    title: "Pack Lookup",
+    rateLimit: "60 req / min",
+    description: "Look up a resource pack by its download URL. Returns pack metadata if the URL matches a known featured pack.",
+    params: [
+      { name: "url", in: "query", required: true, type: "string", description: "The full download URL of the resource pack" },
+    ],
+    example: {
+      request: `GET ${API_BASE}/api/packs/lookup?url=https://example.com/pack.mcpack`,
+      response: `{
+  "pack": {
+    "id": 1,
+    "name": "Faithful 32x",
+    "slug": "faithful-32x",
+    "iconUrl": "https://..."
+  }
+}`,
+    },
+    responseFields: [
+      { name: "pack", desc: "Pack metadata if found, null otherwise" },
+    ],
+  },
+  {
     id: "featured-servers",
     method: "GET",
     path: "/api/featured-servers",
@@ -266,14 +328,14 @@ const ENDPOINTS = [
       request: `GET ${API_BASE}/notification`,
       response: `{
   "title": "Relay Server Information",
-  "message": "MCCompanion 4.0 is live — check out the new features in the app!",
+  "message": "MCCompanion 4.0 is live, check out the new features in the app!",
   "type": "warning"
 }`,
     },
     responseFields: [
       { name: "title", desc: "Short notification heading" },
       { name: "message", desc: "Full notification body text" },
-      { name: "type", desc: 'Severity level — "info", "warning", "error"' },
+      { name: "type", desc: 'Severity level: "info", "warning", "error"' },
     ],
   },
   {
@@ -490,7 +552,6 @@ function EndpointCard({ ep }) {
       onMouseEnter={e => e.currentTarget.style.borderColor = NL.borderMid}
       onMouseLeave={e => e.currentTarget.style.borderColor = NL.border}
     >
-      {/* Header — always visible */}
       <button
         onClick={() => setOpen(v => !v)}
         style={{
@@ -513,7 +574,6 @@ function EndpointCard({ ep }) {
         </svg>
       </button>
 
-      {/* Expandable body */}
       {open && (
         <div style={{ borderTop: `1px solid ${NL.border}`, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 16 }}>
           <p style={{ fontSize: 13, color: NL.secondary, margin: 0, lineHeight: 1.6 }}>{ep.description}</p>
@@ -587,7 +647,6 @@ export default function ApiDocsPage() {
       <div style={{ minHeight: "100vh", background: NL.bg, fontFamily: font, padding: "64px 16px 80px" }}>
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
 
-          {/* Header */}
           <div style={{ marginBottom: 40 }}>
             <div style={{
               display: "inline-flex", alignItems: "center", gap: 8,
@@ -603,7 +662,7 @@ export default function ApiDocsPage() {
               API Reference
             </h1>
             <p style={{ fontSize: 14, color: NL.secondary, margin: "0 0 20px", lineHeight: 1.6, maxWidth: 520 }}>
-              All endpoints are publicly accessible — no authentication required. The base URL is:
+              All endpoints are publicly accessible, no authentication required. The base URL is:
             </p>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: NL.elevated, border: `1px solid ${NL.border}` }}>
               <code style={{ fontFamily: mono, fontSize: 13, color: NL.accent }}>{API_BASE}</code>
@@ -640,7 +699,6 @@ export default function ApiDocsPage() {
             </p>
           </div>
 
-          {/* Quick nav */}
           <div style={{
             display: "flex", gap: 6, flexWrap: "wrap",
             padding: "12px 14px", borderRadius: 12,
@@ -668,7 +726,6 @@ export default function ApiDocsPage() {
             ))}
           </div>
 
-          {/* Endpoints */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {ENDPOINTS.map(ep => <EndpointCard key={ep.id} ep={ep} />)}
           </div>

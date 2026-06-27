@@ -61,7 +61,7 @@ async function parsePack(file) {
   if (iconKey) iconUrl = URL.createObjectURL(new Blob([data[iconKey]], { type: "image/png" }));
 
   const warnings = [];
-  if (!manifest) warnings.push({ type: "error", msg: "No manifest.json found — pack may not work in Minecraft" });
+  if (!manifest) warnings.push({ type: "error", msg: "No manifest.json found, pack may not work in Minecraft" });
   else {
     if (!manifest.header?.uuid) warnings.push({ type: "warning", msg: "manifest.json is missing a UUID" });
     if (!manifest.header?.version) warnings.push({ type: "warning", msg: "manifest.json is missing a version" });
@@ -257,14 +257,14 @@ function ConflictResolver({ conflicts, packs, overrides, onOverride }) {
   const [showIdentical, setShowIdentical] = useState(false);
 
   if (!entries.length) return (
-    <div style={{ textAlign: "center", color: C.accent, fontSize: 13, padding: "24px 0" }}>✓ No conflicts — all files are unique across packs</div>
+    <div style={{ textAlign: "center", color: C.accent, fontSize: 13, padding: "24px 0" }}>✓ No conflicts, all files are unique across packs</div>
   );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {realConflicts.length > 0 && (
         <div style={{ background: C.warningDim, border: `1px solid ${C.warningBorder}`, borderRadius: 10, padding: "10px 14px", color: C.warning, fontSize: 12 }}>
-          ⚠️ {realConflicts.length} real conflict{realConflicts.length !== 1 ? "s" : ""} — choose which pack wins per file, or keep the default (top pack).
+          ⚠️ {realConflicts.length} real conflict{realConflicts.length !== 1 ? "s" : ""}, choose which pack wins per file or keep the default (top pack).
         </div>
       )}
       {realConflicts.map(([path, conflict]) => (
@@ -412,20 +412,18 @@ export default function RPEditor() {
   });
 
   return (
-    <Layout title="RP Merger" description="Merge multiple Minecraft resource packs into one">
+    <Layout title="RP Editor" description="Merge multiple Minecraft resource packs into one">
       <div style={{ background: C.bg, minHeight: "100vh", padding: "40px 16px" }}>
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
 
-          {/* header */}
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: C.accentDim, border: `1px solid ${C.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🧩</div>
             <div>
-              <h1 style={{ color: C.text, fontSize: 22, fontWeight: 800, margin: 0 }}>RP Merger</h1>
+              <h1 style={{ color: C.text, fontSize: 22, fontWeight: 800, margin: 0 }}>RP Editor</h1>
               <p style={{ color: C.muted, fontSize: 12, margin: 0 }}>Combine multiple Minecraft resource packs into one .mcpack</p>
             </div>
           </div>
 
-          {/* tab bar */}
           {visibleTabs.length > 1 && <div style={{ display: "flex", gap: 2, background: C.subtle, borderRadius: 10, padding: 3, border: `1px solid ${C.border}`, marginBottom: 20 }}>
             {visibleTabs.map(t => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
@@ -442,7 +440,6 @@ export default function RPEditor() {
             <div style={{ background: C.dangerDim, border: `1px solid ${C.dangerBorder}`, borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: C.danger, fontSize: 13 }}>{error}</div>
           )}
 
-          {/* PACKS TAB */}
           {activeTab === "packs" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <DropZone onFiles={addFiles} disabled={loading || merging} />
@@ -463,7 +460,7 @@ export default function RPEditor() {
               {packs.length > 0 && (
                 <>
                   <div style={{ color: C.muted, fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-                    {packs.length} pack{packs.length !== 1 ? "s" : ""} — top has highest priority
+                    {packs.length} pack{packs.length !== 1 ? "s" : ""}, top has highest priority
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {packs.map((pack, i) => (
@@ -486,10 +483,8 @@ export default function RPEditor() {
             </div>
           )}
 
-          {/* BROWSER TAB */}
           {activeTab === "browser" && packs.length > 0 && <FileBrowser packs={packs} />}
 
-          {/* CONFLICTS TAB */}
           {activeTab === "conflicts" && result && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <ConflictResolver conflicts={result.conflicts} packs={packs} overrides={overrides} onOverride={handleOverride} />
@@ -497,7 +492,6 @@ export default function RPEditor() {
             </div>
           )}
 
-          {/* MANIFEST TAB */}
           {activeTab === "manifest" && result && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <ManifestEditor value={manifestEdit} onChange={v => { setManifestEdit(v); }} />
@@ -508,7 +502,6 @@ export default function RPEditor() {
             </div>
           )}
 
-          {/* DOWNLOAD BAR */}
           {result && (
             <div style={{ marginTop: 20, background: C.accentDim, border: `1px solid ${C.accentBorder}`, borderRadius: 14, padding: "16px 18px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>

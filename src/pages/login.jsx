@@ -121,7 +121,7 @@ function ForgotPasswordModal({ onClose }) {
                             borderRadius: 8, padding: "12px 14px",
                             lineHeight: 1.6,
                         }}>
-                            ✓ Reset email sent to <strong>{resetEmail}</strong> — check your inbox (and spam folder).
+                            ✓ Reset email sent to <strong>{resetEmail}</strong>, check your inbox (and spam folder).
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>

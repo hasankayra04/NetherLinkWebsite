@@ -256,7 +256,7 @@ export default function Navbar() {
                   {[
                     { label: "Resource Packs", path: "/packs", icon: <FaLayerGroup size={12} /> },
                     { label: "Player Lookup", path: "/lookup", icon: <FaSearch size={12} /> },
-                    { label: "RP Merger", path: "/rpeditor", icon: <FaLayerGroup size={12} /> },
+                    { label: "RP Editor", path: "/rpeditor", icon: <FaLayerGroup size={12} /> },
                     { label: "Server Metrics", path: "/metrics", icon: <FaCode size={12} /> },
                   ].map(item => (
                     <button key={item.path} onClick={() => { navigate(item.path); setToolsDrop(false); }}
@@ -418,7 +418,7 @@ export default function Navbar() {
                 {[
                   { label: "Resource Packs", path: "/packs" },
                   { label: "Player Lookup", path: "/lookup" },
-                  { label: "RP Merger", path: "/rpeditor" },
+                  { label: "RP Editor", path: "/rpeditor" },
                   { label: "Server Metrics", path: "/metrics" },
                 ].map(item => (
                   <button key={item.path} onClick={() => navigate(item.path)} style={drawerBtn()}

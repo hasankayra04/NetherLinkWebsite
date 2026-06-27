@@ -1699,7 +1699,7 @@ export default function DashboardPage() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                 <div>
                   <h3 style={{ fontSize: 13, fontWeight: 600, color: NL.text, margin: 0 }}>Relay connections</h3>
-                  <p style={{ fontSize: 11, color: NL.muted, margin: "2px 0 0" }}>All servers combined — last 30 days</p>
+                  <p style={{ fontSize: 11, color: NL.muted, margin: "2px 0 0" }}>All servers combined, last 30 days</p>
                 </div>
                 {iconBtn(loadConnStats, "Refresh", <IC.Refresh />)}
               </div>
