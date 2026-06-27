@@ -419,7 +419,7 @@ export default function RPEditor() {
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 28 }}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: C.accentDim, border: `1px solid ${C.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🧩</div>
             <div>
-              <h1 style={{ color: C.text, fontSize: 22, fontWeight: 800, margin: 0 }}>RP Editor</h1>
+              <h1 style={{ color: C.text, fontSize: 22, fontWeight: 800, margin: 0 }}>Resource Pack Editor</h1>
               <p style={{ color: C.muted, fontSize: 12, margin: 0 }}>Combine multiple Minecraft resource packs into one .mcpack</p>
             </div>
           </div>

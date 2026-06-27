@@ -72,7 +72,7 @@ const config = {
             position: 'left',
             items: [
               { to: '/lookup',   label: 'Player Lookup'  },
-              { to: '/rpeditor', label: 'RP Merger'      },
+              { to: '/rpeditor', label: 'Resource Pack Editor'      },
               { to: '/metrics',  label: 'Server Metrics' },
             ],
           },
