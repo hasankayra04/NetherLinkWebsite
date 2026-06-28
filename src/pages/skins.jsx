@@ -562,7 +562,7 @@ function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initial
       </div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
         <Btn small onClick={download}>⬇ Download</Btn>
-        {idToken ? (
+        {!isOwn && (idToken ? (
           <button type="button" onClick={toggleLike} disabled={liking} style={{
             display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 10px",
             borderRadius: 8, border: `1px solid ${liked ? "#f8717144" : C.border}`,
@@ -573,7 +573,7 @@ function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initial
           </button>
         ) : likes > 0 ? (
           <span style={{ fontSize: 12, color: C.secondary, fontFamily: font }}>♡ {likes}</span>
-        ) : null}
+        ) : null)}
         {isOwn && (
           <>
             <Btn small variant="ghost" onClick={() => onEdit(initialSkin)}>✏️ Edit</Btn>
@@ -626,7 +626,7 @@ function GalleryTab({ user, idToken, onEditSkin }) {
   useEffect(() => {
     if (!user || !idToken) return;
     setLoadingMine(true);
-    fetch(`${API}/api/skins/me`, { headers: { Authorization: `Bearer ${idToken}` } })
+    fetch(`${API}/api/skins/me`, { headers: { Authorization: `Bearer ${idToken}` }, cache: 'no-store' })
       .then(r => r.json())
       .then(d => { setMySkins(d.skins || []); setLoadingMine(false); })
       .catch(() => setLoadingMine(false));
@@ -681,7 +681,7 @@ function GalleryTab({ user, idToken, onEditSkin }) {
           </h2>
           <div style={gridStyle}>
             {topSkins.map(s => (
-              <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} />
+              <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} />
             ))}
           </div>
         </section>
@@ -698,7 +698,7 @@ function GalleryTab({ user, idToken, onEditSkin }) {
         ) : (
           <div style={gridStyle}>
             {publicSkins.map(s => (
-              <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} />
+              <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} />
             ))}
           </div>
         )}
