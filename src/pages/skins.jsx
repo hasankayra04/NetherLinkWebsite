@@ -511,16 +511,33 @@ function UVEditor({ bufferRef, onUpdate, renderRef }) {
   );
 }
 
-function SkinCard({ skin, onEdit, onDelete, isOwn }) {
+function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn }) {
   const [deleting, setDeleting] = useState(false);
+  const [likes, setLikes] = useState(initialSkin.like_count ?? 0);
+  const [liked, setLiked] = useState(false);
+  const [liking, setLiking] = useState(false);
 
   async function download() {
-    const res = await fetch(skin.public_url);
+    const res = await fetch(initialSkin.public_url);
     const blob = await res.blob();
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `${skin.name || "skin"}.png`;
+    a.download = `${initialSkin.name || "skin"}.png`;
     a.click();
+  }
+
+  async function toggleLike() {
+    if (liking) return;
+    setLiking(true);
+    try {
+      const res = await fetch(`${API}/api/skins/${initialSkin.id}/like`, { method: "POST" });
+      if (res.ok) {
+        const d = await res.json();
+        setLiked(d.liked);
+        setLikes(d.like_count);
+      }
+    } catch (_) {}
+    setLiking(false);
   }
 
   return (
@@ -530,23 +547,31 @@ function SkinCard({ skin, onEdit, onDelete, isOwn }) {
       transition: "border-color .2s",
     }}>
       <div style={{ borderRadius: 8, overflow: "hidden", background: C.elevated }}>
-        <SkinViewer3D skinUrl={skin.public_url} width={120} height={180} />
+        <SkinViewer3D skinUrl={initialSkin.public_url} width={120} height={180} />
       </div>
       <div style={{ textAlign: "center", width: "100%" }}>
         <div style={{ fontFamily: font, fontWeight: 600, color: C.text, fontSize: 14, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {skin.name || "Unnamed"}
+          {initialSkin.name || "Unnamed"}
         </div>
         {isOwn && <Tag color={C.accent}>Yours</Tag>}
       </div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
         <Btn small onClick={download}>⬇ Download</Btn>
+        <button type="button" onClick={toggleLike} disabled={liking} style={{
+          display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 10px",
+          borderRadius: 8, border: `1px solid ${liked ? "#f8717144" : C.border}`,
+          background: liked ? "#f8717112" : "transparent", cursor: "pointer",
+          color: liked ? "#f87171" : C.secondary, fontSize: 12, fontFamily: font, fontWeight: 500,
+        }}>
+          {liked ? "♥" : "♡"} {likes > 0 ? likes : ""}
+        </button>
         {isOwn && (
           <>
-            <Btn small variant="ghost" onClick={() => onEdit(skin)}>✏️ Edit</Btn>
+            <Btn small variant="ghost" onClick={() => onEdit(initialSkin)}>✏️ Edit</Btn>
             <Btn small variant="danger" disabled={deleting} onClick={async () => {
-              if (!confirm(`Delete "${skin.name}"?`)) return;
+              if (!confirm(`Delete "${initialSkin.name}"?`)) return;
               setDeleting(true);
-              await onDelete(skin.id);
+              await onDelete(initialSkin.id);
               setDeleting(false);
             }}>
               {deleting ? "…" : "🗑"}
@@ -560,6 +585,7 @@ function SkinCard({ skin, onEdit, onDelete, isOwn }) {
 
 function GalleryTab({ user, idToken, onEditSkin }) {
   const [publicSkins, setPublicSkins] = useState([]);
+  const [topSkins, setTopSkins] = useState([]);
   const [mySkins, setMySkins] = useState([]);
   const [loadingPublic, setLoadingPublic] = useState(true);
   const [loadingMine, setLoadingMine] = useState(false);
@@ -567,10 +593,16 @@ function GalleryTab({ user, idToken, onEditSkin }) {
 
   useEffect(() => {
     setLoadingPublic(true);
-    fetch(`${API}/api/skins`)
-      .then(r => r.json())
-      .then(d => { setPublicSkins(d.skins || []); setLoadingPublic(false); })
-      .catch(() => { setError("Failed to load public skins."); setLoadingPublic(false); });
+    Promise.all([
+      fetch(`${API}/api/skins`).then(r => r.json()),
+      fetch(`${API}/api/skins/top?limit=30`).then(r => r.json()),
+    ])
+      .then(([all, top]) => {
+        setPublicSkins(all.skins || []);
+        setTopSkins(top.skins || []);
+        setLoadingPublic(false);
+      })
+      .catch(() => { setError("Failed to load skins."); setLoadingPublic(false); });
   }, []);
 
   useEffect(() => {
@@ -618,15 +650,29 @@ function GalleryTab({ user, idToken, onEditSkin }) {
         </section>
       )}
 
+      {error && (
+        <div style={{ background: C.dangerDim, border: `1px solid ${C.dangerBorder}`, borderRadius: 10, padding: 12 }}>
+          <p style={{ fontFamily: font, color: C.danger, margin: 0 }}>{error}</p>
+        </div>
+      )}
+
+      {topSkins.length > 0 && (
+        <section>
+          <h2 style={{ fontFamily: font, color: C.text, fontSize: 18, fontWeight: 700, marginBottom: 16, marginTop: 0, display: "flex", alignItems: "center", gap: 8 }}>
+            🏆 Top 30
+          </h2>
+          <div style={gridStyle}>
+            {topSkins.map(s => (
+              <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} />
+            ))}
+          </div>
+        </section>
+      )}
+
       <section>
         <h2 style={{ fontFamily: font, color: C.text, fontSize: 18, fontWeight: 700, marginBottom: 16, marginTop: 0 }}>
-          Public Gallery
+          All Skins
         </h2>
-        {error && (
-          <div style={{ background: C.dangerDim, border: `1px solid ${C.dangerBorder}`, borderRadius: 10, padding: 12, marginBottom: 16 }}>
-            <p style={{ fontFamily: font, color: C.danger, margin: 0 }}>{error}</p>
-          </div>
-        )}
         {loadingPublic ? (
           <p style={{ fontFamily: font, color: C.muted }}>Loading…</p>
         ) : publicSkins.length === 0 ? (
@@ -634,7 +680,7 @@ function GalleryTab({ user, idToken, onEditSkin }) {
         ) : (
           <div style={gridStyle}>
             {publicSkins.map(s => (
-              <SkinCard key={s.id} skin={s} isOwn={false} onEdit={onEditSkin} onDelete={deleteSkin} />
+              <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} />
             ))}
           </div>
         )}
