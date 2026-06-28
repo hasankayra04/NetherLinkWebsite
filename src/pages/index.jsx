@@ -70,8 +70,6 @@ function Counter({ target, suffix = "" }) {
   return <span ref={ref}>{n > 0 ? n.toLocaleString() : "0"}{suffix}</span>;
 }
 
-// ─── HERO ─────────────────────────────────────────────────────────────────────
-
 function Hero({ stats }) {
   return (
     <section style={{ position: "relative", minHeight: "96vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "110px 24px 80px", overflow: "hidden" }}>
@@ -127,8 +125,6 @@ function Hero({ stats }) {
   );
 }
 
-// ─── CONNECT MODES ────────────────────────────────────────────────────────────
-
 const MODES = [
   { icon: "🎮", label: "Broadcast Mode", platforms: "PS4 · PS5 · Xbox", color: "#60a5fa", dim: "rgba(96,165,250,0.08)", border: "rgba(96,165,250,0.22)", href: "/docs/howto/playstation-xbox-howto" },
   { icon: "🕹️", label: "DNS Mode", platforms: "Nintendo Switch", color: "#f472b6", dim: "rgba(244,114,182,0.08)", border: "rgba(244,114,182,0.22)", href: "/docs/howto/nintendo-howto" },
@@ -163,12 +159,10 @@ function ConnectModes() {
   );
 }
 
-// ─── APP FEATURES ─────────────────────────────────────────────────────────────
-
 const APP_FEATS = [
   { icon: <FaSearch size={13} />, color: "#f472b6", label: "Player Lookup", desc: "Search by Java username, Bedrock gamertag or UUID. 3D skin preview." },
   { icon: <FaServer size={13} />, color: "#60a5fa", label: "Server Tracker", desc: "Real-time status, push notifications. Free: 1 slot, up to 10 on paid plans." },
-  { icon: <FaPalette size={13} />, color: "#a78bfa", label: "Skin Editor", desc: "Browse community skins, upload your own, edit pixel by pixel." },
+  { icon: <FaPalette size={13} />, color: "#a78bfa", label: "Skin Workshop", desc: "Browse community skins, upload your own, and edit pixel by pixel." },
   { icon: <FaBox size={13} />, color: C.accent, label: "Resource Packs", desc: "Apply and manage server resource packs directly from the app.", beta: true },
   { icon: <FaComments size={13} />, color: "#fb923c", label: "Friends & Chat", desc: "Add friends, see online status and send direct messages inside the app." },
   { icon: <FaLink size={13} />, color: "#34d399", label: "Account Linking", desc: "Link Xbox/Bedrock and Java accounts via Microsoft device-code flow." },
@@ -208,9 +202,17 @@ function AppSection() {
   );
 }
 
-// ─── WEB TOOLS ────────────────────────────────────────────────────────────────
-
 const WEB_TOOLS = [
+  {
+    icon: "🎨",
+    label: "Skin Workshop",
+    desc: "Browse community skins, upload your own PNG, or edit pixel by pixel with the built-in UV editor.",
+    color: "#a78bfa",
+    dim: "rgba(167,139,250,0.08)",
+    border: "rgba(167,139,250,0.22)",
+    href: "/skins",
+    tags: ["Gallery", "Editor", "Upload"],
+  },
   {
     icon: "📦",
     label: "Resource Packs",
@@ -314,8 +316,6 @@ function WebToolsSection() {
   );
 }
 
-// ─── DISCORD + BOT STATUS ─────────────────────────────────────────────────────
-
 function LiveSection() {
   return (
     <section style={{ padding: "88px 24px" }}>
@@ -351,8 +351,6 @@ function LiveSection() {
   );
 }
 
-// ─── FEATURED SERVERS ─────────────────────────────────────────────────────────
-
 function ServersSection() {
   return (
     <section style={{ background: C.surface, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "80px 24px" }}>
@@ -366,8 +364,6 @@ function ServersSection() {
     </section>
   );
 }
-
-// ─── BOTTOM CTAs ──────────────────────────────────────────────────────────────
 
 function BottomCTAs() {
   return (
@@ -411,8 +407,6 @@ function BottomCTAs() {
     </section>
   );
 }
-
-// ─── ROOT ─────────────────────────────────────────────────────────────────────
 
 export default function Home() {
   const [stats, setStats] = useState(null);
