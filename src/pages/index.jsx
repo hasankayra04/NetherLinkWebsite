@@ -1,157 +1,123 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  FaWindows, FaApple, FaAndroid, FaSearch, FaRobot,
-  FaDiscord, FaArrowRight, FaChevronDown,
-  FaDownload, FaBox, FaBolt, FaCheck, FaServer, FaComments,
-  FaLink, FaPalette, FaLayerGroup, FaGamepad, FaCode,
-} from "react-icons/fa";
-import { motion, useInView } from "framer-motion";
+import { FaWindows, FaApple, FaAndroid, FaDownload, FaHeart, FaArrowRight, FaPlaystation, FaXbox, FaGamepad } from "react-icons/fa";
 import FeaturedServersCarousel from "../components/FeaturedServersCarousel";
-import AppShowcase from "../components/AppShowcase";
 import BotStatus from "../components/BotStatus";
 import DiscordBotSection from "../components/DiscordBotSection";
 import Layout from "@theme/Layout";
+import { T } from "../lib/tokens";
 
-const C = {
-  bg: "#0d0f14", surface: "#13161e", elevated: "#191c25", subtle: "#1e2129",
-  border: "rgba(255,255,255,0.06)", borderMid: "rgba(255,255,255,0.10)",
-  text: "#eaebee", secondary: "#8892a4", muted: "#4e5666",
-  accent: "#67e404", accentDim: "rgba(103,228,4,0.08)", accentBorder: "rgba(103,228,4,0.22)",
-};
+const API = "https://api.mccompanion.net";
+
+async function toBlobUrl(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error();
+  return URL.createObjectURL(await r.blob());
+}
+function Skin3D({ url }) {
+  const ref = useRef(null);
+  const vRef = useRef(null);
+  useEffect(() => {
+    if (!ref.current || !url) return;
+    let dead = false, blob = null;
+    Promise.all([import("skinview3d"), toBlobUrl(url)]).then(([sv, b]) => {
+      if (dead || !ref.current) { URL.revokeObjectURL(b); return; }
+      blob = b;
+      if (vRef.current) { vRef.current.dispose(); vRef.current = null; }
+      const v = new sv.SkinViewer({ canvas: ref.current, width: 64, height: 96 });
+      v.autoRotate = false;
+      v.camera.rotation.set(0.05, 0.3, 0);
+      vRef.current = v;
+      v.loadSkin(b).catch(() => { });
+    }).catch(() => { });
+    return () => {
+      dead = true;
+      if (vRef.current) { vRef.current.dispose(); vRef.current = null; }
+      if (blob) URL.revokeObjectURL(blob);
+    };
+  }, [url]);
+  return <canvas ref={ref} width={64} height={96} style={{ display: "block" }} />;
+}
 
 const PLATFORMS = [
-  { icon: <FaWindows size={13} />, label: "Windows", url: "https://apps.microsoft.com/detail/9NSFPT6D8PTR", color: "#60a5fa" },
-  { icon: <FaApple size={13} />, label: "macOS", url: "https://apps.apple.com/us/app/mccompanion/id6747323142?platform=mac", color: "#c0c7d4" },
-  { icon: <FaAndroid size={13} />, label: "Android", url: "https://play.google.com/store/apps/details?id=net.netherdev.netherLink", color: "#34d399" },
-  { icon: <FaApple size={13} />, label: "iOS", url: "https://apps.apple.com/be/app/netherlink/id6747323142?l=en", color: "#c0c7d4" },
+  { icon: <FaWindows size={14} />, label: "Windows", url: "https://apps.microsoft.com/detail/9NSFPT6D8PTR" },
+  { icon: <FaApple size={14} />, label: "macOS", url: "https://apps.apple.com/us/app/mccompanion/id6747323142?platform=mac" },
+  { icon: <FaAndroid size={14} />, label: "Android", url: "https://play.google.com/store/apps/details?id=net.netherdev.netherLink" },
+  { icon: <FaApple size={14} />, label: "iOS", url: "https://apps.apple.com/be/app/netherlink/id6747323142?l=en" },
 ];
-
-const up = (i = 0) => ({
-  initial: { opacity: 0, y: 20 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true },
-  transition: { delay: i * 0.07, duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-});
-
-function Pill({ children, color = C.accent, dim = C.accentDim, border = C.accentBorder }) {
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 10, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", padding: "4px 12px", borderRadius: 20, background: dim, border: `1px solid ${border}`, color }}>
-      <span style={{ width: 5, height: 5, borderRadius: "50%", background: color, boxShadow: `0 0 6px ${color}` }} />
-      {children}
-    </span>
-  );
-}
-
-function PlatformBtn({ icon, label, url, color, small }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <a href={url} target="_blank" rel="noopener noreferrer"
-      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: small ? "7px 13px" : "10px 20px", borderRadius: 10, background: hov ? C.elevated : C.surface, border: `1px solid ${hov ? color + "44" : C.border}`, boxShadow: hov ? `0 0 16px ${color}18` : "none", textDecoration: "none", color: C.text, fontSize: small ? 12 : 13, fontWeight: 500, transition: "all 0.18s" }}>
-      <span style={{ color }}>{icon}</span>{label}
-    </a>
-  );
-}
-
-function Counter({ target, suffix = "" }) {
-  const [n, setN] = useState(0);
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true });
-  useEffect(() => {
-    if (!inView || !target) return;
-    let cur = 0; const step = target / 60;
-    const t = setInterval(() => {
-      cur += step;
-      if (cur >= target) { setN(target); clearInterval(t); }
-      else setN(Math.floor(cur));
-    }, 24);
-    return () => clearInterval(t);
-  }, [inView, target]);
-  return <span ref={ref}>{n > 0 ? n.toLocaleString() : "0"}{suffix}</span>;
-}
 
 function Hero({ stats }) {
   return (
-    <section style={{ position: "relative", minHeight: "96vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "110px 24px 80px", overflow: "hidden" }}>
-      <div style={{ position: "absolute", inset: 0, backgroundImage: `linear-gradient(${C.border} 1px,transparent 1px),linear-gradient(90deg,${C.border} 1px,transparent 1px)`, backgroundSize: "64px 64px", maskImage: "radial-gradient(ellipse 80% 70% at 50% 40%, black 20%, transparent 100%)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", top: "30%", left: "50%", transform: "translate(-50%,-50%)", width: 1000, height: 700, background: "radial-gradient(ellipse at center, rgba(103,228,4,0.09) 0%, transparent 60%)", pointerEvents: "none" }} />
+    <section style={{ background: T.bg, padding: "64px 24px 56px", textAlign: "center" }}>
+      <div style={{ maxWidth: 680, margin: "0 auto" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 20, background: T.green + "15", border: "1px solid " + T.green + "30", marginBottom: 24 }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.green, display: "inline-block" }} />
+          <span style={{ fontSize: 12, fontWeight: 600, color: T.green }}>100% free on all platforms</span>
+        </span>
 
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 860, textAlign: "center" }}>
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} style={{ marginBottom: 24 }}>
-          <Pill>Free · 16 languages · All platforms</Pill>
-        </motion.div>
+        <h1 style={{ fontSize: "clamp(32px,6vw,60px)", fontWeight: 900, color: T.text, margin: "0 0 16px", lineHeight: 1.1, letterSpacing: "-0.03em" }}>
+          Your complete<br />
+          <span style={{ color: T.green }}>Minecraft companion.</span>
+        </h1>
 
-        <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          style={{ fontSize: "clamp(40px, 9vw, 88px)", fontWeight: 800, lineHeight: 1.02, letterSpacing: "-0.047em", margin: "0 0 22px", color: C.text }}>
-          Join any server<br />
-          <span style={{ background: "linear-gradient(135deg,#67e404 10%,#34d399 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            from your console.
-          </span>
-        </motion.h1>
+        <p style={{ fontSize: "clamp(15px,2vw,18px)", color: T.sub, margin: "0 0 32px", lineHeight: 1.7, maxWidth: 520, marginLeft: "auto", marginRight: "auto" }}>
+          Console relay, skin editor, player lookup, resource packs, server tracker, Discord bot and more. All free, in 16 languages.
+        </p>
 
-        <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16, duration: 0.5 }}
-          style={{ fontSize: "clamp(15px, 2vw, 18px)", color: C.secondary, lineHeight: 1.8, maxWidth: 580, margin: "0 auto 42px" }}>
-          PS4, PS5, Xbox and Switch, connect to any Minecraft Java or Bedrock server without port forwarding. Resource packs, player lookup, skin editor and more. All free.
-        </motion.p>
-
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24, duration: 0.5 }}
-          style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", marginBottom: 56 }}>
-          {PLATFORMS.map(p => <PlatformBtn key={p.label} {...p} />)}
-          <a href="/beta" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 18px", borderRadius: 10, background: C.accentDim, border: `1px solid ${C.accentBorder}`, textDecoration: "none", color: C.accent, fontSize: 13, fontWeight: 600 }}>
-            <FaDownload size={12} /> Beta builds
-          </a>
-        </motion.div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", marginBottom: 32 }}>
+          {PLATFORMS.map(p => (
+            <a key={p.label} href={p.url} target="_blank" rel="noopener noreferrer"
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 18px", borderRadius: 10, background: T.surface, border: "1px solid " + T.borderMid, textDecoration: "none", color: T.text, fontSize: 14, fontWeight: 600, transition: "background 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.background = T.raised}
+              onMouseLeave={e => e.currentTarget.style.background = T.surface}>
+              {p.icon} {p.label}
+            </a>
+          ))}
+        </div>
 
         {stats && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4, duration: 0.5 }} style={{ display: "flex", justifyContent: "center" }}>
-            <div style={{ display: "inline-flex", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 18, overflow: "hidden" }}>
-              {[{ l: "servers tracked", v: stats.servers }, { l: "connections made", v: stats.joins }].map((s, i) => (
-                <div key={s.l} style={{ padding: "20px 44px", textAlign: "center", borderLeft: i > 0 ? `1px solid ${C.border}` : "none" }}>
-                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 32, fontWeight: 700, color: C.accent, lineHeight: 1, marginBottom: 8 }}>
-                    <Counter target={s.v} />
-                  </div>
-                  <div style={{ fontSize: 11, color: C.muted, letterSpacing: "0.07em", textTransform: "uppercase" }}>{s.l}</div>
+          <div style={{ display: "inline-flex", gap: 32, marginTop: 8 }}>
+            {[{ n: stats.servers, l: "servers tracked" }, { n: stats.joins, l: "connections made" }].map(s => (
+              <div key={s.l} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 900, color: T.text, lineHeight: 1, letterSpacing: "-0.03em" }}>
+                  {s.n?.toLocaleString()}
                 </div>
-              ))}
-            </div>
-          </motion.div>
+                <div style={{ fontSize: 12, color: T.muted, marginTop: 4 }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
-
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 2.2, duration: 0.6 }} style={{ position: "absolute", bottom: 26, color: C.muted }}>
-        <motion.div animate={{ y: [0, 5, 0] }} transition={{ repeat: Infinity, duration: 2.4 }}><FaChevronDown size={12} /></motion.div>
-      </motion.div>
     </section>
   );
 }
 
-const MODES = [
-  { icon: "🎮", label: "Broadcast Mode", platforms: "PS4 · PS5 · Xbox", color: "#60a5fa", dim: "rgba(96,165,250,0.08)", border: "rgba(96,165,250,0.22)", href: "/docs/howto/playstation-xbox-howto" },
-  { icon: "🕹️", label: "DNS Mode", platforms: "Nintendo Switch", color: "#f472b6", dim: "rgba(244,114,182,0.08)", border: "rgba(244,114,182,0.22)", href: "/docs/howto/nintendo-howto" },
-  { icon: "👥", label: "Friends Mode", platforms: "All consoles", color: "#34d399", dim: "rgba(52,211,153,0.08)", border: "rgba(52,211,153,0.22)", href: "/docs/howto/friend-howto" },
-  { icon: "☕", label: "Java Mode", platforms: "Bedrock → Java", color: "#f59e0b", dim: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.22)", href: "/docs/howto/java-howto" },
+const CONSOLES = [
+  { icon: <FaPlaystation size={36} />, name: "PlayStation 4 & 5", how: "Step-by-step setup guide", href: "/docs/howto/playstation-xbox-howto", color: "#60a5fa" },
+  { icon: <FaXbox size={36} />,        name: "Xbox Series & One", how: "Step-by-step setup guide", href: "/docs/howto/playstation-xbox-howto", color: T.green },
+  { icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M10.42 21.648a5.023 5.023 0 0 1-5.018 5.018 5.023 5.023 0 0 1-5.018-5.018V2.352A2.356 2.356 0 0 1 2.736 0h7.684v21.648zm-2.734 1.92a2.284 2.284 0 1 0 0 4.568 2.284 2.284 0 0 0 0-4.568zm0-18.568a2.284 2.284 0 1 0 0-4.568 2.284 2.284 0 0 0 0 4.568zM13.58 0v24h7.684A2.356 2.356 0 0 0 23.616 21.648V2.352A2.356 2.356 0 0 0 21.264 0zm5.14 2.284a2.284 2.284 0 1 1 0 4.568 2.284 2.284 0 0 1 0-4.568z"/></svg>, name: "Nintendo Switch", how: "Step-by-step setup guide", href: "/docs/howto/nintendo-howto", color: "#f472b6" },
+  { icon: <FaGamepad size={36} />,     name: "All consoles",       how: "Join via friend invite",    href: "/docs/howto/friend-howto",      color: "#fb923c" },
 ];
 
-function ConnectModes() {
+function ConsolesSection() {
   return (
-    <section style={{ background: C.surface, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "72px 24px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <Pill>Console connect</Pill>
-          <h2 style={{ fontSize: "clamp(22px, 3.5vw, 38px)", fontWeight: 800, color: C.text, margin: "16px 0 10px", letterSpacing: "-0.03em" }}>Four ways to connect</h2>
-          <p style={{ fontSize: 15, color: C.secondary, margin: 0 }}>Pick the mode that fits your setup. No mods, no port forwarding.</p>
-        </div>
-        <div className="modes-grid">
-          {MODES.map((m, i) => (
-            <motion.a key={m.label} href={m.href} {...up(i)}
-              style={{ display: "block", textDecoration: "none", padding: "22px", borderRadius: 16, background: C.bg, border: `1px solid ${C.border}`, transition: "border-color 0.18s, background 0.18s" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = m.border; e.currentTarget.style.background = m.dim; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.bg; }}>
-              <div style={{ fontSize: 28, marginBottom: 14 }}>{m.icon}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 4 }}>{m.label}</div>
-              <div style={{ fontSize: 12, color: m.color, marginBottom: 16, fontWeight: 500 }}>{m.platforms}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: C.muted, fontWeight: 500 }}>Setup guide <FaArrowRight size={9} /></div>
-            </motion.a>
+    <section style={{ background: T.bgAlt, borderTop: "1px solid " + T.border, padding: "56px 24px" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+        <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: T.green, textAlign: "center", marginBottom: 8 }}>Console connect</p>
+        <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: T.text, textAlign: "center", margin: "0 0 10px", letterSpacing: "-0.02em" }}>Which console do you play on?</h2>
+        <p style={{ fontSize: 15, color: T.sub, textAlign: "center", margin: "0 auto 40px", maxWidth: 460, lineHeight: 1.65 }}>Tap your console to open the setup guide. Takes about 5 minutes.</p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+          {CONSOLES.map(c => (
+            <a key={c.name} href={c.href}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "28px 16px", borderRadius: 16, background: T.surface, border: "1px solid " + T.border, textDecoration: "none", color: "inherit", transition: "border-color 0.15s, transform 0.15s", textAlign: "center" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = c.color + "60"; e.currentTarget.style.transform = "translateY(-3px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; }}>
+              <span style={{ color: c.color }}>{c.icon}</span>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 4 }}>{c.name}</div>
+                <div style={{ fontSize: 12, color: c.color, fontWeight: 600 }}>{c.how} →</div>
+              </div>
+            </a>
           ))}
         </div>
       </div>
@@ -159,156 +125,78 @@ function ConnectModes() {
   );
 }
 
-const APP_FEATS = [
-  { icon: <FaSearch size={13} />, color: "#f472b6", label: "Player Lookup", desc: "Search by Java username, Bedrock gamertag or UUID. 3D skin preview." },
-  { icon: <FaServer size={13} />, color: "#60a5fa", label: "Server Tracker", desc: "Real-time status, push notifications. Free: 1 slot, up to 10 on paid plans." },
-  { icon: <FaPalette size={13} />, color: "#a78bfa", label: "Skin Workshop", desc: "Browse community skins, upload your own, and edit pixel by pixel." },
-  { icon: <FaBox size={13} />, color: C.accent, label: "Resource Packs", desc: "Apply and manage server resource packs directly from the app.", beta: true },
-  { icon: <FaComments size={13} />, color: "#fb923c", label: "Friends & Chat", desc: "Add friends, see online status and send direct messages inside the app." },
-  { icon: <FaLink size={13} />, color: "#34d399", label: "Account Linking", desc: "Link Xbox/Bedrock and Java accounts via Microsoft device-code flow." },
+const FEATURES = [
+  { e: "🔍", title: "Player Lookup", desc: "Search any Minecraft player by name or ID. See their skin, name history and linked accounts.", href: "/lookup", color: "#f472b6" },
+  { e: "🎨", title: "Skin Workshop", desc: "Browse thousands of community skins or upload and edit your own. Works in the app and in your browser.", href: "/skins", color: "#a78bfa" },
+  { e: "📡", title: "Server Tracker", desc: "Follow your favourite servers. Get notified the moment they come back online.", href: null, color: "#60a5fa" },
+  { e: "📦", title: "Resource Packs", desc: "Browse and apply Bedrock resource packs directly from the app.", href: "/packs", color: T.teal, badge: "Beta" },
+  { e: "💬", title: "Friends & Chat", desc: "Add friends, see who's online and send messages inside MCCompanion.", href: null, color: "#fb923c" },
+  { e: "🌍", title: "16 Languages", desc: "Available in Dutch, English, French, German, Spanish, Portuguese and 10 more.", href: null, color: T.muted },
 ];
 
-function AppSection() {
+function FeaturesSection() {
   return (
-    <section style={{ padding: "88px 24px" }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div className="app-grid">
-          <div style={{ display: "flex", justifyContent: "center" }}><AppShowcase /></div>
-          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <Pill>The app</Pill>
-            <h2 style={{ fontSize: "clamp(22px, 3vw, 38px)", fontWeight: 800, color: C.text, margin: "16px 0 8px", letterSpacing: "-0.03em" }}>More than just a relay</h2>
-            <p style={{ fontSize: 14, color: C.secondary, margin: "0 0 28px", lineHeight: 1.75 }}>A full Minecraft companion, available on Windows, macOS, Android and iOS in 16 languages.</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 28 }}>
-              {APP_FEATS.map(f => (
-                <div key={f.label} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "11px 14px", borderRadius: 10, background: C.surface, border: `1px solid ${C.border}` }}>
-                  <div style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, background: f.color + "18", border: `1px solid ${f.color}28`, display: "flex", alignItems: "center", justifyContent: "center", color: f.color }}>{f.icon}</div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{f.label}</span>
-                      {f.beta && <span style={{ fontSize: 9, fontWeight: 700, color: C.accent, background: C.accentDim, border: `1px solid ${C.accentBorder}`, padding: "1px 5px", borderRadius: 4 }}>BETA</span>}
-                    </div>
-                    <span style={{ fontSize: 12, color: C.secondary, lineHeight: 1.6 }}>{f.desc}</span>
-                  </div>
-                </div>
-              ))}
+    <section style={{ background: T.bg, borderTop: "1px solid " + T.border, padding: "56px 24px" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+        <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#60a5fa", textAlign: "center", marginBottom: 8 }}>App features</p>
+        <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: T.text, textAlign: "center", margin: "0 0 10px", letterSpacing: "-0.02em" }}>More than just a relay.</h2>
+        <p style={{ fontSize: 15, color: T.sub, textAlign: "center", margin: "0 auto 40px", maxWidth: 460, lineHeight: 1.65 }}>Everything you need, all in one free app.</p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
+          {FEATURES.map(f => (
+            <div key={f.title}
+              style={{ padding: "22px", borderRadius: 14, background: T.surface, border: "1px solid " + T.border, position: "relative" }}>
+              <span style={{ fontSize: 28, display: "block", marginBottom: 12 }}>{f.e}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{f.title}</span>
+                {f.badge && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: f.color + "20", color: f.color }}>{f.badge}</span>}
+              </div>
+              <p style={{ fontSize: 13, color: T.sub, margin: "0 0 12px", lineHeight: 1.65 }}>{f.desc}</p>
+              {f.href && (
+                <a href={f.href} style={{ fontSize: 13, fontWeight: 600, color: f.color, textDecoration: "none" }}>Open →</a>
+              )}
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {PLATFORMS.map(p => <PlatformBtn key={p.label} {...p} small />)}
-            </div>
-          </div>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 32 }}>
+          {PLATFORMS.map(p => (
+            <a key={p.label} href="#start" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 8, background: T.surface, border: "1px solid " + T.border, textDecoration: "none", color: T.text, fontSize: 13, fontWeight: 500 }}>
+              {p.icon} {p.label}
+            </a>
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-const WEB_TOOLS = [
-  {
-    icon: "🎨",
-    label: "Skin Workshop",
-    desc: "Browse community skins, upload your own PNG, or edit pixel by pixel with the built-in UV editor.",
-    color: "#a78bfa",
-    dim: "rgba(167,139,250,0.08)",
-    border: "rgba(167,139,250,0.22)",
-    href: "/skins",
-    tags: ["Gallery", "Editor", "Upload"],
-  },
-  {
-    icon: "📦",
-    label: "Resource Packs",
-    desc: "Browse curated Minecraft Bedrock resource packs. Apply them directly from the app or download.",
-    color: C.accent,
-    dim: C.accentDim,
-    border: C.accentBorder,
-    href: "/packs",
-    tags: ["Bedrock", "Browse", "Free"],
-  },
-  {
-    icon: "🧩",
-    label: "RP Editor",
-    desc: "Merge multiple resource packs into one .mcpack. Conflict resolver, file browser and manifest editor.",
-    color: "#a78bfa",
-    dim: "rgba(167,139,250,0.08)",
-    border: "rgba(167,139,250,0.22)",
-    href: "/rpeditor",
-    tags: ["Merge", "Conflicts", "No install"],
-  },
-  {
-    icon: "🔍",
-    label: "Player Lookup",
-    desc: "Search any Java username, Bedrock gamertag or UUID. See skin, name history and server activity.",
-    color: "#f472b6",
-    dim: "rgba(244,114,182,0.08)",
-    border: "rgba(244,114,182,0.22)",
-    href: "/lookup",
-    tags: ["Java", "Bedrock", "Skins"],
-  },
-  {
-    icon: "📊",
-    label: "Server Metrics",
-    desc: "See how many players have joined your server through MCCompanion over time.",
-    color: "#60a5fa",
-    dim: "rgba(96,165,250,0.08)",
-    border: "rgba(96,165,250,0.22)",
-    href: "/metrics",
-    tags: ["Stats", "Join count"],
-  },
-  {
-    icon: "🟢",
-    label: "Status",
-    desc: "Live status of all MCCompanion services, including relay bots, API and Discord bot.",
-    color: "#34d399",
-    dim: "rgba(52,211,153,0.08)",
-    border: "rgba(52,211,153,0.22)",
-    href: "/status",
-    tags: ["Uptime", "Live"],
-  },
-  {
-    icon: "⚡",
-    label: "API",
-    desc: "Public REST API for server data, player info and metrics. Free to use with rate limiting.",
-    color: "#fbbf24",
-    dim: "rgba(251,191,36,0.06)",
-    border: "rgba(251,191,36,0.20)",
-    href: "/api-docs",
-    tags: ["REST", "Free", "Docs"],
-  },
+const WEB = [
+  { e: "🔍", title: "Player Lookup", href: "/lookup", color: "#f472b6" },
+  { e: "🎨", title: "Skin Workshop", href: "/skins", color: "#a78bfa" },
+  { e: "🧩", title: "RP Editor", href: "/rpeditor", color: "#a78bfa" },
+  { e: "📊", title: "Server Metrics", href: "/metrics", color: "#60a5fa" },
+  { e: "🟢", title: "Status", href: "/status", color: T.green },
+  { e: "⚡", title: "API", href: "/api-docs", color: "#f59e0b" },
 ];
 
 function WebToolsSection() {
   return (
-    <section style={{ background: C.surface, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "80px 24px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 44 }}>
-          <Pill color="#a78bfa" dim="rgba(167,139,250,0.08)" border="rgba(167,139,250,0.22)">Web tools</Pill>
-          <h2 style={{ fontSize: "clamp(22px, 3.5vw, 38px)", fontWeight: 800, color: C.text, margin: "16px 0 10px", letterSpacing: "-0.03em" }}>
-            Powerful tools,<br />right in your browser
-          </h2>
-          <p style={{ fontSize: 15, color: C.secondary, margin: 0 }}>No download required. Works on any device.</p>
-        </div>
+    <section style={{ background: T.bgAlt, borderTop: "1px solid " + T.border, padding: "56px 24px" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+        <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#a78bfa", textAlign: "center", marginBottom: 8 }}>Browser tools</p>
+        <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: T.text, textAlign: "center", margin: "0 0 10px", letterSpacing: "-0.02em" }}>Works without the app.</h2>
+        <p style={{ fontSize: 15, color: T.sub, textAlign: "center", margin: "0 auto 40px", maxWidth: 460, lineHeight: 1.65 }}>These tools run right in your browser. No download needed.</p>
 
-        <div className="tools-grid">
-          {WEB_TOOLS.map((t, i) => (
-            <motion.a key={t.label} href={t.href} {...up(i)}
-              style={{ display: "flex", flexDirection: "column", textDecoration: "none", padding: "28px 26px", borderRadius: 18, background: C.bg, border: `1px solid ${C.border}`, transition: "all 0.2s", position: "relative", overflow: "hidden" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.background = t.dim; e.currentTarget.style.transform = "translateY(-2px)"; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.bg; e.currentTarget.style.transform = "translateY(0)"; }}>
-              <div style={{ position: "absolute", top: -30, right: -30, width: 160, height: 160, background: `radial-gradient(circle, ${t.color}12 0%, transparent 70%)`, pointerEvents: "none" }} />
-
-              <div style={{ fontSize: 36, marginBottom: 18 }}>{t.icon}</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 8, letterSpacing: "-0.02em" }}>{t.label}</div>
-              <p style={{ fontSize: 13, color: C.secondary, lineHeight: 1.7, margin: "0 0 20px", flex: 1 }}>{t.desc}</p>
-
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 18 }}>
-                {t.tags.map(tag => (
-                  <span key={tag} style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 6, background: t.color + "14", border: `1px solid ${t.color}28`, color: t.color, letterSpacing: "0.04em" }}>{tag}</span>
-                ))}
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: t.color }}>
-                Open tool <FaArrowRight size={10} />
-              </div>
-            </motion.a>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
+          {WEB.map(w => (
+            <a key={w.title} href={w.href}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "22px 12px", borderRadius: 14, background: T.surface, border: "1px solid " + T.border, textDecoration: "none", color: "inherit", textAlign: "center", transition: "border-color 0.15s, transform 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = w.color + "60"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; }}>
+              <span style={{ fontSize: 30 }}>{w.e}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{w.title}</span>
+            </a>
           ))}
         </div>
       </div>
@@ -316,36 +204,66 @@ function WebToolsSection() {
   );
 }
 
-function LiveSection() {
+/* ── Skins ───────────────────────────────────────────────────────────────── */
+function SkinsSection({ skins }) {
+  const row = [...skins, ...skins, ...skins];
+  if (!skins.length) return null;
   return (
-    <section style={{ padding: "88px 24px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", flexDirection: "column", gap: 72 }}>
+    <section style={{ background: T.bg, borderTop: "1px solid " + T.border, padding: "56px 0" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto 28px", padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <Pill color="#7289da" dim="rgba(114,137,218,0.08)" border="rgba(114,137,218,0.25)">Discord bot</Pill>
-            <h2 style={{ fontSize: "clamp(22px, 3.5vw, 38px)", fontWeight: 800, color: C.text, margin: "16px 0 8px", letterSpacing: "-0.03em" }}>
-              Server status, <span style={{ color: "#7289da" }}>always live</span>
-            </h2>
-            <p style={{ fontSize: 15, color: C.secondary, margin: "0 0 8px" }}>Auto-updating embeds in any Discord channel. Java &amp; Bedrock.</p>
-            <a href="/docs/discord-bot/discord-bot-setup" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: "#7289da", textDecoration: "none" }}>
-              Setup guide <FaArrowRight size={10} />
+          <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#a78bfa", margin: "0 0 4px" }}>Skin Workshop</p>
+          <h2 style={{ fontSize: "clamp(20px,3vw,32px)", fontWeight: 800, color: T.text, margin: 0, letterSpacing: "-0.02em" }}>Community skins.</h2>
+        </div>
+        <a href="/skins" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 16px", borderRadius: 10, background: "#a78bfa", textDecoration: "none", color: "#fff", fontSize: 13, fontWeight: 700 }}>
+          Browse & upload <FaArrowRight size={10} />
+        </a>
+      </div>
+      <style>{`@keyframes sk{from{transform:translateX(0)}to{transform:translateX(-33.33%)}}.sk-row{display:flex;gap:10px;width:max-content;animation:sk 70s linear infinite}.sk-row:hover{animation-play-state:paused}`}</style>
+      <div style={{ paddingLeft: 24, overflow: "hidden" }}>
+        <div className="sk-row">
+          {row.map((s, i) => (
+            <a key={i} href="/skins"
+              style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "10px 8px", borderRadius: 12, background: T.surface, border: "1px solid " + T.border, width: 88, textDecoration: "none", transition: "border-color 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "#a78bfa50"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = T.border}>
+              <Skin3D url={s.public_url} />
+              <span style={{ fontSize: 10, color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%", textAlign: "center" }}>{s.name}</span>
+              {s.like_count > 0 && <span style={{ fontSize: 10, color: "#f87171", display: "flex", alignItems: "center", gap: 2 }}><FaHeart size={8} />{s.like_count}</span>}
             </a>
-          </div>
-          <DiscordBotSection />
+          ))}
         </div>
+      </div>
+    </section>
+  );
+}
 
-        <div>
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <Pill color="#34d399" dim="rgba(52,211,153,0.08)" border="rgba(52,211,153,0.25)">Xbox relay network</Pill>
-            <h2 style={{ fontSize: "clamp(22px, 3.5vw, 38px)", fontWeight: 800, color: C.text, margin: "16px 0 8px", letterSpacing: "-0.03em" }}>
-              Always online, <span style={{ color: "#34d399" }}>EU &amp; US</span>
-            </h2>
-            <p style={{ fontSize: 15, color: C.secondary, margin: 0 }}>
-              Dedicated Xbox bots in Europe and the United States, used by DNS Mode and Friends Mode 24/7.
-            </p>
-          </div>
-          <BotStatus />
-        </div>
+/* ── Discord ─────────────────────────────────────────────────────────────── */
+function DiscordSection() {
+  return (
+    <section style={{ background: T.bgAlt, borderTop: "1px solid " + T.border, padding: "56px 24px" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+        <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#5865f2", textAlign: "center", marginBottom: 8 }}>Discord bot</p>
+        <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: T.text, textAlign: "center", margin: "0 0 10px", letterSpacing: "-0.02em" }}>Live server status in Discord.</h2>
+        <p style={{ fontSize: 15, color: T.sub, textAlign: "center", margin: "0 auto 36px", maxWidth: 440, lineHeight: 1.65 }}>
+          Auto-updating embeds for Java and Bedrock servers. Free to add to any Discord server.
+        </p>
+        <DiscordBotSection />
+      </div>
+    </section>
+  );
+}
+
+function RelaySection() {
+  return (
+    <section style={{ background: T.bg, borderTop: "1px solid " + T.border, padding: "56px 24px" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+        <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: T.teal, textAlign: "center", marginBottom: 8 }}>Xbox relay</p>
+        <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: T.text, textAlign: "center", margin: "0 0 10px", letterSpacing: "-0.02em" }}>Always online. EU and US.</h2>
+        <p style={{ fontSize: 15, color: T.sub, textAlign: "center", margin: "0 auto 36px", maxWidth: 440, lineHeight: 1.65 }}>
+          Dedicated relay bots running 24/7 so you can always connect from your console.
+        </p>
+        <BotStatus />
       </div>
     </section>
   );
@@ -353,11 +271,14 @@ function LiveSection() {
 
 function ServersSection() {
   return (
-    <section style={{ background: C.surface, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "80px 24px" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <Pill>Featured servers</Pill>
-          <h2 style={{ fontSize: "clamp(22px, 3.5vw, 38px)", fontWeight: 800, color: C.text, margin: "16px 0 8px", letterSpacing: "-0.03em" }}>Discover new worlds</h2>
+    <section style={{ background: T.bg, borderTop: "1px solid " + T.border, padding: "56px 24px" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 28 }}>
+          <div>
+            <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#f59e0b", margin: "0 0 4px" }}>Community</p>
+            <h2 style={{ fontSize: "clamp(20px,3vw,32px)", fontWeight: 800, color: T.text, margin: 0, letterSpacing: "-0.02em" }}>Featured servers.</h2>
+          </div>
+          <a href="/partner" style={{ fontSize: 13, fontWeight: 600, color: T.green, textDecoration: "none" }}>Feature your server →</a>
         </div>
         <FeaturedServersCarousel />
       </div>
@@ -365,44 +286,22 @@ function ServersSection() {
   );
 }
 
-function BottomCTAs() {
+function DownloadCTA() {
   return (
-    <section style={{ padding: "80px 24px 96px" }}>
-      <div className="cta-grid" style={{ maxWidth: 1100, margin: "0 auto" }}>
-
-        <div style={{ padding: "36px", borderRadius: 20, background: `linear-gradient(135deg, ${C.elevated} 0%, #0e1a0b 100%)`, border: `1px solid ${C.accentBorder}`, position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", top: -60, right: -60, width: 260, height: 260, background: "radial-gradient(circle, rgba(103,228,4,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
-          <Pill>Partner program</Pill>
-          <h3 style={{ fontSize: 24, fontWeight: 800, color: C.text, margin: "16px 0 10px", letterSpacing: "-0.02em" }}>Feature your server</h3>
-          <p style={{ fontSize: 13, color: C.secondary, lineHeight: 1.75, margin: "0 0 20px" }}>
-            Reach thousands of players through in-app featured placement, website listings and Discord. Standard $15/mo · Premium $50/mo.
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 26 }}>
-            {["Rotating featured spot in app & website", "Stats dashboard with real-time visit graphs", "Premium: hero placement on the connector page"].map(b => (
-              <div key={b} style={{ display: "flex", gap: 8, fontSize: 12, color: C.secondary, alignItems: "flex-start" }}>
-                <FaCheck size={10} color={C.accent} style={{ flexShrink: 0, marginTop: 2 }} />{b}
-              </div>
-            ))}
-          </div>
-          <a href="/partner" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 22px", borderRadius: 10, background: C.accent, color: "#000", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>
-            View plans <FaArrowRight size={11} />
-          </a>
+    <section style={{ background: T.bgAlt, borderTop: "1px solid " + T.border, padding: "64px 24px", textAlign: "center" }}>
+      <div style={{ maxWidth: 540, margin: "0 auto" }}>
+        <h2 style={{ fontSize: "clamp(28px,5vw,52px)", fontWeight: 900, color: T.text, margin: "0 0 12px", letterSpacing: "-0.03em" }}>
+          Ready? <span style={{ color: T.green }}>It's free.</span>
+        </h2>
+        <p style={{ fontSize: 15, color: T.sub, margin: "0 0 28px", lineHeight: 1.65 }}>Download and play in minutes.</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
+          {PLATFORMS.map(p => (
+            <a key={p.label} href={p.url} target="_blank" rel="noopener noreferrer"
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 18px", borderRadius: 10, background: T.surface, border: "1px solid " + T.borderMid, textDecoration: "none", color: T.text, fontSize: 14, fontWeight: 600 }}>
+              {p.icon} {p.label}
+            </a>
+          ))}
         </div>
-
-        <div style={{ padding: "36px", borderRadius: 20, background: C.elevated, border: `1px solid ${C.border}`, display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: C.accentDim, border: `1px solid ${C.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
-            <img src="/img/icon.png" alt="MCCompanion" style={{ width: 36, height: 36, borderRadius: 9 }} />
-          </div>
-          <h3 style={{ fontSize: 24, fontWeight: 800, color: C.text, margin: "0 0 10px", letterSpacing: "-0.02em" }}>Download MCCompanion</h3>
-          <p style={{ fontSize: 13, color: C.secondary, lineHeight: 1.75, margin: "0 0 24px" }}>Free on every platform. No account required to start. Available in 16 languages.</p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-            {PLATFORMS.map(p => <PlatformBtn key={p.label} {...p} small />)}
-          </div>
-          <a href="/beta" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: C.muted, textDecoration: "none", padding: "6px 12px", borderRadius: 7, border: `1px solid ${C.border}`, background: C.surface }}>
-            <FaDownload size={10} /> Beta builds
-          </a>
-        </div>
-
       </div>
     </section>
   );
@@ -410,45 +309,35 @@ function BottomCTAs() {
 
 export default function Home() {
   const [stats, setStats] = useState(null);
+  const [skins, setSkins] = useState([]);
 
   useEffect(() => {
-    fetch("https://api.mccompanion.net/api/metrics")
-      .then(r => r.json())
-      .then(d => setStats({ servers: d.totalServers, joins: d.totalCount }))
-      .catch(() => { });
+    fetch(API + "/api/metrics").then(r => r.json()).then(d => setStats({ servers: d.totalServers, joins: d.totalCount })).catch(() => { });
+    Promise.all([
+      fetch(API + "/api/skins/top?limit=30").then(r => r.json()).catch(() => ({ skins: [] })),
+      fetch(API + "/api/skins?limit=30").then(r => r.json()).catch(() => ({ skins: [] })),
+    ]).then(([a, b]) => {
+      const map = new Map();
+      [...(a.skins || []), ...(b.skins || [])].forEach(s => { if (!map.has(s.id)) map.set(s.id, s); });
+      setSkins([...map.values()].slice(0, 30));
+    });
   }, []);
 
   return (
     <Layout
-      title="MCCompanion: Join any Minecraft server from your console"
-      description="Connect PS4, PS5, Xbox and Switch to any Minecraft server. No mods, no port forwarding. Plus player lookup, skin editor, server tracker, Discord bot and more."
+      title="MCCompanion: Connect any console to any Minecraft server"
+      description="Free Minecraft companion app. Console relay, skin workshop, player lookup, server tracker, Discord bot and more."
     >
-      <style>{`
-        .modes-grid  { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
-        .app-grid    { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
-        .tools-grid  { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
-        .cta-grid    { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 960px) {
-          .modes-grid  { grid-template-columns: repeat(2,1fr); }
-          .tools-grid  { grid-template-columns: repeat(2,1fr); }
-          .app-grid    { grid-template-columns: 1fr; }
-          .app-grid > div:first-child { display: none; }
-          .cta-grid    { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 540px) {
-          .modes-grid  { grid-template-columns: 1fr 1fr; }
-          .tools-grid  { grid-template-columns: 1fr; }
-        }
-      `}</style>
-
-      <div style={{ background: C.bg, fontFamily: "'Inter',system-ui,sans-serif", overflowX: "hidden" }}>
+      <div style={{ background: T.bg, fontFamily: "'Inter',system-ui,sans-serif" }}>
         <Hero stats={stats} />
-        <ConnectModes />
-        <AppSection />
+        <ConsolesSection />
+        <FeaturesSection />
         <WebToolsSection />
-        <LiveSection />
+        <SkinsSection skins={skins} />
+        <DiscordSection />
+        <RelaySection />
         <ServersSection />
-        <BottomCTAs />
+        <DownloadCTA />
       </div>
     </Layout>
   );

@@ -1,204 +1,78 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { FaDiscord, FaPlus, FaList, FaEdit, FaTrash } from "react-icons/fa";
+import { T } from "../lib/tokens";
 
-const NL = {
-  bg: "#111318",
-  surface: "#191c23",
-  elevated: "#1f232c",
-  subtle: "#252931",
-  border: "rgba(255,255,255,0.07)",
-  borderMid: "rgba(255,255,255,0.12)",
-  text: "#e8e9ec",
-  secondary: "#9299a6",
-  muted: "#5a6070",
-  accent: "#67e404",
-  accentDim: "rgba(103,228,4,0.10)",
-  accentBorder: "rgba(103,228,4,0.22)",
-};
-
-const DISCORD_INVITE = "https://discord.com/oauth2/authorize?client_id=1405139934771282061&permissions=274877934592&integration_type=0&scope=bot";
+const INVITE = "https://discord.com/oauth2/authorize?client_id=1405139934771282061&permissions=274877934592&integration_type=0&scope=bot";
 
 const COMMANDS = [
-  {
-    icon: <FaPlus size={13} />,
-    name: "/server-add",
-    desc: "Add a Minecraft server to monitor. Provide a name, IP, and channel, the bot posts a live status embed instantly.",
-    color: "#67e404",
-    colorDim: "rgba(103,228,4,0.10)",
-    colorBorder: "rgba(103,228,4,0.20)",
-  },
-  {
-    icon: <FaTrash size={13} />,
-    name: "/server-delete",
-    desc: "Remove a server from monitoring. The status embed is automatically deleted from the channel.",
-    color: "#f87171",
-    colorDim: "rgba(248,113,113,0.10)",
-    colorBorder: "rgba(248,113,113,0.20)",
-  },
-  {
-    icon: <FaEdit size={13} />,
-    name: "/server-edit",
-    desc: "Update a server's IP, port, platform, channel, or custom favicon without re-adding it.",
-    color: "#60a5fa",
-    colorDim: "rgba(96,165,250,0.10)",
-    colorBorder: "rgba(96,165,250,0.20)",
-  },
-  {
-    icon: <FaList size={13} />,
-    name: "/server-list",
-    desc: "View all monitored servers for this Discord server, see status, channel, and tracking state at a glance.",
-    color: "#a78bfa",
-    colorDim: "rgba(167,139,250,0.10)",
-    colorBorder: "rgba(167,139,250,0.20)",
-  },
+  { icon: <FaPlus size={12} />,   name: "/server-add",    desc: "Add a server to monitor and post a live status embed.",   color: "#67e404" },
+  { icon: <FaTrash size={12} />,  name: "/server-delete", desc: "Remove a server and delete its embed from the channel.",  color: "#f87171" },
+  { icon: <FaEdit size={12} />,   name: "/server-edit",   desc: "Update IP, port, channel or favicon without re-adding.", color: "#60a5fa" },
+  { icon: <FaList size={12} />,   name: "/server-list",   desc: "View all monitored servers for this Discord server.",     color: "#a78bfa" },
 ];
 
-const EMBED_STATES = [
-  {
-    server: "play.hypixel.net:25565",
-    status: "Online",
-    statusColor: "#67e404",
-    players: "47,291 / 200,000",
-    version: "1.21.x",
-    platform: "Java Edition",
-    motd: "Hypixel Network · The Largest Server",
-    embedColor: "#67e404",
-    ping: "12ms",
-  },
-  {
-    server: "mc.nether.pro:19132",
-    status: "Online",
-    statusColor: "#67e404",
-    players: "312 / 500",
-    version: "1.21.x",
-    platform: "Bedrock Edition",
-    motd: "NetherPro Network · Bedrock & Java",
-    embedColor: "#34d399",
-    ping: "28ms",
-  },
-  {
-    server: "offline.example.net:25565",
-    status: "Offline",
-    statusColor: "#f87171",
-    players: "—",
-    version: "—",
-    platform: "Java Edition",
-    motd: "Server is currently offline",
-    embedColor: "#f87171",
-    ping: "—",
-  },
+const EMBEDS = [
+  { server: "play.hypixel.net:25565",     online: true,  players: "47,291 / 200,000", version: "1.21.x", platform: "Java",    motd: "Hypixel Network · The Largest Server",   color: "#67e404", ping: "12ms" },
+  { server: "mc.nether.pro:19132",        online: true,  players: "312 / 500",        version: "1.21.x", platform: "Bedrock", motd: "NetherPro Network · Bedrock & Java",      color: "#34d399", ping: "28ms" },
+  { server: "offline.example.net:25565",  online: false, players: "—",               version: "—",      platform: "Java",    motd: "Server is currently offline",              color: "#f87171", ping: "—" },
 ];
 
-function DiscordEmbedMockup() {
-  const [idx, setIdx] = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(() => setIdx(i => (i + 1) % EMBED_STATES.length), 3500);
-    return () => clearInterval(t);
-  }, []);
-
-  const embed = EMBED_STATES[idx];
+function EmbedMockup() {
+  const [i, setI] = useState(0);
+  useEffect(() => { const t = setInterval(() => setI(x => (x + 1) % EMBEDS.length), 3500); return () => clearInterval(t); }, []);
+  const e = EMBEDS[i];
 
   return (
-    <div style={{
-      background: "#313338",
-      borderRadius: 12,
-      padding: "16px",
-      fontFamily: "'Inter', sans-serif",
-      maxWidth: 400,
-      width: "100%",
-      boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
-      border: "1px solid rgba(255,255,255,0.06)",
-      minHeight: 310,
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: "50%",
-          background: "linear-gradient(135deg, #67e404, #34d399)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          flexShrink: 0,
-        }}>
-          <FaDiscord size={18} color="#fff" />
+    <div style={{ background: "#1e1f22", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.08)", width: "100%", maxWidth: 360 }}>
+      {/* discord top bar */}
+      <div style={{ background: "#2b2d31", padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#67e404,#34d399)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <FaDiscord size={16} color="#fff" />
         </div>
         <div>
-          <span style={{ color: "#fff", fontSize: 14, fontWeight: 600 }}>MCCompanion</span>
-          <span style={{
-            marginLeft: 6, fontSize: 10, background: "#5865f2",
-            color: "#fff", padding: "1px 5px", borderRadius: 4, fontWeight: 600,
-          }}>APP</span>
+          <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>MCCompanion</span>
+          <span style={{ marginLeft: 6, fontSize: 9, background: T.discord, color: "#fff", padding: "1px 5px", borderRadius: 3, fontWeight: 700 }}>APP</span>
         </div>
-        <span style={{ marginLeft: "auto", fontSize: 11, color: "#72767d" }}>Today at 12:34</span>
+        <span style={{ marginLeft: "auto", fontSize: 10, color: "#72767d" }}>Today 12:34</span>
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={idx}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.25 }}
-          style={{
-            borderLeft: `4px solid ${embed.embedColor}`,
-            background: "#2b2d31",
-            borderRadius: "0 8px 8px 0",
-            padding: "12px 14px",
-          }}
-        >
-          <p style={{ color: "#fff", fontWeight: 600, fontSize: 14, margin: "0 0 10px" }}>
-            {embed.server}
-          </p>
+      {/* embed */}
+      <div style={{ padding: "10px 14px 14px" }}>
+        <AnimatePresence mode="wait">
+          <motion.div key={i}
+            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22 }}
+            style={{ borderLeft: `3px solid ${e.color}`, background: "#2b2d31", borderRadius: "0 8px 8px 0", padding: "12px 14px" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 10, fontFamily: "monospace" }}>{e.server}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px 10px", marginBottom: 10 }}>
+              {[
+                ["Status",   e.online ? "🟢 Online" : "🔴 Offline", e.color],
+                ["Players",  e.players,  "#e3e5e8"],
+                ["Version",  e.version,  "#e3e5e8"],
+                ["Platform", e.platform, "#e3e5e8"],
+                ["Ping",     e.ping,     "#e3e5e8"],
+              ].map(([label, val, col]) => (
+                <div key={label}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#b5bac1", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>{label}</div>
+                  <div style={{ fontSize: 12, color: col, fontWeight: label === "Status" ? 700 : 400 }}>{val}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#b5bac1", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3 }}>MOTD</div>
+              <div style={{ fontSize: 12, color: "#e3e5e8" }}>{e.motd}</div>
+            </div>
+            <div style={{ fontSize: 10, color: "#72767d", marginTop: 8 }}>MCCompanion · auto-updated</div>
+          </motion.div>
+        </AnimatePresence>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px 12px", marginBottom: 10 }}>
-            <div>
-              <p style={{ color: "#b5bac1", fontSize: 11, fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Status</p>
-              <p style={{ color: embed.statusColor, fontSize: 13, fontWeight: 600, margin: 0 }}>
-                {embed.status === "Online" ? "🟢" : "🔴"} {embed.status}
-              </p>
-            </div>
-            <div>
-              <p style={{ color: "#b5bac1", fontSize: 11, fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Players</p>
-              <p style={{ color: "#e3e5e8", fontSize: 13, margin: 0 }}>{embed.players}</p>
-            </div>
-            <div>
-              <p style={{ color: "#b5bac1", fontSize: 11, fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Version</p>
-              <p style={{ color: "#e3e5e8", fontSize: 13, margin: 0 }}>{embed.version}</p>
-            </div>
-            <div>
-              <p style={{ color: "#b5bac1", fontSize: 11, fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Platform</p>
-              <p style={{ color: "#e3e5e8", fontSize: 13, margin: 0 }}>{embed.platform}</p>
-            </div>
-            <div>
-              <p style={{ color: "#b5bac1", fontSize: 11, fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Ping</p>
-              <p style={{ color: "#e3e5e8", fontSize: 13, margin: 0 }}>{embed.ping}</p>
-            </div>
-          </div>
-
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 8 }}>
-            <p style={{ color: "#b5bac1", fontSize: 11, fontWeight: 600, margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Message of the Day</p>
-            <p style={{ color: "#e3e5e8", fontSize: 12, margin: 0 }}>{embed.motd}</p>
-          </div>
-
-          <p style={{ color: "#72767d", fontSize: 11, margin: "10px 0 0" }}>
-            MCCompanion • Instant updates for Minecraft servers
-          </p>
-        </motion.div>
-      </AnimatePresence>
-
-      <div style={{ display: "flex", gap: 5, justifyContent: "center", marginTop: 12 }}>
-        {EMBED_STATES.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setIdx(i)}
-            style={{
-              width: i === idx ? 18 : 6,
-              height: 6, borderRadius: 3,
-              background: i === idx ? NL.accent : "rgba(255,255,255,0.15)",
-              border: "none", cursor: "pointer", padding: 0,
-              transition: "all 0.3s",
-            }}
-          />
-        ))}
+        <div style={{ display: "flex", gap: 5, justifyContent: "center", marginTop: 12 }}>
+          {EMBEDS.map((_, j) => (
+            <button key={j} onClick={() => setI(j)}
+              style={{ width: j === i ? 18 : 6, height: 6, borderRadius: 3, background: j === i ? T.green : "rgba(255,255,255,0.15)", border: "none", cursor: "pointer", padding: 0, transition: "all 0.25s" }} />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -206,99 +80,34 @@ function DiscordEmbedMockup() {
 
 export default function DiscordBotSection() {
   return (
-    <div style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-      gap: 48,
-      alignItems: "center",
-    }}>
-      <div>
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 8,
-          fontSize: 11, padding: "4px 12px", borderRadius: 20,
-          background: "rgba(88,101,242,0.12)", border: "1px solid rgba(88,101,242,0.25)",
-          color: "#7289da", fontFamily: "'JetBrains Mono', monospace",
-          letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 16,
-        }}>
-          <FaDiscord size={11} />
-          Discord Bot
-        </div>
-
-        <h2 style={{
-          fontSize: "clamp(22px, 3vw, 32px)",
-          fontWeight: 700, color: NL.text,
-          letterSpacing: "-0.02em", lineHeight: 1.2, margin: "0 0 14px",
-        }}>
-          Live Minecraft status,<br />
-          right in your{" "}
-          <span style={{ color: "#7289da" }}>Discord</span>
-        </h2>
-
-        <p style={{ fontSize: 14, color: NL.secondary, lineHeight: 1.7, margin: "0 0 24px", maxWidth: 440 }}>
-          The MCCompanion Discord bot monitors your Minecraft servers and posts auto-updating status embeds in any channel. Java &amp; Bedrock both supported, direct TCP/UDP pings, no third-party API.
-        </p>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 24 }}>
-          {COMMANDS.map(cmd => (
-            <div key={cmd.name} style={{
-              padding: "12px 14px",
-              borderRadius: 10,
-              background: NL.surface,
-              border: `1px solid ${NL.border}`,
-              transition: "border-color 0.2s",
-            }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = cmd.colorBorder}
-              onMouseLeave={e => e.currentTarget.style.borderColor = NL.border}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
-                <div style={{
-                  width: 24, height: 24, borderRadius: 6, flexShrink: 0,
-                  background: cmd.colorDim, border: `1px solid ${cmd.colorBorder}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: cmd.color,
-                }}>
-                  {cmd.icon}
-                </div>
-                <code style={{
-                  fontSize: 11, color: cmd.color,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontWeight: 600,
-                }}>{cmd.name}</code>
-              </div>
-              <p style={{ fontSize: 11, color: NL.muted, margin: 0, lineHeight: 1.6 }}>{cmd.desc}</p>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 40, alignItems: "start" }}>
+      {/* commands */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {COMMANDS.map(c => (
+          <div key={c.name} style={{ display: "flex", gap: 14, padding: "14px 16px", borderRadius: 12, background: T.surface, border: `1px solid ${T.border}`, transition: "border-color 0.15s" }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.14)"}
+            onMouseLeave={e => e.currentTarget.style.borderColor = T.border}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: c.color + "18", border: `1px solid ${c.color}28`, display: "flex", alignItems: "center", justifyContent: "center", color: c.color, flexShrink: 0, marginTop: 1 }}>
+              {c.icon}
             </div>
-          ))}
-        </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: c.color, fontFamily: "monospace", marginBottom: 3 }}>{c.name}</div>
+              <div style={{ fontSize: 12, color: T.sub, lineHeight: 1.6 }}>{c.desc}</div>
+            </div>
+          </div>
+        ))}
 
-        <a
-          href={DISCORD_INVITE}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "11px 22px", borderRadius: 10,
-            background: "#5865f2",
-            color: "#fff", fontWeight: 600, fontSize: 14,
-            textDecoration: "none",
-            transition: "background 0.2s, transform 0.15s",
-            border: "1px solid rgba(88,101,242,0.5)",
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = "#4752c4";
-            e.currentTarget.style.transform = "translateY(-1px)";
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = "#5865f2";
-            e.currentTarget.style.transform = "translateY(0)";
-          }}
-        >
-          <FaDiscord size={16} />
-          Add to your server it&apos;s free
+        <a href={INVITE} target="_blank" rel="noopener noreferrer"
+          style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "12px 20px", borderRadius: 12, background: T.discord, textDecoration: "none", color: "#fff", fontSize: 14, fontWeight: 700, marginTop: 4, transition: "opacity 0.15s" }}
+          onMouseEnter={e => e.currentTarget.style.opacity = "0.88"}
+          onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+          <FaDiscord size={15} /> Add to your server — it's free
         </a>
       </div>
 
+      {/* mockup */}
       <div style={{ display: "flex", justifyContent: "center" }}>
-        <DiscordEmbedMockup />
+        <EmbedMockup />
       </div>
     </div>
   );
