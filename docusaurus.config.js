@@ -72,6 +72,7 @@ const config = {
             position: 'left',
             items: [
               { to: '/lookup',   label: 'Player Lookup'  },
+              { to: '/skins',    label: 'Skin Workshop'  },
               { to: '/rpeditor', label: 'Resource Pack Editor'      },
               { to: '/metrics',  label: 'Server Metrics' },
             ],

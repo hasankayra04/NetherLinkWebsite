@@ -78,6 +78,50 @@ function Tag({ children }) {
   );
 }
 
+function SkinGallery({ username }) {
+  const [skins, setSkins] = useState(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/skins/user/${encodeURIComponent(username)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setSkins(data?.skins ?? []))
+      .catch(() => setSkins([]));
+  }, [username]);
+
+  if (!skins || skins.length === 0) return null;
+
+  return (
+    <div style={{
+      background: NL.surface, border: `1px solid ${NL.border}`,
+      borderRadius: 16, padding: 24, marginBottom: 16,
+    }}>
+      <h3 style={{ margin: "0 0 16px", fontSize: 13, fontWeight: 600, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+        Skins
+      </h3>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+        {skins.map(skin => (
+          <div key={skin.id} style={{ textAlign: "center" }}>
+            <div style={{
+              width: 64, height: 64, background: NL.elevated, border: `1px solid ${NL.border}`,
+              borderRadius: 10, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <img
+                src={skin.publicUrl}
+                alt={skin.name}
+                style={{ width: 32, height: 64, imageRendering: "pixelated", objectFit: "cover", objectPosition: "0 0" }}
+                onError={(e) => { e.target.style.display = "none"; }}
+              />
+            </div>
+            <div style={{ fontSize: 11, color: NL.muted, marginTop: 5, maxWidth: 64, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {skin.name}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function UserPage() {
   const location = useLocation();
   const history = useHistory();
@@ -239,6 +283,8 @@ export default function UserPage() {
                   )}
                 </div>
               )}
+
+              <SkinGallery username={user.username} />
 
               <div style={{
                 background: NL.accentDim, border: `1px solid ${NL.accentBorder}`,

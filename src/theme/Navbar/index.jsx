@@ -256,6 +256,7 @@ export default function Navbar() {
                   {[
                     { label: "Resource Packs", path: "/packs", icon: <FaLayerGroup size={12} /> },
                     { label: "Player Lookup", path: "/lookup", icon: <FaSearch size={12} /> },
+                    { label: "Skin Workshop", path: "/skins", icon: <FaUser size={12} /> },
                     { label: "Resource Pack Editor", path: "/rpeditor", icon: <FaLayerGroup size={12} /> },
                     { label: "Server Metrics", path: "/metrics", icon: <FaCode size={12} /> },
                   ].map(item => (
@@ -418,6 +419,7 @@ export default function Navbar() {
                 {[
                   { label: "Resource Packs", path: "/packs" },
                   { label: "Player Lookup", path: "/lookup" },
+                  { label: "Skin Workshop", path: "/skins" },
                   { label: "Resource Pack Editor", path: "/rpeditor" },
                   { label: "Server Metrics", path: "/metrics" },
                 ].map(item => (
