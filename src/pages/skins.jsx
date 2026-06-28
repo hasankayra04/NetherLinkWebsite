@@ -511,11 +511,12 @@ function UVEditor({ bufferRef, onUpdate, renderRef }) {
   );
 }
 
-function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn }) {
+function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initialLiked = false }) {
   const [deleting, setDeleting] = useState(false);
   const [likes, setLikes] = useState(initialSkin.like_count ?? 0);
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(initialLiked);
   const [liking, setLiking] = useState(false);
+  const lastLike = useRef(0);
 
   async function download() {
     const res = await fetch(initialSkin.public_url);
@@ -527,10 +528,14 @@ function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn }) {
   }
 
   async function toggleLike() {
-    if (liking) return;
+    if (!idToken || liking || Date.now() - lastLike.current < 2000) return;
+    lastLike.current = Date.now();
     setLiking(true);
     try {
-      const res = await fetch(`${API}/api/skins/${initialSkin.id}/like`, { method: "POST" });
+      const res = await fetch(`${API}/api/skins/${initialSkin.id}/like`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
       if (res.ok) {
         const d = await res.json();
         setLiked(d.liked);
@@ -557,14 +562,18 @@ function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn }) {
       </div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
         <Btn small onClick={download}>⬇ Download</Btn>
-        <button type="button" onClick={toggleLike} disabled={liking} style={{
-          display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 10px",
-          borderRadius: 8, border: `1px solid ${liked ? "#f8717144" : C.border}`,
-          background: liked ? "#f8717112" : "transparent", cursor: "pointer",
-          color: liked ? "#f87171" : C.secondary, fontSize: 12, fontFamily: font, fontWeight: 500,
-        }}>
-          {liked ? "♥" : "♡"} {likes > 0 ? likes : ""}
-        </button>
+        {idToken ? (
+          <button type="button" onClick={toggleLike} disabled={liking} style={{
+            display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 10px",
+            borderRadius: 8, border: `1px solid ${liked ? "#f8717144" : C.border}`,
+            background: liked ? "#f8717112" : "transparent", cursor: "pointer",
+            color: liked ? "#f87171" : C.secondary, fontSize: 12, fontFamily: font, fontWeight: 500,
+          }}>
+            {liked ? "♥" : "♡"} {likes > 0 ? likes : ""}
+          </button>
+        ) : likes > 0 ? (
+          <span style={{ fontSize: 12, color: C.secondary, fontFamily: font }}>♡ {likes}</span>
+        ) : null}
         {isOwn && (
           <>
             <Btn small variant="ghost" onClick={() => onEdit(initialSkin)}>✏️ Edit</Btn>
@@ -587,6 +596,7 @@ function GalleryTab({ user, idToken, onEditSkin }) {
   const [publicSkins, setPublicSkins] = useState([]);
   const [topSkins, setTopSkins] = useState([]);
   const [mySkins, setMySkins] = useState([]);
+  const [likedIds, setLikedIds] = useState(new Set());
   const [loadingPublic, setLoadingPublic] = useState(true);
   const [loadingMine, setLoadingMine] = useState(false);
   const [error, setError] = useState(null);
@@ -604,6 +614,14 @@ function GalleryTab({ user, idToken, onEditSkin }) {
       })
       .catch(() => { setError("Failed to load skins."); setLoadingPublic(false); });
   }, []);
+
+  useEffect(() => {
+    if (!idToken) { setLikedIds(new Set()); return; }
+    fetch(`${API}/api/skins/me/likes`, { headers: { Authorization: `Bearer ${idToken}` } })
+      .then(r => r.json())
+      .then(d => setLikedIds(new Set(d.liked || [])))
+      .catch(() => {});
+  }, [idToken]);
 
   useEffect(() => {
     if (!user || !idToken) return;
