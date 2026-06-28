@@ -93,9 +93,59 @@ function Hero({ stats }) {
 
 const CONSOLES = [
   { icon: <FaPlaystation size={36} />, name: "PlayStation 4 & 5", how: "Step-by-step setup guide", href: "/docs/howto/playstation-xbox-howto", color: "#60a5fa" },
-  { icon: <FaXbox size={36} />,        name: "Xbox Series & One", how: "Step-by-step setup guide", href: "/docs/howto/playstation-xbox-howto", color: T.green },
-  { icon: <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M10.42 21.648a5.023 5.023 0 0 1-5.018 5.018 5.023 5.023 0 0 1-5.018-5.018V2.352A2.356 2.356 0 0 1 2.736 0h7.684v21.648zm-2.734 1.92a2.284 2.284 0 1 0 0 4.568 2.284 2.284 0 0 0 0-4.568zm0-18.568a2.284 2.284 0 1 0 0-4.568 2.284 2.284 0 0 0 0 4.568zM13.58 0v24h7.684A2.356 2.356 0 0 0 23.616 21.648V2.352A2.356 2.356 0 0 0 21.264 0zm5.14 2.284a2.284 2.284 0 1 1 0 4.568 2.284 2.284 0 0 1 0-4.568z"/></svg>, name: "Nintendo Switch", how: "Step-by-step setup guide", href: "/docs/howto/nintendo-howto", color: "#f472b6" },
-  { icon: <FaGamepad size={36} />,     name: "All consoles",       how: "Join via friend invite",    href: "/docs/howto/friend-howto",      color: "#fb923c" },
+  { icon: <FaXbox size={36} />, name: "Xbox Series & One", how: "Step-by-step setup guide", href: "/docs/howto/playstation-xbox-howto", color: T.green },
+  {
+    icon: (
+      <svg
+        width="36"
+        height="36"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect
+          x="2"
+          y="2"
+          width="8"
+          height="20"
+          rx="3"
+          fill="currentColor"
+        />
+
+        <rect
+          x="14"
+          y="2"
+          width="8"
+          height="20"
+          rx="3"
+          fill="currentColor"
+        />
+
+        <rect
+          x="11"
+          y="2"
+          width="2"
+          height="20"
+          rx="1"
+          fill="currentColor"
+          opacity="0.15"
+        />
+
+        <circle cx="6" cy="7" r="1.5" fill="white" />
+
+        <circle cx="6" cy="16" r="2.4" fill="white" opacity="0.95" />
+
+        <circle cx="18" cy="9" r="2.4" fill="white" opacity="0.95" />
+
+        <circle cx="18" cy="17" r="1.5" fill="white" />
+      </svg>
+    ),
+    name: "Nintendo Switch",
+    how: "Step-by-step setup guide",
+    href: "/docs/howto/nintendo-howto",
+    color: "#f472b6",
+  },
+  { icon: <FaGamepad size={36} />, name: "All consoles", how: "Join via friend invite", href: "/docs/howto/friend-howto", color: "#fb923c" },
 ];
 
 function ConsolesSection() {
@@ -204,7 +254,6 @@ function WebToolsSection() {
   );
 }
 
-/* ── Skins ───────────────────────────────────────────────────────────────── */
 function SkinsSection({ skins }) {
   const row = [...skins, ...skins, ...skins];
   if (!skins.length) return null;
@@ -238,7 +287,6 @@ function SkinsSection({ skins }) {
   );
 }
 
-/* ── Discord ─────────────────────────────────────────────────────────────── */
 function DiscordSection() {
   return (
     <section style={{ background: T.bgAlt, borderTop: "1px solid " + T.border, padding: "56px 24px" }}>
