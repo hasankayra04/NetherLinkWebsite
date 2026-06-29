@@ -56,43 +56,29 @@ async function fetchSkinAsBlob(url) {
   return URL.createObjectURL(blob);
 }
 
-function SkinViewer3D({ skinUrl, width = 140, height = 200, autoRotate = true }) {
+function SkinViewer3D({ skinUrl, scale = 5 }) {
   const canvasRef = useRef(null);
-  const viewerRef = useRef(null);
-
   useEffect(() => {
     if (!canvasRef.current || !skinUrl) return;
-    let cancelled = false;
-    let blobUrl = null;
-
-    Promise.all([import("skinview3d"), fetchSkinAsBlob(skinUrl)])
-      .then(([skinview3d, blob]) => {
-        if (cancelled || !canvasRef.current) { URL.revokeObjectURL(blob); return; }
-        blobUrl = blob;
-        if (viewerRef.current) { viewerRef.current.dispose(); viewerRef.current = null; }
-        const viewer = new skinview3d.SkinViewer({ canvas: canvasRef.current, width, height });
-        viewer.autoRotate = autoRotate;
-        viewer.autoRotateSpeed = 0.4;
-        viewerRef.current = viewer;
-        viewer.loadSkin(blob).catch(() => {});
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-      if (viewerRef.current) { viewerRef.current.dispose(); viewerRef.current = null; }
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = false;
+      const s = scale;
+      ctx.drawImage(img,  8,  8, 8,  8,  4*s,  0,    8*s, 8*s);
+      ctx.drawImage(img, 40,  8, 8,  8,  4*s,  0,    8*s, 8*s);
+      ctx.drawImage(img, 20, 20, 8, 12,  4*s,  8*s,  8*s, 12*s);
+      ctx.drawImage(img, 44, 20, 4, 12,  0,    8*s,  4*s, 12*s);
+      ctx.drawImage(img, 36, 52, 4, 12,  12*s, 8*s,  4*s, 12*s);
+      ctx.drawImage(img,  4, 20, 4, 12,  4*s,  20*s, 4*s, 12*s);
+      ctx.drawImage(img, 20, 52, 4, 12,  8*s,  20*s, 4*s, 12*s);
     };
-  }, [skinUrl, width, height, autoRotate]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      width={width}
-      height={height}
-      style={{ display: "block", borderRadius: 8 }}
-    />
-  );
+    img.src = skinUrl;
+  }, [skinUrl, scale]);
+  return <canvas ref={canvasRef} width={16 * scale} height={32 * scale} style={{ display: "block", imageRendering: "pixelated" }} />;
 }
 
 function LiveSkinViewer3D({ getDataUrl, triggerRef, width = 220, height = 320 }) {
@@ -390,17 +376,29 @@ function UVEditor({ bufferRef, onUpdate, renderRef }) {
     isDrawing.current = false;
   }
 
-  function onTouchStart(e) {
-    e.preventDefault();
-    pushUndo();
-    isDrawing.current = true;
-    paint(e.touches[0]);
-  }
-  function onTouchMove(e) {
-    e.preventDefault();
-    if (isDrawing.current) paint(e.touches[0]);
-  }
-  function onTouchEnd() { isDrawing.current = false; }
+  useEffect(() => {
+    const canvas = displayRef.current;
+    if (!canvas) return;
+    function onTouchStart(e) {
+      e.preventDefault();
+      pushUndo();
+      isDrawing.current = true;
+      paint(e.touches[0]);
+    }
+    function onTouchMove(e) {
+      e.preventDefault();
+      if (isDrawing.current) paint(e.touches[0]);
+    }
+    function onTouchEnd() { isDrawing.current = false; }
+    canvas.addEventListener("touchstart", onTouchStart, { passive: false });
+    canvas.addEventListener("touchmove", onTouchMove, { passive: false });
+    canvas.addEventListener("touchend", onTouchEnd);
+    return () => {
+      canvas.removeEventListener("touchstart", onTouchStart);
+      canvas.removeEventListener("touchmove", onTouchMove);
+      canvas.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [tool, color, brushSize]);
 
   function handleColorChange(val) {
     setColor(val);
@@ -492,19 +490,16 @@ function UVEditor({ bufferRef, onUpdate, renderRef }) {
         </div>
       )}
 
-      <div ref={containerRef} style={{ overflow: "auto", maxWidth: "100%", maxHeight: "65vh", borderRadius: 10, border: `1px solid ${C.border}` }}>
+      <div ref={containerRef} style={{ overflow: "auto", maxWidth: "100%", maxHeight: "65vh", borderRadius: 10, border: `1px solid ${C.border}`, touchAction: "none" }}>
         <canvas
           ref={displayRef}
           width={displayPx}
           height={displayPx}
-          style={{ display: "block", cursor: tool === "erase" ? "cell" : tool === "pick" ? "crosshair" : "crosshair", imageRendering: "pixelated" }}
+          style={{ display: "block", cursor: "crosshair", imageRendering: "pixelated", touchAction: "none" }}
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
           onMouseUp={onMouseUp}
           onMouseLeave={onMouseUp}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
         />
       </div>
     </div>
@@ -546,21 +541,37 @@ function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initial
   }
 
   return (
-    <div style={{
-      background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14,
-      padding: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-      transition: "border-color .2s",
-    }}>
-      <div style={{ borderRadius: 8, overflow: "hidden", background: C.elevated }}>
-        <SkinViewer3D skinUrl={initialSkin.public_url} width={120} height={180} />
+    <div
+      onClick={onEdit ? () => onEdit(initialSkin) : undefined}
+      style={{
+        background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14,
+        padding: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
+        transition: "border-color .2s, transform .15s",
+        cursor: onEdit ? "pointer" : "default",
+      }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = C.accentBorder; e.currentTarget.style.transform = "translateY(-2px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = "translateY(0)"; }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 160 }}>
+        <SkinViewer3D skinUrl={initialSkin.public_url} scale={5} />
       </div>
       <div style={{ textAlign: "center", width: "100%" }}>
         <div style={{ fontFamily: font, fontWeight: 600, color: C.text, fontSize: 14, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {initialSkin.name || "Unnamed"}
         </div>
+        {initialSkin.username && (
+          <div style={{ fontSize: 11, color: C.secondary, marginBottom: 4 }}>
+            Created by:{" "}
+            <a href={`/u?name=${initialSkin.username}`}
+              onClick={e => e.stopPropagation()}
+              style={{ color: C.accent, textDecoration: "none" }}>
+              {initialSkin.display_name || initialSkin.username}
+            </a>
+          </div>
+        )}
         {isOwn && <Tag color={C.accent}>Yours</Tag>}
       </div>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+      <div onClick={e => e.stopPropagation()} style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
         <Btn small onClick={download}>⬇ Download</Btn>
         {!isOwn && (idToken ? (
           <button type="button" onClick={toggleLike} disabled={liking} style={{

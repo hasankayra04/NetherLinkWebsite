@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useLocation, useHistory } from "@docusaurus/router";
 import Layout from "@theme/Layout";
 
@@ -78,6 +78,31 @@ function Tag({ children }) {
   );
 }
 
+function SkinBody2D({ url, scale = 3 }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!ref.current || !url) return;
+    const canvas = ref.current;
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = false;
+      const s = scale;
+      ctx.drawImage(img,  8,  8, 8,  8,  4*s,  0,    8*s, 8*s);
+      ctx.drawImage(img, 40,  8, 8,  8,  4*s,  0,    8*s, 8*s);
+      ctx.drawImage(img, 20, 20, 8, 12,  4*s,  8*s,  8*s, 12*s);
+      ctx.drawImage(img, 44, 20, 4, 12,  0,    8*s,  4*s, 12*s);
+      ctx.drawImage(img, 36, 52, 4, 12,  12*s, 8*s,  4*s, 12*s);
+      ctx.drawImage(img,  4, 20, 4, 12,  4*s,  20*s, 4*s, 12*s);
+      ctx.drawImage(img, 20, 52, 4, 12,  8*s,  20*s, 4*s, 12*s);
+    };
+    img.src = url;
+  }, [url, scale]);
+  return <canvas ref={ref} width={16 * scale} height={32 * scale} style={{ display: "block", imageRendering: "pixelated" }} />;
+}
+
 function SkinGallery({ username }) {
   const [skins, setSkins] = useState(null);
 
@@ -100,22 +125,20 @@ function SkinGallery({ username }) {
       </h3>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
         {skins.map(skin => (
-          <div key={skin.id} style={{ textAlign: "center" }}>
-            <div style={{
-              width: 64, height: 64, background: NL.elevated, border: `1px solid ${NL.border}`,
-              borderRadius: 10, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <img
-                src={skin.publicUrl}
-                alt={skin.name}
-                style={{ width: 32, height: 64, imageRendering: "pixelated", objectFit: "cover", objectPosition: "0 0" }}
-                onError={(e) => { e.target.style.display = "none"; }}
-              />
-            </div>
-            <div style={{ fontSize: 11, color: NL.muted, marginTop: 5, maxWidth: 64, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <a key={skin.id} href="/skins" style={{ textAlign: "center", textDecoration: "none",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+            padding: "10px 8px", borderRadius: 12, border: `1px solid ${NL.border}`,
+            background: NL.elevated, transition: "border-color .15s" }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = NL.accent + "60"}
+            onMouseLeave={e => e.currentTarget.style.borderColor = NL.border}>
+            <SkinBody2D url={skin.public_url} scale={5} />
+            <div style={{ fontSize: 11, color: NL.muted, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {skin.name}
             </div>
-          </div>
+            {skin.like_count > 0 && (
+              <span style={{ fontSize: 10, color: "#f87171" }}>♥ {skin.like_count}</span>
+            )}
+          </a>
         ))}
       </div>
     </div>

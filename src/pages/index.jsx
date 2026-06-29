@@ -8,34 +8,34 @@ import { T } from "../lib/tokens";
 
 const API = "https://api.mccompanion.net";
 
-async function toBlobUrl(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error();
-  return URL.createObjectURL(await r.blob());
-}
-function Skin3D({ url }) {
+function SkinBody({ url, scale = 3 }) {
   const ref = useRef(null);
-  const vRef = useRef(null);
   useEffect(() => {
     if (!ref.current || !url) return;
-    let dead = false, blob = null;
-    Promise.all([import("skinview3d"), toBlobUrl(url)]).then(([sv, b]) => {
-      if (dead || !ref.current) { URL.revokeObjectURL(b); return; }
-      blob = b;
-      if (vRef.current) { vRef.current.dispose(); vRef.current = null; }
-      const v = new sv.SkinViewer({ canvas: ref.current, width: 64, height: 96 });
-      v.autoRotate = false;
-      v.camera.rotation.set(0.05, 0.3, 0);
-      vRef.current = v;
-      v.loadSkin(b).catch(() => { });
-    }).catch(() => { });
-    return () => {
-      dead = true;
-      if (vRef.current) { vRef.current.dispose(); vRef.current = null; }
-      if (blob) URL.revokeObjectURL(blob);
+    const canvas = ref.current;
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingEnabled = false;
+      const s = scale;
+      ctx.drawImage(img,  8,  8, 8,  8,  4*s,  0,   8*s, 8*s);
+      ctx.drawImage(img, 40,  8, 8,  8,  4*s,  0,   8*s, 8*s);
+      ctx.drawImage(img, 20, 20, 8, 12,  4*s,  8*s, 8*s, 12*s);
+      ctx.drawImage(img, 44, 20, 4, 12,  0,    8*s, 4*s, 12*s);
+      ctx.drawImage(img, 36, 52, 4, 12,  12*s, 8*s, 4*s, 12*s);
+      ctx.drawImage(img,  4, 20, 4, 12,  4*s,  20*s, 4*s, 12*s);
+      ctx.drawImage(img, 20, 52, 4, 12,  8*s,  20*s, 4*s, 12*s);
     };
-  }, [url]);
-  return <canvas ref={ref} width={64} height={96} style={{ display: "block" }} />;
+    img.onerror = () => {
+      const fb = new Image();
+      fb.onload = () => { ctx.imageSmoothingEnabled = false; ctx.drawImage(fb, 0, 0, canvas.width, canvas.height); };
+      fb.src = url;
+    };
+    img.src = url;
+  }, [url, scale]);
+  return <canvas ref={ref} width={16 * scale} height={32 * scale} style={{ display: "block", imageRendering: "pixelated" }} />;
 }
 
 const PLATFORMS = [
@@ -273,12 +273,25 @@ function SkinsSection({ skins }) {
         <div className="sk-row">
           {row.map((s, i) => (
             <a key={i} href="/skins"
-              style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "10px 8px", borderRadius: 12, background: T.surface, border: "1px solid " + T.border, width: 88, textDecoration: "none", transition: "border-color 0.15s" }}
+              style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "12px 10px", borderRadius: 12, background: T.surface, border: "1px solid " + T.border, width: 72, textDecoration: "none", transition: "border-color 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = "#a78bfa50"}
               onMouseLeave={e => e.currentTarget.style.borderColor = T.border}>
-              <Skin3D url={s.public_url} />
-              <span style={{ fontSize: 10, color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%", textAlign: "center" }}>{s.name}</span>
-              {s.like_count > 0 && <span style={{ fontSize: 10, color: "#f87171", display: "flex", alignItems: "center", gap: 2 }}><FaHeart size={8} />{s.like_count}</span>}
+              <SkinBody url={s.public_url} scale={3} />
+              <div style={{ width: "100%", textAlign: "center" }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</div>
+                {s.username && (
+                  <a href={`/u?name=${s.username}`}
+                    onClick={e => e.stopPropagation()}
+                    style={{ fontSize: 9, color: T.green, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1, display: "block", textDecoration: "none" }}>
+                    {s.display_name || s.username}
+                  </a>
+                )}
+                {s.like_count > 0 && (
+                  <span style={{ fontSize: 9, color: "#f87171", display: "inline-flex", alignItems: "center", gap: 2, marginTop: 2 }}>
+                    <FaHeart size={7} />{s.like_count}
+                  </span>
+                )}
+              </div>
             </a>
           ))}
         </div>
