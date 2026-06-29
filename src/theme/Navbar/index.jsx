@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FaDiscord, FaStar, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaCircle, FaLayerGroup, FaFlask, FaUser, FaSignOutAlt } from "react-icons/fa";
+import { FaDiscord, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaCircle, FaLayerGroup, FaFlask, FaUser, FaSignOutAlt, FaPalette, FaChartBar, FaStar, FaPlug, FaEnvelope, FaShieldAlt, FaFileAlt } from "react-icons/fa";
 import { useHistory, useLocation } from "@docusaurus/router";
 import sidebars from "../../../sidebars.js";
 import { signOut } from "firebase/auth";
@@ -61,6 +61,40 @@ function SidebarDropdown({ items, onClose, level = 0 }) {
   );
 }
 
+const MEGA_GROUPS = [
+  {
+    label: "TOOLS",
+    items: [
+      { label: "Skin Workshop", desc: "Create & share skins", path: "/skins", icon: <FaPalette size={14} /> },
+      { label: "Player Lookup", desc: "Find any Bedrock player", path: "/lookup", icon: <FaSearch size={14} /> },
+      { label: "Resource Packs", desc: "Browse community packs", path: "/packs", icon: <FaLayerGroup size={14} /> },
+      { label: "RP Editor", desc: "Merge & edit resource packs", path: "/rpeditor", icon: <FaCode size={14} /> },
+      { label: "Server Metrics", desc: "Track server performance", path: "/metrics", icon: <FaChartBar size={14} /> },
+    ],
+  },
+  {
+    label: "COMMUNITY",
+    items: [
+      { label: "Discord", desc: "Chat with the community", href: "https://discord.gg/xvaNzE35Rs", icon: <FaDiscord size={14} />, iconColor: "#7289da" },
+      { label: "Discord Bot", desc: "Live server status in Discord", path: "/discord-bot", icon: <FaDiscord size={14} />, iconColor: "#5865f2" },
+      { label: "Partner Program", desc: "Grow with MCCompanion", path: "/partner", icon: <FaHandshake size={14} /> },
+      { label: "Beta", desc: "Try new features early", path: "/beta", icon: <FaFlask size={14} /> },
+      { label: "Bug Report", desc: "Report an issue", path: "/feedback", icon: <FaBug size={14} /> },
+      { label: "Contact", desc: "Get in touch with us", path: "/contact", icon: <FaEnvelope size={14} /> },
+      { label: "Sponsor", desc: "Support the project", href: "https://github.com/sponsors/MCCORG", icon: <FaHeart size={14} />, iconColor: "#f87171" },
+    ],
+  },
+  {
+    label: "MORE",
+    items: [
+      { label: "API Docs", desc: "Integrate with our API", path: "/api-docs", icon: <FaPlug size={14} /> },
+      { label: "Status", desc: "Service health", path: "/status", icon: <FaCircle size={10} />, iconColor: "#67e404" },
+      { label: "Privacy Policy", desc: "How we handle your data", path: "/privacy", icon: <FaShieldAlt size={14} /> },
+      { label: "Terms of Service", desc: "Usage terms", path: "/terms", icon: <FaFileAlt size={14} /> },
+    ],
+  },
+];
+
 const btnReset = {
   background: "none", border: "none", cursor: "pointer",
   fontFamily: "'Inter', system-ui, sans-serif",
@@ -72,16 +106,14 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [wikiDrop, setWikiDrop] = useState(false);
   const [wikiDropMobile, setWikiDropMobile] = useState(false);
-  const [toolsDrop, setToolsDrop] = useState(false);
-  const [toolsDropMobile, setToolsDropMobile] = useState(false);
-  const [moreDrop, setMoreDrop] = useState(false);
+  const [megaDrop, setMegaDrop] = useState(false);
+  const [megaDropMobile, setMegaDropMobile] = useState({});
   const [userDrop, setUserDrop] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const menuRef = useRef();
   const hamburgerRef = useRef();
   const wikiRef = useRef();
-  const toolsRef = useRef();
-  const moreRef = useRef();
+  const megaRef = useRef();
   const userRef = useRef();
   const history = useHistory();
   const location = useLocation();
@@ -99,7 +131,7 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    setDrawerOpen(false); setWikiDrop(false); setWikiDropMobile(false); setMoreDrop(false);
+    setDrawerOpen(false); setWikiDrop(false); setWikiDropMobile(false); setMegaDrop(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -109,16 +141,10 @@ export default function Navbar() {
   }, [wikiDrop]);
 
   useEffect(() => {
-    const h = e => { if (toolsRef.current && !toolsRef.current.contains(e.target)) setToolsDrop(false); };
-    if (toolsDrop) document.addEventListener("mousedown", h);
+    const h = e => { if (megaRef.current && !megaRef.current.contains(e.target)) setMegaDrop(false); };
+    if (megaDrop) document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
-  }, [toolsDrop]);
-
-  useEffect(() => {
-    const h = e => { if (moreRef.current && !moreRef.current.contains(e.target)) setMoreDrop(false); };
-    if (moreDrop) document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [moreDrop]);
+  }, [megaDrop]);
 
   useEffect(() => {
     const h = e => { if (userRef.current && !userRef.current.contains(e.target)) setUserDrop(false); };
@@ -145,21 +171,13 @@ export default function Navbar() {
 
   function navigate(path) {
     history.push(path);
-    setDrawerOpen(false); setWikiDrop(false); setWikiDropMobile(false);
+    setDrawerOpen(false); setWikiDrop(false); setWikiDropMobile(false); setMegaDrop(false);
   }
 
   async function handleSignOut() {
     try { await signOut(auth); } catch (_) { }
     navigate("/");
   }
-
-  const portalLink = role === "admin"
-    ? { label: "Dashboard", path: "/dashboard", icon: <FaTachometerAlt size={13} /> }
-    : role === "partner"
-      ? { label: "Dashboard", path: "/dashboard", icon: <FaHandshake size={13} /> }
-      : role === "user"
-        ? { label: "Dashboard", path: "/dashboard", icon: <FaTachometerAlt size={13} /> }
-        : null;
 
   const drawerBtn = (color = NL.secondary) => ({
     ...btnReset,
@@ -169,6 +187,40 @@ export default function Navbar() {
   });
   const drawerEnter = e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; };
   const drawerLeave = (color = NL.secondary) => e => { e.currentTarget.style.color = color; e.currentTarget.style.background = "none"; };
+
+  function MegaItem({ item }) {
+    const [hov, setHov] = useState(false);
+    const handleClick = () => {
+      if (item.href) { window.open(item.href, "_blank", "noopener,noreferrer"); setMegaDrop(false); }
+      else navigate(item.path);
+    };
+    return (
+      <button
+        onClick={handleClick}
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        style={{
+          ...btnReset,
+          display: "flex", alignItems: "flex-start", gap: 10,
+          width: "100%", padding: "9px 10px", borderRadius: 8, textAlign: "left",
+          background: hov ? NL.elevated : "transparent",
+          transition: "background 0.12s",
+        }}
+      >
+        <span style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          width: 30, height: 30, borderRadius: 7, flexShrink: 0,
+          background: hov ? "rgba(103,228,4,0.1)" : "rgba(255,255,255,0.04)",
+          color: item.iconColor || (hov ? NL.accent : NL.secondary),
+          transition: "background 0.12s, color 0.12s",
+        }}>{item.icon}</span>
+        <span style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <span style={{ fontSize: 13, fontWeight: 500, color: hov ? NL.text : NL.text, lineHeight: 1.3 }}>{item.label}</span>
+          <span style={{ fontSize: 11, color: NL.muted, lineHeight: 1.3 }}>{item.desc}</span>
+        </span>
+      </button>
+    );
+  }
 
   return (
     <>
@@ -203,6 +255,7 @@ export default function Navbar() {
         {!isMobile && (
           <nav style={{ display: "flex", alignItems: "center", gap: 2 }}>
 
+            {/* Wiki dropdown */}
             <div ref={wikiRef} style={{ position: "relative" }}>
               <button onClick={() => setWikiDrop(x => !x)} style={{
                 ...btnReset,
@@ -215,7 +268,7 @@ export default function Navbar() {
                 onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
                 onMouseLeave={e => { if (!wikiDrop) { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; } }}
               >
-                Wiki
+                <FaBook size={12} /> Wiki
                 <FaChevronDown size={9} style={{ transition: "transform 0.2s", transform: wikiDrop ? "rotate(180deg)" : "none" }} />
               </button>
               {wikiDrop && DOC_SIDEBAR.length > 0 && (
@@ -231,72 +284,45 @@ export default function Navbar() {
               )}
             </div>
 
-            <div ref={toolsRef} style={{ position: "relative" }}>
-              <button onClick={() => setToolsDrop(x => !x)} style={{
+            {/* Mega dropdown */}
+            <div ref={megaRef} style={{ position: "relative" }}>
+              <button onClick={() => setMegaDrop(x => !x)} style={{
                 ...btnReset,
                 display: "inline-flex", alignItems: "center", gap: 5,
                 padding: "6px 10px", borderRadius: 8,
                 fontSize: 13, fontWeight: 500,
-                color: toolsDrop ? NL.text : NL.secondary,
-                background: toolsDrop ? NL.elevated : "none",
+                color: megaDrop ? NL.text : NL.secondary,
+                background: megaDrop ? NL.elevated : "none",
               }}
                 onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
-                onMouseLeave={e => { if (!toolsDrop) { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; } }}
+                onMouseLeave={e => { if (!megaDrop) { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; } }}
               >
-                Tools
-                <FaChevronDown size={9} style={{ transition: "transform 0.2s", transform: toolsDrop ? "rotate(180deg)" : "none" }} />
+                Explore
+                <FaChevronDown size={9} style={{ transition: "transform 0.2s", transform: megaDrop ? "rotate(180deg)" : "none" }} />
               </button>
-              {toolsDrop && (
+              {megaDrop && (
                 <div style={{
-                  position: "absolute", left: 0, top: "calc(100% + 8px)", minWidth: 180,
+                  position: "absolute", right: 0,
+                  top: "calc(100% + 8px)",
                   background: NL.surface, border: `1px solid ${NL.borderMid}`,
-                  borderRadius: 12, padding: 6,
-                  boxShadow: "0 12px 40px rgba(0,0,0,0.4)", zIndex: 1001,
+                  borderRadius: 14, padding: 16,
+                  boxShadow: "0 16px 48px rgba(0,0,0,0.5)", zIndex: 1001,
+                  display: "flex", gap: 8,
+                  minWidth: 580,
                 }}>
-                  {[
-                    { label: "Resource Packs", path: "/packs", icon: <FaLayerGroup size={12} /> },
-                    { label: "Player Lookup", path: "/lookup", icon: <FaSearch size={12} /> },
-                    { label: "Skin Workshop", path: "/skins", icon: <FaUser size={12} /> },
-                    { label: "Resource Pack Editor", path: "/rpeditor", icon: <FaLayerGroup size={12} /> },
-                    { label: "Server Metrics", path: "/metrics", icon: <FaCode size={12} /> },
-                  ].map(item => (
-                    <button key={item.path} onClick={() => { navigate(item.path); setToolsDrop(false); }}
-                      style={{ ...btnReset, display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 10px", borderRadius: 6, fontSize: 13, color: NL.secondary }}
-                      onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
-                      onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "transparent"; }}
-                    >
-                      {item.icon} {item.label}
-                    </button>
+                  {MEGA_GROUPS.map(group => (
+                    <div key={group.label} style={{ flex: group.items.length > 3 ? 1 : "0 0 160px", minWidth: 0 }}>
+                      <div style={{
+                        fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                        color: NL.muted, textTransform: "uppercase",
+                        padding: "0 10px", marginBottom: 6,
+                      }}>{group.label}</div>
+                      {group.items.map(item => <MegaItem key={item.label} item={item} />)}
+                    </div>
                   ))}
                 </div>
               )}
             </div>
-
-            {[
-              { label: "Bug Report", path: "/feedback" },
-              { label: "API", path: "/api-docs" },
-              { label: "Partner Program", path: "/partner" },
-              { label: "Beta", path: "/beta", icon: <FaFlask size={11} /> },
-              { label: "Status", path: "/status", dot: true },
-            ].map(item => (
-              <button key={item.path} onClick={() => navigate(item.path)}
-                style={{ ...btnReset, display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: NL.secondary }}
-                onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
-                onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.background = "none"; }}
-              >
-                {item.dot && <FaCircle size={7} style={{ color: "#67e404" }} />}
-                {item.icon && item.icon}
-                {item.label}
-              </button>
-            ))}
-
-            <a href="https://discord.gg/xvaNzE35Rs" target="_blank" rel="noopener noreferrer" title="Discord"
-              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 8, color: "#7289da", textDecoration: "none" }}
-              onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.background = NL.elevated; }}
-              onMouseLeave={e => { e.currentTarget.style.color = "#7289da"; e.currentTarget.style.background = "none"; }}
-            >
-              <FaDiscord size={15} />
-            </a>
 
             <a href="https://github.com/sponsors/MCCORG" target="_blank" rel="noopener noreferrer"
               style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 7, fontSize: 13, fontWeight: 600, color: NL.accent, textDecoration: "none", background: "rgba(103,228,4,0.08)", border: "1px solid rgba(103,228,4,0.20)" }}
@@ -408,59 +434,36 @@ export default function Navbar() {
               </div>
             )}
 
-            <button onClick={() => setToolsDropMobile(x => !x)} style={drawerBtn()}
-              onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
-            >
-              <FaLayerGroup size={13} /> Tools
-              <FaChevronDown size={10} style={{ marginLeft: "auto", transform: toolsDropMobile ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
-            </button>
-            {toolsDropMobile && (
-              <div style={{ paddingLeft: 12, borderLeft: `2px solid ${NL.border}`, marginLeft: 12, marginBottom: 4 }}>
-                {[
-                  { label: "Resource Packs", path: "/packs" },
-                  { label: "Player Lookup", path: "/lookup" },
-                  { label: "Skin Workshop", path: "/skins" },
-                  { label: "Resource Pack Editor", path: "/rpeditor" },
-                  { label: "Server Metrics", path: "/metrics" },
-                ].map(item => (
-                  <button key={item.path} onClick={() => navigate(item.path)} style={drawerBtn()}
+            {/* Mobile: flat list grouped by section */}
+            <div style={{ height: 1, background: NL.border, margin: "4px 0" }} />
+            <div style={{ padding: "4px 12px 2px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: NL.muted, textTransform: "uppercase" }}>Tools</div>
+            {MEGA_GROUPS[0].items.map(item => (
+              <button key={item.label} onClick={() => navigate(item.path)} style={drawerBtn()}
+                onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
+              >{item.icon} {item.label}</button>
+            ))}
+
+            <div style={{ height: 1, background: NL.border, margin: "4px 0" }} />
+            <div style={{ padding: "4px 12px 2px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: NL.muted, textTransform: "uppercase" }}>Community</div>
+            {MEGA_GROUPS[1].items.map(item => (
+              item.href
+                ? <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer"
+                    onClick={() => setDrawerOpen(false)}
+                    style={{ ...drawerBtn(item.iconColor || NL.secondary), textDecoration: "none" }}
+                    onMouseEnter={drawerEnter} onMouseLeave={drawerLeave(item.iconColor || NL.secondary)}
+                  ><span style={{ color: item.iconColor || NL.secondary }}>{item.icon}</span> {item.label}</a>
+                : <button key={item.label} onClick={() => navigate(item.path)} style={drawerBtn()}
                     onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
-                  >{item.label}</button>
-                ))}
-              </div>
-            )}
+                  >{item.icon} {item.label}</button>
+            ))}
 
-            <button onClick={() => navigate("/beta")} style={drawerBtn()}
-              onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
-            ><FaFlask size={13} /> Beta</button>
-
-            <button onClick={() => navigate("/feedback")} style={drawerBtn()}
-              onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
-            ><FaBug size={13} /> Bug Report</button>
-
-<button onClick={() => navigate("/api-docs")} style={drawerBtn()}
-              onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
-            ><FaCode size={13} /> API</button>
-
-            <button onClick={() => navigate("/partner")} style={drawerBtn()}
-              onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
-            ><FaStar size={14} /> Partner Program</button>
-
-            <button onClick={() => navigate("/status")} style={drawerBtn()}
-              onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
-            ><FaCircle size={9} style={{ color: "#67e404" }} /> Status</button>
-
-            <a href="https://discord.gg/xvaNzE35Rs" target="_blank" rel="noopener noreferrer"
-              onClick={() => setDrawerOpen(false)}
-              style={{ ...drawerBtn("#7289da"), textDecoration: "none" }}
-              onMouseEnter={drawerEnter} onMouseLeave={drawerLeave("#7289da")}
-            ><FaDiscord size={14} /> Discord</a>
-
-            <a href="https://github.com/sponsors/MCCORG" target="_blank" rel="noopener noreferrer"
-              onClick={() => setDrawerOpen(false)}
-              style={{ ...drawerBtn(NL.accent), textDecoration: "none" }}
-              onMouseEnter={drawerEnter} onMouseLeave={drawerLeave(NL.accent)}
-            ><FaHeart size={13} /> Sponsor</a>
+            <div style={{ height: 1, background: NL.border, margin: "4px 0" }} />
+            <div style={{ padding: "4px 12px 2px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: NL.muted, textTransform: "uppercase" }}>More</div>
+            {MEGA_GROUPS[2].items.map(item => (
+              <button key={item.label} onClick={() => navigate(item.path)} style={drawerBtn()}
+                onMouseEnter={drawerEnter} onMouseLeave={drawerLeave()}
+              >{item.icon} {item.label}</button>
+            ))}
 
             <div style={{ height: 1, background: NL.border, margin: "4px 0" }} />
 

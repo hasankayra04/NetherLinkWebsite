@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { FaWindows, FaApple, FaAndroid, FaDownload, FaHeart, FaArrowRight, FaPlaystation, FaXbox, FaGamepad } from "react-icons/fa";
 import FeaturedServersCarousel from "../components/FeaturedServersCarousel";
-import BotStatus from "../components/BotStatus";
-import DiscordBotSection from "../components/DiscordBotSection";
 import Layout from "@theme/Layout";
 import { T } from "../lib/tokens";
 
@@ -300,36 +298,6 @@ function SkinsSection({ skins }) {
   );
 }
 
-function DiscordSection() {
-  return (
-    <section style={{ background: T.bgAlt, borderTop: "1px solid " + T.border, padding: "56px 24px" }}>
-      <div style={{ maxWidth: 860, margin: "0 auto" }}>
-        <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#5865f2", textAlign: "center", marginBottom: 8 }}>Discord bot</p>
-        <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: T.text, textAlign: "center", margin: "0 0 10px", letterSpacing: "-0.02em" }}>Live server status in Discord.</h2>
-        <p style={{ fontSize: 15, color: T.sub, textAlign: "center", margin: "0 auto 36px", maxWidth: 440, lineHeight: 1.65 }}>
-          Auto-updating embeds for Java and Bedrock servers. Free to add to any Discord server.
-        </p>
-        <DiscordBotSection />
-      </div>
-    </section>
-  );
-}
-
-function RelaySection() {
-  return (
-    <section style={{ background: T.bg, borderTop: "1px solid " + T.border, padding: "56px 24px" }}>
-      <div style={{ maxWidth: 860, margin: "0 auto" }}>
-        <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: T.teal, textAlign: "center", marginBottom: 8 }}>Xbox relay</p>
-        <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: T.text, textAlign: "center", margin: "0 0 10px", letterSpacing: "-0.02em" }}>Always online. EU and US.</h2>
-        <p style={{ fontSize: 15, color: T.sub, textAlign: "center", margin: "0 auto 36px", maxWidth: 440, lineHeight: 1.65 }}>
-          Dedicated relay bots running 24/7 so you can always connect from your console.
-        </p>
-        <BotStatus />
-      </div>
-    </section>
-  );
-}
-
 function ServersSection() {
   return (
     <section style={{ background: T.bg, borderTop: "1px solid " + T.border, padding: "56px 24px" }}>
@@ -395,8 +363,6 @@ export default function Home() {
         <FeaturesSection />
         <WebToolsSection />
         <SkinsSection skins={skins} />
-        <DiscordSection />
-        <RelaySection />
         <ServersSection />
         <DownloadCTA />
       </div>
