@@ -1333,10 +1333,201 @@ function FeaturedPacksPanel() {
   );
 }
 
+function PackSubmissionsPanel() {
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("pending");
+  const [expandedId, setExpandedId] = useState(null);
+  const [acting, setActing] = useState(null);
+  const [reviewNotes, setReviewNotes] = useState({});
+  const [promoteOpts, setPromoteOpts] = useState({});
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = await fetchIdToken();
+      const qs = statusFilter !== "all" ? `?status=${statusFilter}` : "";
+      const res = await fetch(`${API_BASE}/api/featured-packs/admin/submissions${qs}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) setSubmissions((await res.json()).submissions || []);
+    } catch (_) {}
+    finally { setLoading(false); }
+  }, [statusFilter]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function decide(id, status) {
+    setActing(id + status);
+    try {
+      const token = await fetchIdToken();
+      const opts = promoteOpts[id] ?? {};
+      const body = {
+        status,
+        reviewNote: reviewNotes[id]?.trim() || undefined,
+        ...(status === "approved" && opts.promote ? { promote: true, sortOrder: parseInt(opts.sortOrder ?? "0", 10) || 0 } : {}),
+      };
+      const res = await fetch(`${API_BASE}/api/featured-packs/admin/submissions/${id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSubmissions(prev => prev.map(s => s.id === id ? { ...s, status } : s));
+        if (data.featuredPack) alert(`✓ Added to featured packs as "${data.featuredPack.name}"`);
+        setExpandedId(null);
+      }
+    } catch (_) {}
+    setActing(null);
+  }
+
+  const STATUS_C = { pending: "warn", approved: "success", rejected: "danger" };
+
+  return (
+    <Card title="Pack submissions" subtitle={`${submissions.length} shown`} action={
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        {iconBtn(load, "Refresh", <IC.Refresh />)}
+        <div style={{ display: "flex", gap: 2, background: NL.subtle, borderRadius: 8, padding: 2, border: `1px solid ${NL.border}` }}>
+          {["all", "pending", "approved", "rejected"].map(s => (
+            <button key={s} onClick={() => setStatusFilter(s)}
+              style={{ padding: "4px 10px", fontSize: 11, fontWeight: 600, borderRadius: 6, border: "none", cursor: "pointer", fontFamily: font, background: statusFilter === s ? NL.accent : "transparent", color: statusFilter === s ? "#0d1a18" : NL.secondary, transition: "background 0.15s, color 0.15s" }}>
+              {s.charAt(0).toUpperCase() + s.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+    }>
+      {loading ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13, padding: "24px 0", justifyContent: "center" }}><Spinner /> Loading…</div>
+      ) : submissions.length === 0 ? (
+        <p style={{ fontSize: 13, color: NL.muted, textAlign: "center", padding: "32px 0" }}>No submissions found.</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {submissions.map(s => {
+            const isExpanded = expandedId === s.id;
+            const note = reviewNotes[s.id] ?? "";
+            const opts = promoteOpts[s.id] ?? { promote: false, sortOrder: "0" };
+            return (
+              <div key={s.id} style={{ border: `1px solid ${isExpanded ? NL.borderMid : NL.border}`, borderRadius: 12, background: NL.elevated, overflow: "hidden", transition: "border-color 0.15s" }}>
+                {/* Row */}
+                <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 14px", flexWrap: "wrap" }}>
+                  {s.thumbnail_url
+                    ? <img src={s.thumbnail_url} alt={s.name} style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", imageRendering: "pixelated", flexShrink: 0, background: NL.subtle }} />
+                    : <div style={{ width: 44, height: 44, borderRadius: 8, background: NL.subtle, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>📦</div>
+                  }
+                  <div style={{ flex: 1, minWidth: 120 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <p style={{ margin: 0, fontWeight: 700, fontSize: 13, color: NL.text }}>{s.name}</p>
+                      {s.category && <Badge color="blue">{s.category}</Badge>}
+                      <Badge color={STATUS_C[s.status] ?? "default"}>{s.status}</Badge>
+                    </div>
+                    <p style={{ margin: "2px 0 0", fontSize: 12, color: NL.secondary }}>by <span style={{ fontFamily: mono, color: NL.text }}>{s.username}</span></p>
+                    <p style={{ margin: "1px 0 0", fontSize: 11, color: NL.muted }}>{new Date(s.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+                    {s.status === "pending" && (
+                      <>
+                        <Btn size="sm" variant="success" disabled={!!acting} onClick={() => decide(s.id, "approved")}>{acting === s.id + "approved" ? <Spinner size={10} /> : "Approve"}</Btn>
+                        <Btn size="sm" variant="danger" disabled={!!acting} onClick={() => decide(s.id, "rejected")}>{acting === s.id + "rejected" ? <Spinner size={10} /> : "Reject"}</Btn>
+                      </>
+                    )}
+                    {s.status !== "pending" && <Btn size="sm" variant="ghost" disabled={!!acting} onClick={() => decide(s.id, "pending")}>Reopen</Btn>}
+                    <button onClick={() => setExpandedId(isExpanded ? null : s.id)}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: NL.muted, fontSize: 10, padding: "2px 4px", fontFamily: mono }}>{isExpanded ? "▲" : "▼"}</button>
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div style={{ borderTop: `1px solid ${NL.border}`, background: "rgba(0,0,0,0.12)", padding: "16px 14px", display: "flex", flexDirection: "column", gap: 14 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {s.description && (
+                        <div style={{ gridColumn: "1/-1" }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Description</span>
+                          <p style={{ margin: "4px 0 0", fontSize: 12, color: NL.secondary, lineHeight: 1.5 }}>{s.description}</p>
+                        </div>
+                      )}
+                      {s.tags?.length > 0 && (
+                        <div>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Tags</span>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                            {s.tags.map(t => <span key={t} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: NL.accentDim, color: NL.accent, border: `1px solid ${NL.accentBorder}`, fontFamily: mono }}>#{t}</span>)}
+                          </div>
+                        </div>
+                      )}
+                      {(s.creator_website || s.creator_discord) && (
+                        <div>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Creator links</span>
+                          <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                            {s.creator_website && <a href={s.creator_website} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: NL.accent, textDecoration: "none" }}>🌐 Website ↗</a>}
+                            {s.creator_discord && <a href={s.creator_discord} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#7289da", textDecoration: "none" }}>Discord ↗</a>}
+                          </div>
+                        </div>
+                      )}
+                      <div>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.06em" }}>File</span>
+                        <p style={{ margin: "4px 0 0", fontSize: 11, fontFamily: mono, color: NL.muted }}>{formatBytes(s.size_bytes)} · {s.sha256?.slice(0, 16)}…</p>
+                        <a href={s.download_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: NL.accent, textDecoration: "none" }}>Download ↗</a>
+                      </div>
+                    </div>
+
+                    {s.long_description && (
+                      <div>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Long description</span>
+                        <div style={{ marginTop: 6, background: NL.surface, borderRadius: 8, padding: "10px 12px", fontSize: 12, color: NL.secondary, lineHeight: 1.6, whiteSpace: "pre-wrap", maxHeight: 180, overflowY: "auto", fontFamily: mono }}>
+                          {s.long_description}
+                        </div>
+                      </div>
+                    )}
+
+                    {s.status === "pending" && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4, borderTop: `1px solid ${NL.border}` }}>
+                        <div>
+                          <label style={{ fontSize: 10, fontWeight: 700, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 5 }}>Review note (visible to submitter)</label>
+                          <input value={note} onChange={e => setReviewNotes(p => ({ ...p, [s.id]: e.target.value }))} placeholder="Optional reason or feedback…"
+                            style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${NL.borderMid}`, background: NL.surface, color: NL.text, fontSize: 12, fontFamily: font, outline: "none", boxSizing: "border-box" }} />
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, color: NL.secondary }}>
+                            <input type="checkbox" checked={opts.promote} onChange={e => setPromoteOpts(p => ({ ...p, [s.id]: { ...opts, promote: e.target.checked } }))}
+                              style={{ accentColor: NL.accent }} />
+                            Also add to featured packs
+                          </label>
+                          {opts.promote && (
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <label style={{ fontSize: 11, color: NL.muted }}>Sort order:</label>
+                              <input type="number" value={opts.sortOrder} onChange={e => setPromoteOpts(p => ({ ...p, [s.id]: { ...opts, sortOrder: e.target.value } }))}
+                                style={{ width: 60, padding: "4px 8px", borderRadius: 6, border: `1px solid ${NL.border}`, background: NL.surface, color: NL.text, fontSize: 12, fontFamily: mono, outline: "none", textAlign: "center" }} />
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <Btn variant="success" disabled={!!acting} onClick={() => decide(s.id, "approved")}>{acting === s.id + "approved" ? <><Spinner size={12} /> Approving…</> : opts.promote ? "✓ Approve & Feature" : "✓ Approve"}</Btn>
+                          <Btn variant="danger" disabled={!!acting} onClick={() => decide(s.id, "rejected")}>{acting === s.id + "rejected" ? <><Spinner size={12} /> Rejecting…</> : "✕ Reject"}</Btn>
+                        </div>
+                      </div>
+                    )}
+
+                    {s.review_note && (
+                      <div style={{ background: "rgba(0,0,0,0.12)", borderRadius: 8, padding: "10px 12px" }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.06em" }}>Review note</span>
+                        <p style={{ margin: "4px 0 0", fontSize: 12, color: NL.secondary, lineHeight: 1.5 }}>{s.review_note}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 const TABS = [
   { id: "overview", label: "Overview" },
   { id: "partners", label: "Partners" },
   { id: "featured-packs", label: "Packs" },
+  { id: "submissions", label: "Submissions" },
   { id: "moderation", label: "Mod" },
   { id: "feedback", label: "Feedback" },
 ];
@@ -1401,6 +1592,7 @@ export default function AdminPage() {
           )}
           {activeTab === "partners" && <PartnersManagementPanel />}
           {activeTab === "featured-packs" && <FeaturedPacksPanel />}
+          {activeTab === "submissions" && <PackSubmissionsPanel />}
           {activeTab === "moderation" && <ModerationPanel isMobile={isMobile} />}
           {activeTab === "feedback" && <FeedbackPanel />}
         </div>
