@@ -75,14 +75,28 @@ const sections = [
     footer: "This data is derived from relay usage and is visible to anyone without an account. It does not include any personal user information. If you are a server operator and wish to have your server's data removed from the public metrics, please contact us at privacy@mccompanion.net.",
   },
   {
-    title: "8. Resource Pack Caching",
-    content: "To deliver a seamless console experience, MCCompanion may automatically download and cache resource packs from Minecraft servers you connect to via the relay. The following data is stored:",
+    title: "8. Resource Packs",
+    content: "MCCompanion handles resource pack data in several ways depending on the feature used:",
     list: [
-      "The resource pack file itself (stored in Cloudflare R2 cloud storage)",
-      "Pack metadata: UUID, version, file size, and a SHA-256 content hash used for deduplication",
-      "The R2 storage key referencing the pack",
+      "Relay caching: packs downloaded automatically from servers you connect to are stored in Cloudflare R2. We store the pack file, UUID, version, file size, and a SHA-256 hash for deduplication. These packs are not publicly listed or browsable.",
+      "User-uploaded packs: if you upload a resource pack, the file is stored in Cloudflare R2 under a hash-based path and is accessible to anyone with the direct URL. You can delete your uploaded pack at any time from within the App.",
+      "Pack editor: the in-app RP editor processes packs locally on your device. No pack content is sent to our servers unless you explicitly upload the result.",
+      "Community browser: pack listings include the pack name, author, download URL, and description as submitted. We do not collect personal data in connection with browsing packs.",
     ],
-    footer: "Resource packs are cached indefinitely to avoid re-downloading them on subsequent connections. Packs are only accessible internally by the relay service and are not publicly indexed or browsable. If you upload your own resource pack for relay delivery, the pack file is stored under a hash-based path and is accessible to anyone with the direct URL. You can delete your uploaded pack at any time from within the App.",
+    footer: "Cached relay packs are retained indefinitely. User-uploaded packs are retained until you delete them in-app.",
+  },
+  {
+    title: "9. Cloud Skins",
+    content: "When you use the Skin Workshop to upload and publish a skin, we store the following data:",
+    list: [
+      "The skin texture file (stored in Cloudflare R2 cloud storage)",
+      "Skin name as you entered it",
+      "Your user ID and username, stored as the creator of the skin",
+      "A public URL pointing to the texture file",
+      "Like count: the number of users who have liked your skin (individual liker identities are stored to prevent duplicate likes but are not publicly visible)",
+      "Upload timestamp",
+    ],
+    footer: "Published skins are publicly visible on your profile and in the skin gallery. Anyone can view and download the texture via the public URL. You can delete your skins at any time from within the App/Website, which permanently removes the texture file and all associated metadata.",
   },
   {
     title: "9. Feedback & Contact Data",
@@ -102,7 +116,7 @@ const sections = [
     title: "11. How We Use Your Information",
     content: "We use your information exclusively to:",
     list: [
-      "Provide and operate the App: account management, relay connections, skin viewer, wiki, player lookup",
+      "Provide and operate the App: account management, relay connections, skin workshop, resource packs, wiki, player lookup",
       "Enable social features: friend requests, direct messaging, online presence, push notifications",
       "Ensure security: detecting abuse, rate-limit violations, and enforcing our Terms of Service",
       "Improve the App: aggregated, anonymised analytics on relay usage and popular servers",
@@ -146,12 +160,14 @@ const sections = [
       "IP addresses in route cache (Redis): automatically deleted after 15 minutes",
       "Connection logs: automatically deleted after 90 days",
       "Feedback contact emails: retained until you request removal at privacy@mccompanion.net",
-      "Resource pack files in cloud storage: retained indefinitely for relay delivery; user-uploaded packs can be deleted in-app",
+      "Resource pack files in cloud storage: retained indefinitely for relay delivery; user-uploaded packs can be deleted in-app at any time",
+      "Cloud skin files and metadata: retained until you delete the skin from within the App/Website",
+      "Skin like records: retained until you delete your account",
       "Abuse and report records: retained indefinitely for moderation integrity",
     ],
   },
   {
-    title: "12. Account Deletion",
+    title: "15. Account Deletion",
     content: "You can permanently delete your account at any time from within the App (Profile → Settings → Delete Account). Upon deletion, the following data is permanently and irreversibly removed:",
     list: [
       "Your account and profile data",
@@ -160,8 +176,10 @@ const sections = [
       "All your linked gaming accounts",
       "All your FCM device tokens",
       "All your tracked servers and active sessions",
+      "All your uploaded cloud skins and their texture files",
+      "All your skin like records",
     ],
-    footer: "Abuse and moderation reports that involve your account may be retained to protect the integrity of our community. Connection logs are not linked to your account and will expire after 90 days as normal.",
+    footer: "User-uploaded resource packs are not automatically deleted on account deletion, delete them manually in-app before deleting your account if desired. Abuse and moderation reports may be retained. Connection logs expire after 90 days as normal.",
   },
   {
     title: "16. Your Rights",
@@ -295,7 +313,7 @@ export default function Privacy() {
           </div>
 
           <p style={{ fontSize: 11, color: NL.muted, textAlign: "right", marginBottom: 32 }}>
-            Last updated: June 22, 2026
+            Last updated: June 29, 2026
           </p>
 
           <div style={{ textAlign: "center" }}>

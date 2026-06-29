@@ -66,14 +66,27 @@ const sections = [
   },
   {
     title: "5. User-Generated Content",
-    content: "You are solely responsible for any content you submit through the App, including direct messages, profile information, usernames, and linked gaming accounts. Content must not:",
+    content: "You are solely responsible for any content you submit through the App/Website, including direct messages, profile information, usernames, linked gaming accounts, uploaded Minecraft skins, and uploaded resource packs. Content must not:",
     list: [
       "Be illegal, defamatory, or fraudulent",
       "Contain hate speech or discrimination based on race, ethnicity, religion, gender, sexual orientation, disability, or nationality",
       "Be sexually explicit or contain graphic violence",
       "Violate the intellectual property rights of any third party",
+      "Infringe on Mojang's or Microsoft's intellectual property in a way that exceeds fair use for personal Minecraft customisation",
     ],
     footer: "We reserve the right to remove content and suspend or terminate accounts that violate these Terms, at our sole discretion, without prior notice.",
+  },
+  {
+    title: "5a. Cloud Skins",
+    content: "MCCompanion allows you to create, upload, and share custom Minecraft skins via the Skin Workshop. By uploading a skin you agree that:",
+    list: [
+      "The skin texture is stored on our servers and assigned a public URL accessible to anyone with the link.",
+      "Your username is displayed as the creator of the skin on your public profile and on skin cards visible to other users.",
+      "Other users may like your skin; like counts are publicly visible.",
+      "You own or have the right to upload the skin content. Uploading skins that infringe third-party copyrights is prohibited.",
+      "You can delete your cloud skins at any time from within the App. Deletion permanently removes the texture file and all associated data.",
+      "We reserve the right to remove skins that violate these Terms without notice.",
+    ],
   },
   {
     title: "6. Reporting & Moderation",
@@ -111,12 +124,14 @@ const sections = [
     ],
   },
   {
-    title: "11. Resource Pack Caching",
-    content: "To deliver resource packs to your console via the relay, MCCompanion may automatically download, cache, and serve resource packs from Minecraft servers you connect to.",
+    title: "11. Resource Packs",
+    content: "MCCompanion provides several resource pack features: automatic relay caching, a community pack browser, a pack merger/editor, and user uploads. The following rules apply:",
     list: [
-      "Server-side packs: packs are downloaded from the server and stored in our cloud storage (Cloudflare R2) for deduplication and relay delivery. They are not publicly listed or searchable.",
-      "User-uploaded packs: if you upload your own resource pack in the App, it is stored in our cloud storage and accessible to anyone with the direct URL. You can delete your uploaded pack at any time from within the App.",
-      "Intellectual property: resource packs may be subject to copyright. By using the relay feature, you agree not to use MCCompanion to infringe third-party intellectual property rights. We are not responsible for the content of third-party resource packs.",
+      "Relay caching: MCCompanion may automatically download and cache resource packs from servers you connect to via the relay. These packs are stored in our cloud storage for deduplication and delivery and are not publicly listed.",
+      "Community browser: packs listed in the public browser are submitted by users or sourced from public repositories. We do not verify or endorse their content.",
+      "User-uploaded packs: if you upload a resource pack, it is stored in our cloud storage and accessible to anyone with the direct URL. You can delete your uploaded pack at any time from within the App.",
+      "Pack editor/merger: the in-app RP editor processes packs locally on your device. We do not store or transmit the contents of packs you edit unless you explicitly upload the result.",
+      "Intellectual property: resource packs may be subject to copyright. By using any resource pack feature, you agree not to use MCCompanion to distribute or infringe third-party intellectual property. We are not responsible for the content of third-party resource packs.",
     ],
   },
   {
@@ -264,7 +279,7 @@ export default function Terms() {
           </div>
 
           <p style={{ fontSize: 11, color: NL.muted, textAlign: "right", marginBottom: 32 }}>
-            Last updated: June 22, 2026
+            Last updated: June 29, 2026
           </p>
 
           <div style={{ textAlign: "center" }}>
