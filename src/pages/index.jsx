@@ -273,10 +273,10 @@ function SkinsSection({ skins }) {
         <div className="sk-row">
           {row.map((s, i) => (
             <a key={i} href={`/skins?skin=${s.id}`}
-              style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "12px 10px", borderRadius: 12, background: T.surface, border: "1px solid " + T.border, width: 72, textDecoration: "none", transition: "border-color 0.15s" }}
+              style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "14px 12px", borderRadius: 12, background: T.surface, border: "1px solid " + T.border, width: 150, textDecoration: "none", transition: "border-color 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = "#a78bfa50"}
               onMouseLeave={e => e.currentTarget.style.borderColor = T.border}>
-              <SkinBody url={s.public_url} scale={3} />
+              <SkinBody url={s.public_url} scale={5} />
               <div style={{ width: "100%", textAlign: "center" }}>
                 <div style={{ fontSize: 10, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</div>
                 {s.username && (
