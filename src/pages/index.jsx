@@ -272,7 +272,7 @@ function SkinsSection({ skins }) {
       <div style={{ paddingLeft: 24, overflow: "hidden" }}>
         <div className="sk-row">
           {row.map((s, i) => (
-            <a key={i} href="/skins"
+            <a key={i} href={`/skins?skin=${s.id}`}
               style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "12px 10px", borderRadius: 12, background: T.surface, border: "1px solid " + T.border, width: 72, textDecoration: "none", transition: "border-color 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = "#a78bfa50"}
               onMouseLeave={e => e.currentTarget.style.borderColor = T.border}>

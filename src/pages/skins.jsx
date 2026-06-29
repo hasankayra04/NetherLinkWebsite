@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import Layout from "@theme/Layout";
+import { useLocation } from "@docusaurus/router";
 import { useAuth } from "../useAuth";
 
 const C = {
@@ -420,15 +421,17 @@ function UVEditor({ bufferRef, onUpdate, renderRef }) {
   function uploadPNG(file) {
     const img = new Image();
     img.onload = () => {
-      if (img.width !== 64 || (img.height !== 64 && img.height !== 32)) {
-        alert(`Expected 64×64 or 64×32, got ${img.width}×${img.height}.`);
+      const validSizes = [[64, 64], [64, 32], [128, 128], [128, 64]];
+      if (!validSizes.some(([w, h]) => img.width === w && img.height === h)) {
+        alert(`Expected 64×64 or 64×32 skin PNG, got ${img.width}×${img.height}.`);
         return;
       }
       pushUndo();
       const buf = bufferRef.current;
       const ctx = buf.getContext("2d");
       ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      ctx.drawImage(img, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
       renderDisplay();
       onUpdate();
     };
@@ -720,8 +723,14 @@ function GalleryTab({ user, idToken, onEditSkin }) {
 
 function EditorTab({ user, idToken, initialSkin, onSaved }) {
   const bufferRef = useRef(null);
+  if (!bufferRef.current) {
+    const c = document.createElement("canvas");
+    c.width = CANVAS_SIZE;
+    c.height = CANVAS_SIZE;
+    bufferRef.current = c;
+  }
   const renderRef = useRef(null);
-  const update3DRef = useRef(null); 
+  const update3DRef = useRef(null);
   const debounceTimer = useRef(null);
   const [skinName, setSkinName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -731,13 +740,6 @@ function EditorTab({ user, idToken, initialSkin, onSaved }) {
   const [showNameInput, setShowNameInput] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [saveSuccess, setSaveSuccess] = useState(false);
-
-  useEffect(() => {
-    const c = document.createElement("canvas");
-    c.width = CANVAS_SIZE;
-    c.height = CANVAS_SIZE;
-    bufferRef.current = c;
-  }, []);
 
   useEffect(() => {
     if (!initialSkin || !initialSkin.public_url) return;
@@ -751,7 +753,11 @@ function EditorTab({ user, idToken, initialSkin, onSaved }) {
       setSavedSkinId(initialSkin.id || null);
       setSkinName(initialSkin.name || "");
       setSkinIsPublic(initialSkin.is_public !== false);
-      if (renderRef.current) renderRef.current();
+      const tryRender = (attempts = 0) => {
+        if (renderRef.current) { renderRef.current(); return; }
+        if (attempts < 10) setTimeout(() => tryRender(attempts + 1), 30);
+      };
+      tryRender();
       scheduleUpdate3D();
     };
     img.src = initialSkin.public_url;
@@ -927,9 +933,20 @@ function UploadTab({ user, idToken, onSaved }) {
     const img = new Image();
     const url = URL.createObjectURL(f);
     img.onload = () => {
-      if ((img.width !== 64) || (img.height !== 64 && img.height !== 32)) {
+      const validSizes = [[64, 64], [64, 32], [128, 128], [128, 64]];
+      if (!validSizes.some(([w, h]) => img.width === w && img.height === h)) {
         setError(`Expected 64×64 or 64×32 pixels, got ${img.width}×${img.height}.`);
         URL.revokeObjectURL(url);
+        return;
+      }
+      if (img.width === 128) {
+        const c = document.createElement("canvas");
+        c.width = 64; c.height = img.height === 128 ? 64 : 32;
+        const ctx = c.getContext("2d");
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, 0, 0, 64, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(blob => handleFile(blob), "image/png");
         return;
       }
       if (img.height === 32) {
@@ -948,13 +965,13 @@ function UploadTab({ user, idToken, onSaved }) {
           setFile(blob);
           setPreview(c.toDataURL());
           setError(null);
-          if (!name) setName(f.name.replace(/\.png$/i, ""));
+          if (!name) setName((f.name || "").replace(/\.png$/i, "") || "My Skin");
         }, "image/png");
       } else {
         setFile(f);
         setPreview(url);
         setError(null);
-        if (!name) setName(f.name.replace(/\.png$/i, ""));
+        if (!name) setName((f.name || "").replace(/\.png$/i, "") || "My Skin");
       }
     };
     img.src = url;
@@ -1061,9 +1078,23 @@ function UploadTab({ user, idToken, onSaved }) {
 
 export default function SkinsPage() {
   const { user, idToken, checking } = useAuth();
-  const [tab, setTab] = useState("gallery"); 
+  const location = useLocation();
+  const [tab, setTab] = useState("gallery");
   const [editSkin, setEditSkin] = useState(null);
   const [galleryKey, setGalleryKey] = useState(0);
+
+  useEffect(() => {
+    const skinId = new URLSearchParams(location.search).get("skin");
+    if (!skinId) return;
+    fetch(`https://api.mccompanion.net/api/skins/${skinId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(skin => {
+        if (!skin) return;
+        setEditSkin(skin);
+        setTab("editor");
+      })
+      .catch(() => {});
+  }, [location.search]);
 
   function handleEditSkin(skin) {
     setEditSkin(skin);
