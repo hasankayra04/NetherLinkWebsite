@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import Layout from "@theme/Layout";
-import { useLocation } from "@docusaurus/router";
 import { useAuth } from "../useAuth";
 import CommentsSection from "../components/CommentsSection";
 
@@ -620,20 +619,18 @@ function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initial
             {likes > 0 && <span style={{ fontSize: 11, color: liked ? "#f87171" : C.muted, fontFamily: font }}>{likes}</span>}
           </button>
         )}
-        <button onClick={() => setShowComments(true)} title="Comments" style={{ padding: "10px 0", flex: 1, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 3, borderRight: isOwn ? `1px solid ${C.border}` : "none" }}>
+        <button onClick={() => setShowComments(true)} title="Comments" style={{ padding: "10px 0", flex: 1, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 3, borderRight: `1px solid ${C.border}` }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={commentCount > 0 ? C.secondary : C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
           {commentCount > 0 && <span style={{ fontSize: 11, color: C.secondary, fontFamily: font }}>{commentCount}</span>}
         </button>
+        <button onClick={() => onEdit(initialSkin)} title={isOwn ? "Edit" : "Edit as template"} style={{ padding: "10px 0", flex: 1, background: "transparent", border: "none", borderRight: isOwn ? `1px solid ${C.border}` : "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+        </button>
         {isOwn && (
-          <>
-            <button onClick={() => onEdit(initialSkin)} title="Edit" style={{ padding: "10px 0", flex: 1, background: "transparent", border: "none", borderRight: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-            </button>
-            <button disabled={deleting} title="Delete" onClick={async () => { if (!confirm(`Delete "${initialSkin.name}"?`)) return; setDeleting(true); await onDelete(initialSkin.id); setDeleting(false); }}
-              style={{ padding: "10px 0", flex: 1, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: deleting ? 0.4 : 1 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.danger} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" /></svg>
-            </button>
-          </>
+          <button disabled={deleting} title="Delete" onClick={async () => { if (!confirm(`Delete "${initialSkin.name}"?`)) return; setDeleting(true); await onDelete(initialSkin.id); setDeleting(false); }}
+            style={{ padding: "10px 0", flex: 1, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: deleting ? 0.4 : 1 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.danger} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" /></svg>
+          </button>
         )}
       </div>
 
@@ -783,8 +780,11 @@ function GalleryTab({ user, idToken, onEditSkin }) {
   );
 }
 
+const STEVE_SKIN_URL = "https://textures.minecraft.net/texture/31f477eb1a7beee631c2ca64d06f8f68fa93a3386d04452ab27f43acdf1b60cb";
+
 function EditorTab({ user, idToken, initialSkin, onSaved }) {
   const bufferRef = useRef(null);
+  const steveLoadedRef = useRef(false);
   if (!bufferRef.current) {
     const c = document.createElement("canvas");
     c.width = CANVAS_SIZE;
@@ -804,7 +804,9 @@ function EditorTab({ user, idToken, initialSkin, onSaved }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
-    if (!initialSkin || !initialSkin.public_url) return;
+    const url = initialSkin?.public_url || STEVE_SKIN_URL;
+    const isSteve = !initialSkin?.public_url;
+    if (isSteve && steveLoadedRef.current) return;
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
@@ -812,9 +814,13 @@ function EditorTab({ user, idToken, initialSkin, onSaved }) {
       const ctx = bufferRef.current.getContext("2d");
       ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
       ctx.drawImage(img, 0, 0);
-      setSavedSkinId(initialSkin.id || null);
-      setSkinName(initialSkin.name || "");
-      setSkinIsPublic(initialSkin.is_public !== false);
+      if (!isSteve) {
+        setSavedSkinId(initialSkin.id || null);
+        setSkinName(initialSkin.name || "");
+        setSkinIsPublic(initialSkin.is_public !== false);
+      } else {
+        steveLoadedRef.current = true;
+      }
       const tryRender = (attempts = 0) => {
         if (renderRef.current) { renderRef.current(); return; }
         if (attempts < 10) setTimeout(() => tryRender(attempts + 1), 30);
@@ -822,7 +828,7 @@ function EditorTab({ user, idToken, initialSkin, onSaved }) {
       tryRender();
       scheduleUpdate3D();
     };
-    img.src = initialSkin.public_url;
+    img.src = url;
   }, [initialSkin]);
 
   function getDataUrl() {
@@ -1137,88 +1143,46 @@ function UploadTab({ user, idToken, onSaved }) {
 }
 
 export default function SkinsPage() {
-  const { user, idToken, checking } = useAuth();
-  const location = useLocation();
-  const [showEditor, setShowEditor] = useState(false);
+  const { user, idToken } = useAuth();
   const [showUpload, setShowUpload] = useState(false);
-  const [editSkin, setEditSkin] = useState(null);
   const [galleryKey, setGalleryKey] = useState(0);
 
-  useEffect(() => {
-    const skinId = new URLSearchParams(location.search).get("skin");
-    if (!skinId) return;
-    fetch(`https://api.mccompanion.net/api/skins/${skinId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(skin => {
-        if (!skin) return;
-        setEditSkin(skin);
-        setShowEditor(true);
-      })
-      .catch(() => { });
-  }, [location.search]);
-
   function handleEditSkin(skin) {
-    setEditSkin(skin);
-    setShowEditor(true);
+    window.location.href = `/skin-editor?skin=${skin.id}`;
   }
 
   function handleSkinSaved() {
     setGalleryKey(k => k + 1);
-    setShowEditor(false);
     setShowUpload(false);
-  }
-
-  function openEditor() {
-    setEditSkin(null);
-    setShowEditor(true);
   }
 
   return (
     <Layout title="Skin Workshop">
       <div style={{ background: C.bg, minHeight: "100vh", fontFamily: font }}>
-
-        {showEditor ? (
-          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
-              <button type="button" onClick={() => setShowEditor(false)}
-                style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9, border: `1px solid ${C.borderMid}`, background: C.elevated, color: C.secondary, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: font }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-                Back to gallery
-              </button>
-              <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: C.text }}>
-                {editSkin ? `Editing: ${editSkin.name}` : "Create skin"}
-              </h1>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 20px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 32, gap: 16, flexWrap: "wrap" }}>
+            <div>
+              <h1 style={{ color: C.text, fontSize: 28, fontWeight: 800, margin: 0, marginBottom: 6 }}>Skin Workshop</h1>
+              <p style={{ color: C.secondary, fontSize: 15, margin: 0 }}>Browse community skins or create your own.</p>
             </div>
-            <EditorTab user={user} idToken={idToken} initialSkin={editSkin} onSaved={handleSkinSaved} />
-          </div>
-
-        ) : (
-          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 20px" }}>
-
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 32, gap: 16, flexWrap: "wrap" }}>
-              <div>
-                <h1 style={{ color: C.text, fontSize: 28, fontWeight: 800, margin: 0, marginBottom: 6 }}>Skin Workshop</h1>
-                <p style={{ color: C.secondary, fontSize: 15, margin: 0 }}>Browse community skins or create your own.</p>
+            {user && (
+              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                <button onClick={() => setShowUpload(true)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: `1px solid ${C.borderMid}`, background: C.elevated, color: C.secondary, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: font }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                  Upload PNG
+                </button>
+                <a href="/skin-editor"
+                  style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "none", background: C.accent, color: "#000", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: font, textDecoration: "none" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+                  Create skin
+                </a>
               </div>
-              {user && (
-                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  <button onClick={() => setShowUpload(true)}
-                    style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: `1px solid ${C.borderMid}`, background: C.elevated, color: C.secondary, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: font }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-                    Upload PNG
-                  </button>
-                  <button onClick={openEditor}
-                    style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "none", background: C.accent, color: "#000", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: font }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
-                    Create skin
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <GalleryTab key={galleryKey} user={user} idToken={idToken} onEditSkin={handleEditSkin} />
+            )}
           </div>
-        )}
+
+          <GalleryTab key={galleryKey} user={user} idToken={idToken} onEditSkin={handleEditSkin} />
+        </div>
 
         {showUpload && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.82)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
@@ -1232,7 +1196,6 @@ export default function SkinsPage() {
             </div>
           </div>
         )}
-
       </div>
     </Layout>
   );
