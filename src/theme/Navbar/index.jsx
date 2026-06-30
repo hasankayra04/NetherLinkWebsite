@@ -119,7 +119,8 @@ const MEGA_GROUPS = [
   {
     label: "TOOLS",
     items: [
-      { label: "Skin Workshop", desc: "Create & share skins", path: "/skins", icon: <FaPalette size={14} /> },
+      { label: "Skins", desc: "Browse community skins", path: "/skins", icon: <FaPalette size={14} /> },
+      { label: "Skin Editor", desc: "Create & edit skins", path: "/skin-editor", icon: <FaPalette size={14} /> },
       { label: "Player Lookup", desc: "Find any Bedrock player", path: "/lookup", icon: <FaSearch size={14} /> },
       { label: "Resource Packs", desc: "Browse community packs", path: "/packs", icon: <FaLayerGroup size={14} /> },
       { label: "RP Editor", desc: "Merge & edit resource packs", path: "/rpeditor", icon: <FaCode size={14} /> },

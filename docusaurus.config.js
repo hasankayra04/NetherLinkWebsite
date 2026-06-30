@@ -71,10 +71,11 @@ const config = {
             label: 'Tools',
             position: 'left',
             items: [
-              { to: '/lookup',   label: 'Player Lookup'  },
-              { to: '/skins',    label: 'Skin Workshop'  },
-              { to: '/rpeditor', label: 'Resource Pack Editor'      },
-              { to: '/metrics',  label: 'Server Metrics' },
+              { to: '/lookup',      label: 'Player Lookup'   },
+              { to: '/skins',       label: 'Skins'           },
+              { to: '/skin-editor', label: 'Skin Editor'     },
+              { to: '/rpeditor',    label: 'Resource Pack Editor' },
+              { to: '/metrics',     label: 'Server Metrics'  },
             ],
           },
           {
