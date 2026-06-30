@@ -95,23 +95,16 @@ export default function UserPage() {
   useEffect(() => {
     if (!username) { setLoading(false); setNotFound(true); return; }
     setLoading(true);
-    fetch(`${API_BASE}/api/users/${encodeURIComponent(username)}`)
+    fetch(`${API_BASE}/api/users/${encodeURIComponent(username)}/profile`)
       .then(r => { if (r.status === 404) throw new Error("not_found"); return r.json(); })
-      .then(data => { setUser(data.user); setLoading(false); })
+      .then(d => {
+        setUser(d.user);
+        if (d.stats) setStats(d.stats);
+        if (d.activity) setActivity(d.activity);
+        if (d.skins) setSkins(d.skins);
+        setLoading(false);
+      })
       .catch(() => { setNotFound(true); setLoading(false); });
-  }, [username]);
-
-  useEffect(() => {
-    if (!username) return;
-    Promise.all([
-      fetch(`${API_BASE}/api/users/${encodeURIComponent(username)}/stats`).then(r => r.ok ? r.json() : null),
-      fetch(`${API_BASE}/api/users/${encodeURIComponent(username)}/activity`).then(r => r.ok ? r.json() : null),
-      fetch(`${API_BASE}/api/skins/user/${encodeURIComponent(username)}`).then(r => r.ok ? r.json() : null),
-    ]).then(([s, a, sk]) => {
-      if (s?.stats) setStats(s.stats);
-      if (a?.activity) setActivity(a.activity);
-      if (sk?.skins) setSkins(sk.skins);
-    });
   }, [username]);
 
   const displayName = user?.displayName || user?.username || username;

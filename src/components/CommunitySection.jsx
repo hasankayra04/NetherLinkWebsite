@@ -1,19 +1,16 @@
 import { useState, useEffect } from "react";
 import { FaBug, FaLightbulb, FaHammer, FaGithub, FaExternalLinkAlt, FaSpinner } from "react-icons/fa";
+import { T } from "../lib/tokens";
+import { timeAgo } from "../lib/date-utils";
 
 const NL = {
-  bg: "#0d1117",
-  surface: "#131820",
-  elevated: "#191f2b",
-  text: "#eaecf0",
-  secondary: "#8d97aa",
-  muted: "#4a5270",
-  border: "rgba(255,255,255,0.06)",
-  borderMid: "rgba(255,255,255,0.11)",
-  accent: "#67e404",
+  ...T,
+  elevated: T.raised,
+  secondary: T.sub,
+  accent: T.green,
   accentDim: "rgba(103,228,4,0.10)",
   accentBorder: "rgba(103,228,4,0.22)",
-  danger: "#f87171",
+  danger: T.red,
   dangerDim: "rgba(248,113,113,0.10)",
   dangerBorder: "rgba(248,113,113,0.22)",
   amber: "#f59e0b",
@@ -26,17 +23,6 @@ const TABS = [
   { id: "feature", label: "Feature Requests", icon: <FaLightbulb size={12} />, color: NL.accent, dim: NL.accentDim, border: NL.accentBorder, githubLabel: "feature-request" },
   { id: "progress", label: "In Progress", icon: <FaHammer size={12} />, color: NL.amber, dim: NL.amberDim, border: NL.amberBorder, githubLabel: "in-progress" },
 ];
-
-function timeAgo(dateStr) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const d = Math.floor(diff / 86400000);
-  if (d === 0) return "today";
-  if (d === 1) return "yesterday";
-  if (d < 30) return `${d}d ago`;
-  const m = Math.floor(d / 30);
-  if (m < 12) return `${m}mo ago`;
-  return `${Math.floor(m / 12)}y ago`;
-}
 
 function IssueCard({ issue, color, dim, border }) {
   const [hovered, setHovered] = useState(false);

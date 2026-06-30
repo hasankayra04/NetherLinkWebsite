@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebaseClient";
 import { fetchIdToken } from "./firebaseAuthHelpers";
-
-const API_BASE = "https://api.mccompanion.net";
+import { API_BASE } from "./lib/api";
 
 async function resolveRole(user) {
   if (!user) return "none";

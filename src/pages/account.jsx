@@ -6,69 +6,29 @@ import { fetchIdToken } from "../firebaseAuthHelpers";
 import Layout from "@theme/Layout";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
+import { API_BASE } from "../lib/api";
+import { T } from "../lib/tokens";
+import SkinRenderer from "../components/SkinRenderer";
+import Spinner from "../components/Spinner";
+import { timeAgo } from "../lib/date-utils";
 
 marked.use({ breaks: true });
 
-function SkinBody({ url, scale = 5 }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    if (!ref.current || !url) return;
-    const canvas = ref.current;
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.imageSmoothingEnabled = false;
-      const s = scale;
-      ctx.drawImage(img, 8, 8, 8, 8, 4 * s, 0, 8 * s, 8 * s);
-      ctx.drawImage(img, 40, 8, 8, 8, 4 * s, 0, 8 * s, 8 * s);
-      ctx.drawImage(img, 20, 20, 8, 12, 4 * s, 8 * s, 8 * s, 12 * s);
-      ctx.drawImage(img, 44, 20, 4, 12, 0, 8 * s, 4 * s, 12 * s);
-      ctx.drawImage(img, 36, 52, 4, 12, 12 * s, 8 * s, 4 * s, 12 * s);
-      ctx.drawImage(img, 4, 20, 4, 12, 4 * s, 20 * s, 4 * s, 12 * s);
-      ctx.drawImage(img, 20, 52, 4, 12, 8 * s, 20 * s, 4 * s, 12 * s);
-    };
-    img.onerror = () => {
-      const fb = new Image();
-      fb.onload = () => { ctx.imageSmoothingEnabled = false; ctx.drawImage(fb, 0, 0, canvas.width, canvas.height); };
-      fb.src = url;
-    };
-    img.src = url;
-  }, [url, scale]);
-  return <canvas ref={ref} width={16 * scale} height={32 * scale} style={{ display: "block", imageRendering: "pixelated" }} />;
-}
-
 const NL = {
-  bg: "#0d1117",
-  surface: "#131820",
-  elevated: "#191f2b",
+  ...T,
+  elevated: T.raised,
   subtle: "#1f2635",
-  border: "rgba(255,255,255,0.06)",
-  borderMid: "rgba(255,255,255,0.11)",
-  text: "#eaecf0",
-  secondary: "#8d97aa",
-  muted: "#4a5270",
-  accent: "#67e404",
+  secondary: T.sub,
+  accent: T.green,
   accentDim: "rgba(103,228,4,0.10)",
   accentBorder: "rgba(103,228,4,0.22)",
-  danger: "#f87171",
+  danger: T.red,
   dangerDim: "rgba(248,113,113,0.10)",
   dangerBorder: "rgba(248,113,113,0.22)",
-  success: "#34d399",
+  success: T.teal,
 };
 const font = "'Inter', system-ui, sans-serif";
 const mono = "'JetBrains Mono', 'Fira Code', monospace";
-const API_BASE = "https://api.mccompanion.net";
-
-function Spinner({ size = 16 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ animation: "spin 0.8s linear infinite" }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeDasharray="40 20" />
-    </svg>
-  );
-}
 
 function Card({ title, subtitle, action, children }) {
   return (
@@ -116,13 +76,13 @@ function Btn({ onClick, disabled, children, size = "md" }) {
   );
 }
 
-function MySkinsSection({ username, idToken }) {
-  const [skins, setSkins] = useState([]);
-  const [loading, setLoading] = useState(true);
+function MySkinsSection({ username, initialSkins }) {
+  const [skins, setSkins] = useState(initialSkins ?? null);
+  const [loading, setLoading] = useState(initialSkins == null);
   const [deleting, setDeleting] = useState(null);
 
   useEffect(() => {
-    if (!username) return;
+    if (initialSkins != null || !username) return;
     fetchIdToken().then(token => {
       if (!token) return;
       fetch(`${API_BASE}/api/skins/me`, { headers: { Authorization: `Bearer ${token}` } })
@@ -132,6 +92,10 @@ function MySkinsSection({ username, idToken }) {
         .finally(() => setLoading(false));
     });
   }, [username]);
+
+  useEffect(() => {
+    if (initialSkins != null) { setSkins(initialSkins); setLoading(false); }
+  }, [initialSkins]);
 
   async function deleteSkin(id) {
     if (!confirm("Delete this skin?")) return;
@@ -160,7 +124,7 @@ function MySkinsSection({ username, idToken }) {
               onMouseEnter={e => e.currentTarget.style.borderColor = NL.borderMid}
               onMouseLeave={e => e.currentTarget.style.borderColor = NL.border}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <SkinBody url={skin.public_url} scale={3} />
+                <SkinRenderer url={skin.public_url} scale={3} />
               </div>
               <span style={{ fontSize: 11, color: NL.text, fontWeight: 600, textAlign: "center", wordBreak: "break-word", lineHeight: 1.3, width: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{skin.name}</span>
               {skin.like_count > 0 && <span style={{ fontSize: 10, color: NL.muted }}>♥ {skin.like_count}</span>}
@@ -791,14 +755,18 @@ export default function AccountPage() {
     setProfileLoading(true); setProfileError(null);
     try {
       const token = await fetchIdToken(); if (!token) return;
-      const res = await fetch(`${API_BASE}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) { if (res.status === 403) { setProfile(null); return; } throw new Error(`${res.status}`); }
-      const { user: u } = await res.json();
+      const res = await fetch(`${API_BASE}/api/account/dashboard`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { if (res.status === 403 || res.status === 404) { setProfile(null); return; } throw new Error(`${res.status}`); }
+      const d = await res.json();
+      const u = d.user;
       setProfile(u);
       setProfileEdit({ displayName: u.displayName || "", bio: u.bio || "" });
       setProfileDirty(false);
+      if (d.stats) setStats(d.stats);
+      if (d.activity) setActivity(d.activity);
+      if (d.skins) setDashboardSkins(d.skins);
     } catch (e) { setProfileError("Failed to load profile: " + e.message); }
-    finally { setProfileLoading(false); }
+    finally { setProfileLoading(false); setActivityLoading(false); }
   }, []);
 
   useEffect(() => { if (!checking) loadProfile(); }, [checking, loadProfile]);
@@ -882,18 +850,7 @@ export default function AccountPage() {
   const [stats, setStats] = useState(null);
   const [activity, setActivity] = useState([]);
   const [activityLoading, setActivityLoading] = useState(true);
-
-  useEffect(() => {
-    if (checking) return;
-    Promise.all([
-      fetchIdToken().then(t => t && fetch(`${API_BASE}/api/users/me/stats`, { headers: { Authorization: `Bearer ${t}` } }).then(r => r.ok ? r.json() : null)),
-      fetchIdToken().then(t => t && fetch(`${API_BASE}/api/users/me/activity`, { headers: { Authorization: `Bearer ${t}` } }).then(r => r.ok ? r.json() : null)),
-    ]).then(([s, a]) => {
-      if (s?.stats) setStats(s.stats);
-      if (a?.activity) setActivity(a.activity);
-      setActivityLoading(false);
-    }).catch(() => setActivityLoading(false));
-  }, [checking]);
+  const [dashboardSkins, setDashboardSkins] = useState(null);
 
   const inputStyle = {
     padding: "9px 12px", borderRadius: 9, border: `1px solid ${NL.borderMid}`,
@@ -925,15 +882,6 @@ export default function AccountPage() {
     pack_rejected: { icon: "❌", label: "Pack rejected", color: NL.danger },
     skin_liked: { icon: "❤️", label: "Skin got a like", color: "#f87171" },
   };
-
-  function timeAgo(dateStr) {
-    const diff = (Date.now() - new Date(dateStr)) / 1000;
-    if (diff < 60) return "just now";
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    if (diff < 86400 * 7) return `${Math.floor(diff / 86400)}d ago`;
-    return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-  }
 
   return (
     <Layout>
@@ -1248,7 +1196,7 @@ export default function AccountPage() {
                   </div>
                 )}
 
-                {activeTab === "skins" && profile && <MySkinsSection username={profile.username} />}
+                {activeTab === "skins" && profile && <MySkinsSection username={profile.username} initialSkins={dashboardSkins} />}
                 {activeTab === "packs" && profile && <SubmitPackSection />}
                 {activeTab === "notifications" && <NotificationsTab getToken={fetchIdToken} />}
               </div>

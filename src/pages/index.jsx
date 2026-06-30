@@ -3,8 +3,7 @@ import { FaWindows, FaApple, FaAndroid, FaDownload, FaHeart, FaArrowRight, FaPla
 import FeaturedServersCarousel from "../components/FeaturedServersCarousel";
 import Layout from "@theme/Layout";
 import { T } from "../lib/tokens";
-
-const API = "https://api.mccompanion.net";
+import { API_BASE as API } from "../lib/api";
 
 function SkinBody({ url, scale = 3 }) {
   const ref = useRef(null);
@@ -298,6 +297,41 @@ function SkinsSection({ skins }) {
   );
 }
 
+function RecentlyJoinedSection({ users }) {
+  if (!users || users.length < 3) return null;
+  return (
+    <section style={{ background: T.bg, borderTop: "1px solid " + T.border, padding: "56px 24px" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 28 }}>
+          <div>
+            <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#34d399", margin: "0 0 4px" }}>Community</p>
+            <h2 style={{ fontSize: "clamp(20px,3vw,32px)", fontWeight: 800, color: T.text, margin: 0, letterSpacing: "-0.02em" }}>Recently joined.</h2>
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
+          {users.map(u => (
+            <a key={u.username} href={`/u?name=${u.username}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: T.surface, border: "1px solid " + T.border, textDecoration: "none", transition: "border-color 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "#34d39950"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = T.border}>
+              {u.avatarUrl ? (
+                <img src={u.avatarUrl} alt={u.username} style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} onError={e => e.currentTarget.style.display = "none"} />
+              ) : (
+                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(52,211,153,0.12)", border: "1px solid rgba(52,211,153,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#34d399", flexShrink: 0 }}>
+                  {(u.username || "?")[0].toUpperCase()}
+                </div>
+              )}
+              <div style={{ minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.displayName || u.username}</p>
+                <p style={{ margin: 0, fontSize: 10, color: T.sub }}>@{u.username}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CommunitySection({ skins }) {
   const creators = [];
   const seen = new Set();
@@ -385,17 +419,17 @@ function DownloadCTA() {
 export default function Home() {
   const [stats, setStats] = useState(null);
   const [skins, setSkins] = useState([]);
+  const [recentUsers, setRecentUsers] = useState([]);
 
   useEffect(() => {
-    fetch(API + "/api/metrics").then(r => r.json()).then(d => setStats({ servers: d.totalServers, joins: d.totalCount })).catch(() => { });
-    Promise.all([
-      fetch(API + "/api/skins/top?limit=30").then(r => r.json()).catch(() => ({ skins: [] })),
-      fetch(API + "/api/skins?limit=30").then(r => r.json()).catch(() => ({ skins: [] })),
-    ]).then(([a, b]) => {
-      const map = new Map();
-      [...(a.skins || []), ...(b.skins || [])].forEach(s => { if (!map.has(s.id)) map.set(s.id, s); });
-      setSkins([...map.values()].slice(0, 30));
-    });
+    fetch(API + "/api/home")
+      .then(r => r.json())
+      .then(d => {
+        setStats({ servers: d.stats?.totalServers, joins: d.stats?.totalCount });
+        setSkins(d.skins || []);
+        setRecentUsers(d.recentUsers || []);
+      })
+      .catch(() => {});
   }, []);
 
   return (
@@ -409,6 +443,7 @@ export default function Home() {
         <FeaturesSection />
         <WebToolsSection />
         <SkinsSection skins={skins} />
+        <RecentlyJoinedSection users={recentUsers} />
         <CommunitySection skins={skins} />
         <ServersSection />
         <DownloadCTA />

@@ -2,31 +2,27 @@ import React, { useState, useEffect, useCallback } from "react";
 import { fetchIdToken } from "../firebaseAuthHelpers";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { FaFileInvoiceDollar } from "react-icons/fa";
+import { API_BASE } from "../lib/api";
+import { T } from "../lib/tokens";
+import Spinner from "./Spinner";
 
 const NL = {
-  bg: "#0d1117",
-  surface: "#131820",
-  elevated: "#191f2b",
+  ...T,
+  elevated: T.raised,
   subtle: "#1f2635",
-  border: "rgba(255,255,255,0.06)",
-  borderMid: "rgba(255,255,255,0.11)",
-  text: "#eaecf0",
-  secondary: "#8d97aa",
-  muted: "#4a5270",
-  accent: "#67e404",
+  secondary: T.sub,
+  accent: T.green,
   accentDim: "rgba(103,228,4,0.10)",
   accentBorder: "rgba(103,228,4,0.22)",
-  danger: "#f87171",
+  danger: T.red,
   dangerDim: "rgba(248,113,113,0.10)",
   dangerBorder: "rgba(248,113,113,0.22)",
-  success: "#34d399",
+  success: T.teal,
   successDim: "rgba(52,211,153,0.10)",
   warn: "#fbbf24",
 };
 const font = "'Inter', system-ui, sans-serif";
 const mono = "'JetBrains Mono', 'Fira Code', monospace";
-
-const API_BASE = "https://api.mccompanion.net";
 
 async function apiFetch(path, options = {}) {
   const token = await fetchIdToken();
@@ -39,15 +35,6 @@ async function apiFetch(path, options = {}) {
   const data = await res.json().catch(() => ({}));
   if (res.ok) return data;
   throw Object.assign(new Error(data.message || res.statusText), { data, status: res.status });
-}
-
-function Spinner({ size = 16 }) {
-  return (
-    <svg className="animate-spin" width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3V0a12 12 0 100 24v-4l-3 3 3 3v4a12 12 0 01-12-12z" />
-    </svg>
-  );
 }
 
 function Btn({ children, onClick, variant = "primary", size = "md", disabled, type = "button", style: extraStyle }) {

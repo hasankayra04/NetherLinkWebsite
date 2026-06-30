@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
+import { API_BASE } from "../lib/api";
 
-const API_BASE = "https://api.mccompanion.net";
 const ENDPOINTS = {
   EU: `${API_BASE}/api/metrics`,
   US: `${API_BASE}/api/metrics`,

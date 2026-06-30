@@ -145,32 +145,26 @@ function GalleryTab({ user, idToken, onEditSkin }) {
 
   useEffect(() => {
     setLoadingPublic(true);
-    Promise.all([
-      fetch(`${API}/api/skins`).then(r => r.json()),
-      fetch(`${API}/api/skins/top?limit=30`).then(r => r.json()),
-    ])
-      .then(([all, top]) => {
-        setPublicSkins(all.skins || []);
-        setTopSkins(top.skins || []);
+    fetch(`${API}/api/skins/gallery`)
+      .then(r => r.json())
+      .then(d => {
+        setPublicSkins(d.recent || []);
+        setTopSkins(d.top || []);
         setLoadingPublic(false);
       })
       .catch(() => { setError("Failed to load skins."); setLoadingPublic(false); });
   }, []);
 
   useEffect(() => {
-    if (!idToken) { setLikedIds(new Set()); return; }
-    fetch(`${API}/api/skins/me/likes`, { headers: { Authorization: `Bearer ${idToken}` } })
-      .then(r => r.json())
-      .then(d => setLikedIds(new Set(d.liked || [])))
-      .catch(() => { });
-  }, [idToken]);
-
-  useEffect(() => {
-    if (!user || !idToken) return;
+    if (!user || !idToken) { setLikedIds(new Set()); return; }
     setLoadingMine(true);
-    fetch(`${API}/api/skins/me`, { headers: { Authorization: `Bearer ${idToken}` }, cache: 'no-store' })
+    fetch(`${API}/api/skins/me/dashboard`, { headers: { Authorization: `Bearer ${idToken}` } })
       .then(r => r.json())
-      .then(d => { setMySkins(d.skins || []); setLoadingMine(false); })
+      .then(d => {
+        setMySkins(d.skins || []);
+        setLikedIds(new Set(d.liked || []));
+        setLoadingMine(false);
+      })
       .catch(() => setLoadingMine(false));
   }, [user, idToken]);
 

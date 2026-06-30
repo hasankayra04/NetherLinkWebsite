@@ -59,3 +59,8 @@ export const SECTION_STYLE = (alt = false) => ({
 export const INNER_STYLE = {
   maxWidth: 960, margin: "0 auto",
 };
+
+export const FONTS = {
+  sans: "'Inter', system-ui, sans-serif",
+  mono: "'JetBrains Mono', 'Fira Code', monospace",
+};

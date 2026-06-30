@@ -1,14 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { FaDiscord, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaCircle, FaLayerGroup, FaFlask, FaUser, FaSignOutAlt, FaPalette, FaChartBar, FaStar, FaPlug, FaEnvelope, FaShieldAlt, FaFileAlt, FaGamepad, FaUsers, FaServer, FaWrench, FaQuestionCircle, FaBell } from "react-icons/fa";
 
-function timeAgo(iso) {
-  const s = Math.floor((Date.now() - new Date(iso)) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
-}
-
 const NOTIF_TEXT = {
   skin_liked:       n => `${n.actor_username} liked your skin "${n.target_name}"`,
   comment_received: n => `${n.actor_username} commented on "${n.target_name}"`,
@@ -23,16 +15,15 @@ import sidebars from "../../../sidebars.js";
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebaseClient.js";
 import { useAuth } from "../../useAuth.js";
+import { API_BASE } from "../../lib/api";
+import { T } from "../../lib/tokens";
+import { timeAgo } from "../../lib/date-utils";
 
 const NL = {
-  surface: "#131820",
-  elevated: "#191f2b",
-  border: "rgba(255,255,255,0.06)",
-  borderMid: "rgba(255,255,255,0.11)",
-  text: "#eaecf0",
-  secondary: "#8d97aa",
-  muted: "#4a5270",
-  accent: "#67e404",
+  ...T,
+  elevated: T.raised,
+  secondary: T.sub,
+  accent: T.green,
 };
 
 const DOC_SIDEBAR = sidebars.tutorialSidebar || sidebars.geyserSidebar || [];
@@ -228,8 +219,6 @@ export default function Navbar() {
     window.addEventListener("scroll", h);
     return () => window.removeEventListener("scroll", h);
   }, []);
-
-  const API_BASE = "https://api.mccompanion.net";
 
   useEffect(() => {
     if (!user) { setNotifs([]); setUnreadCount(0); return; }

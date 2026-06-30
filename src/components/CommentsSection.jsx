@@ -1,24 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
+import { API_BASE } from "../lib/api";
+import { T } from "../lib/tokens";
+import { timeAgo } from "../lib/date-utils";
 
 const NL = {
-  surface: "#131820", elevated: "#191f2b", subtle: "#1f2635",
-  border: "rgba(255,255,255,0.06)", borderMid: "rgba(255,255,255,0.11)",
-  text: "#eaecf0", secondary: "#8d97aa", muted: "#4a5270",
-  accent: "#67e404", accentDim: "rgba(103,228,4,0.10)", accentBorder: "rgba(103,228,4,0.22)",
-  danger: "#f87171", dangerDim: "rgba(248,113,113,0.08)", dangerBorder: "rgba(248,113,113,0.22)",
+  ...T,
+  elevated: T.raised,
+  subtle: "#1f2635",
+  secondary: T.sub,
+  accent: T.green,
+  accentDim: "rgba(103,228,4,0.10)",
+  accentBorder: "rgba(103,228,4,0.22)",
+  danger: T.red,
+  dangerDim: "rgba(248,113,113,0.08)",
+  dangerBorder: "rgba(248,113,113,0.22)",
 };
 const font = "'Inter', system-ui, sans-serif";
 const mono = "'JetBrains Mono', 'Fira Code', monospace";
-const API_BASE = "https://api.mccompanion.net";
-
-function timeAgo(dateStr) {
-  const diff = (Date.now() - new Date(dateStr)) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 86400 * 7) return `${Math.floor(diff / 86400)}d ago`;
-  return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-}
 
 export default function CommentsSection({ targetType, targetId, currentUsername: usernameProp, getToken }) {
   const [comments, setComments] = useState([]);

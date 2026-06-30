@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { FaChevronLeft, FaChevronRight, FaExternalLinkAlt } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
+import { API_BASE } from "../lib/api";
 
-const API_URL = "https://api.mccompanion.net/api/featured-servers";
+const API_URL = `${API_BASE}/api/featured-servers`;
 
 export default function FeaturedServersCarousel() {
   const [servers, setServers] = useState([]);

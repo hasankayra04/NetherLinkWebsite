@@ -1,45 +1,25 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import Layout from "@theme/Layout";
+import { API_BASE } from "../lib/api";
+import { T } from "../lib/tokens";
+import SkinRenderer from "../components/SkinRenderer";
 
 const NL = {
-  bg: "#0d1117", surface: "#131820", elevated: "#191f2b", subtle: "#1f2635",
-  border: "rgba(255,255,255,0.06)", borderMid: "rgba(255,255,255,0.11)",
-  text: "#eaecf0", secondary: "#8d97aa", muted: "#4a5270",
-  accent: "#67e404", accentDim: "rgba(103,228,4,0.10)", accentBorder: "rgba(103,228,4,0.22)",
+  ...T,
+  elevated: T.raised,
+  subtle: "#1f2635",
+  secondary: T.sub,
+  accent: T.green,
+  accentDim: "rgba(103,228,4,0.10)",
+  accentBorder: "rgba(103,228,4,0.22)",
 };
 const font = "'Inter', system-ui, sans-serif";
 const mono = "'JetBrains Mono', 'Fira Code', monospace";
-const API_BASE = "https://api.mccompanion.net";
 
 function formatBytes(n) {
   if (!n) return "";
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function SkinBody({ url, scale = 4 }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    if (!ref.current || !url) return;
-    const canvas = ref.current;
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.imageSmoothingEnabled = false;
-      const s = scale;
-      ctx.drawImage(img, 8, 8, 8, 8, 4 * s, 0, 8 * s, 8 * s);
-      ctx.drawImage(img, 40, 8, 8, 8, 4 * s, 0, 8 * s, 8 * s);
-      ctx.drawImage(img, 20, 20, 8, 12, 4 * s, 8 * s, 8 * s, 12 * s);
-      ctx.drawImage(img, 44, 20, 4, 12, 0, 8 * s, 4 * s, 12 * s);
-      ctx.drawImage(img, 36, 52, 4, 12, 12 * s, 8 * s, 4 * s, 12 * s);
-      ctx.drawImage(img, 4, 20, 4, 12, 4 * s, 20 * s, 4 * s, 12 * s);
-      ctx.drawImage(img, 20, 52, 4, 12, 8 * s, 20 * s, 4 * s, 12 * s);
-    };
-    img.src = url;
-  }, [url, scale]);
-  return <canvas ref={ref} width={16 * scale} height={32 * scale} style={{ display: "block", imageRendering: "pixelated" }} />;
 }
 
 const RANK_COLORS = ["#ffd700", "#c0c0c0", "#cd7f32"];
@@ -53,18 +33,7 @@ function RankBadge({ rank }) {
   );
 }
 
-function SkinLeaderboard() {
-  const [skins, setSkins] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`${API_BASE}/api/skins/top?limit=20`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.skins) setSkins(d.skins); })
-      .catch(() => { })
-      .finally(() => setLoading(false));
-  }, []);
-
+function SkinLeaderboard({ skins, loading }) {
   return (
     <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 16, overflow: "hidden" }}>
       <div style={{ padding: "14px 20px", borderBottom: `1px solid ${NL.border}`, display: "flex", alignItems: "center", gap: 10 }}>
@@ -86,7 +55,7 @@ function SkinLeaderboard() {
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
               <RankBadge rank={i + 1} />
               <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", width: 40 }}>
-                <SkinBody url={skin.public_url} scale={3} />
+                <SkinRenderer url={skin.public_url} scale={3} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: NL.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{skin.name || "Unnamed"}</p>
@@ -108,23 +77,7 @@ function SkinLeaderboard() {
   );
 }
 
-function PackLeaderboard() {
-  const [packs, setPacks] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`${API_BASE}/api/featured-packs`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d?.packs) {
-          const sorted = [...d.packs].sort((a, b) => (b.downloadCount ?? 0) - (a.downloadCount ?? 0)).slice(0, 20);
-          setPacks(sorted);
-        }
-      })
-      .catch(() => { })
-      .finally(() => setLoading(false));
-  }, []);
-
+function PackLeaderboard({ packs, loading }) {
   return (
     <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 16, overflow: "hidden" }}>
       <div style={{ padding: "14px 20px", borderBottom: `1px solid ${NL.border}`, display: "flex", alignItems: "center", gap: 10 }}>
@@ -171,12 +124,26 @@ function PackLeaderboard() {
 
 export default function LeaderboardsPage() {
   const [isMobile, setIsMobile] = useState(false);
+  const [skins, setSkins] = useState([]);
+  const [packs, setPacks] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/leaderboards`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.skins) setSkins(d.skins);
+        if (d?.packs) setPacks(d.packs);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   return (
@@ -191,8 +158,8 @@ export default function LeaderboardsPage() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, alignItems: "start" }}>
-            <SkinLeaderboard />
-            <PackLeaderboard />
+            <SkinLeaderboard skins={skins} loading={loading} />
+            <PackLeaderboard packs={packs} loading={loading} />
           </div>
 
         </div>

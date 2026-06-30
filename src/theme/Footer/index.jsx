@@ -1,15 +1,12 @@
 import Link from "@docusaurus/Link";
 import { FaDiscord, FaGithub } from "react-icons/fa";
+import { T } from "../../lib/tokens";
 
 const NL = {
-  surface: "#131820",
-  elevated: "#191f2b",
-  border: "rgba(255,255,255,0.06)",
-  borderMid: "rgba(255,255,255,0.11)",
-  text: "#eaecf0",
-  secondary: "#8d97aa",
-  muted: "#4a5270",
-  accent: "#67e404",
+  ...T,
+  elevated: T.raised,
+  secondary: T.sub,
+  accent: T.green,
 };
 
 const footerLinks = [
