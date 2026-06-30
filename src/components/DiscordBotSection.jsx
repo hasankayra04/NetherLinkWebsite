@@ -59,7 +59,7 @@ function EmbedMockup() {
                 </div>
               ))}
             </div>
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 8 }}>
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 8 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: "#b5bac1", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3 }}>MOTD</div>
               <div style={{ fontSize: 12, color: "#e3e5e8" }}>{e.motd}</div>
             </div>

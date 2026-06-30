@@ -4,13 +4,13 @@ import { FaShieldAlt, FaArrowLeft } from "react-icons/fa";
 import Layout from "@theme/Layout";
 
 const NL = {
-  bg: "#111318",
-  surface: "#191c23",
-  elevated: "#1f232c",
-  border: "rgba(255,255,255,0.07)",
-  text: "#e8e9ec",
-  secondary: "#9299a6",
-  muted: "#5a6070",
+  bg: "#0d1117",
+  surface: "#131820",
+  elevated: "#191f2b",
+  border: "rgba(255,255,255,0.06)",
+  text: "#eaecf0",
+  secondary: "#8d97aa",
+  muted: "#4a5270",
   accent: "#67e404",
   accentDim: "rgba(103,228,4,0.10)",
   accentBorder: "rgba(103,228,4,0.22)",
@@ -327,7 +327,7 @@ export default function Privacy() {
                 fontSize: 13, fontWeight: 500, textDecoration: "none",
                 transition: "color 0.2s, border-color 0.2s",
               }}
-              onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; }}
+              onMouseEnter={e => { e.currentTarget.style.color = NL.text; e.currentTarget.style.borderColor = "rgba(255,255,255,0.11)"; }}
               onMouseLeave={e => { e.currentTarget.style.color = NL.secondary; e.currentTarget.style.borderColor = NL.border; }}
             >
               <FaArrowLeft size={12} /> Back to Home

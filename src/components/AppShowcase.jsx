@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const NL = {
-    bg: "#111318",
-    surface: "#191c23",
-    elevated: "#1f232c",
-    border: "rgba(255,255,255,0.07)",
-    borderMid: "rgba(255,255,255,0.12)",
-    text: "#e8e9ec",
-    secondary: "#9299a6",
-    muted: "#5a6070",
+    bg: "#0d1117",
+    surface: "#131820",
+    elevated: "#191f2b",
+    border: "rgba(255,255,255,0.06)",
+    borderMid: "rgba(255,255,255,0.11)",
+    text: "#eaecf0",
+    secondary: "#8d97aa",
+    muted: "#4a5270",
     accent: "#67e404",
     accentDim: "rgba(103,228,4,0.10)",
     accentBorder: "rgba(103,228,4,0.22)",
@@ -89,7 +89,7 @@ function PhoneMockup({ src, accent }) {
                 {/* Screen */}
                 <div style={{
                     position: "absolute", top: 3, left: 3, right: 3, bottom: 3,
-                    borderRadius: 42, overflow: "hidden", background: "#111318",
+                    borderRadius: 42, overflow: "hidden", background: "#0d1117",
                 }}>
                     <img src={src} alt="" style={{
                         width: "100%", height: "100%",
@@ -99,14 +99,14 @@ function PhoneMockup({ src, accent }) {
                 {/* Glare */}
                 <div style={{
                     position: "absolute", inset: 3, borderRadius: 42,
-                    background: "linear-gradient(140deg, rgba(255,255,255,0.07) 0%, transparent 40%)",
+                    background: "linear-gradient(140deg, rgba(255,255,255,0.06) 0%, transparent 40%)",
                     pointerEvents: "none", zIndex: 5,
                 }} />
             </div>
             {/* Side buttons */}
-            <div style={{ position: "absolute", right: -3, top: 130, width: 4, height: 48, borderRadius: "0 3px 3px 0", background: "rgba(255,255,255,0.12)" }} />
+            <div style={{ position: "absolute", right: -3, top: 130, width: 4, height: 48, borderRadius: "0 3px 3px 0", background: "rgba(255,255,255,0.11)" }} />
             {[96, 142].map(t => (
-                <div key={t} style={{ position: "absolute", left: -3, top: t, width: 4, height: 36, borderRadius: "3px 0 0 3px", background: "rgba(255,255,255,0.12)" }} />
+                <div key={t} style={{ position: "absolute", left: -3, top: t, width: 4, height: 36, borderRadius: "3px 0 0 3px", background: "rgba(255,255,255,0.11)" }} />
             ))}
         </div>
     );

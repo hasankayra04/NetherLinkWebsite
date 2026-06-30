@@ -7,13 +7,13 @@ import { auth } from "../../firebaseClient.js";
 import { useAuth } from "../../useAuth.js";
 
 const NL = {
-  surface: "#191c23",
-  elevated: "#1f232c",
-  border: "rgba(255,255,255,0.07)",
-  borderMid: "rgba(255,255,255,0.12)",
-  text: "#e8e9ec",
-  secondary: "#9299a6",
-  muted: "#5a6070",
+  surface: "#131820",
+  elevated: "#191f2b",
+  border: "rgba(255,255,255,0.06)",
+  borderMid: "rgba(255,255,255,0.11)",
+  text: "#eaecf0",
+  secondary: "#8d97aa",
+  muted: "#4a5270",
   accent: "#67e404",
 };
 

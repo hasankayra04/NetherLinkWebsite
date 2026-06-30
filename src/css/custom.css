@@ -1,8 +1,129 @@
 @import "tailwindcss";
+
+:root {
+  /* Deep Space – Docusaurus IFM overrides */
+  --ifm-background-color: #0d1117;
+  --ifm-background-surface-color: #131820;
+  --ifm-navbar-background-color: #0d1117;
+  --ifm-footer-background-color: #0a0d13;
+  --ifm-sidebar-background: #0d1117;
+
+  --ifm-color-content: #eaecf0;
+  --ifm-color-content-secondary: #8d97aa;
+
+  --ifm-color-primary: #67e404;
+  --ifm-color-primary-dark: #55c003;
+  --ifm-color-primary-darker: #4aac03;
+  --ifm-color-primary-darkest: #3a8702;
+  --ifm-color-primary-light: #79f516;
+  --ifm-color-primary-lighter: #86f626;
+  --ifm-color-primary-lightest: #9af845;
+
+  --ifm-link-color: #67e404;
+  --ifm-link-hover-color: #86f626;
+
+  --ifm-toc-border-color: rgba(255,255,255,0.06);
+  --ifm-hr-border-color: rgba(255,255,255,0.06);
+  --ifm-table-border-color: rgba(255,255,255,0.09);
+  --ifm-table-stripe-background: rgba(255,255,255,0.03);
+
+  --ifm-card-background-color: #131820;
+  --ifm-code-background: #191f2b;
+  --ifm-pre-background: #131820;
+
+  --ifm-font-color-base: #eaecf0;
+  --ifm-font-color-secondary: #8d97aa;
+  --ifm-heading-color: #eaecf0;
+
+  --ifm-navbar-link-color: #eaecf0;
+  --ifm-navbar-link-hover-color: #ffffff;
+
+  --ifm-menu-color: #8d97aa;
+  --ifm-menu-color-active: #67e404;
+  --ifm-menu-link-sublist-icon-filter: invert(1);
+
+  --ifm-breadcrumb-color-active: #67e404;
+  --ifm-breadcrumb-separator-filter: invert(0.5);
+
+  --ifm-alert-background-color-highlight: rgba(103,228,4,0.08);
+
+  --docusaurus-highlighted-code-line-bg: rgba(103,228,4,0.08);
+
+  /* scrollbar */
+  scrollbar-color: #191f2b #0d1117;
+}
+
+/* sidebar active item */
+.menu__link--active,
+.menu__link--active:hover {
+  color: #67e404 !important;
+  background: rgba(103,228,4,0.08) !important;
+}
+
+/* sidebar background */
+.theme-doc-sidebar-container {
+  background: #0d1117 !important;
+  border-right: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+/* doc page background */
+.docMainContainer_gTbr,
+article {
+  background: transparent;
+}
+
+/* code blocks */
+.prism-code,
+pre.prism-code {
+  background: #131820 !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+/* inline code */
+code {
+  background: #191f2b !important;
+  color: #67e404 !important;
+  border-color: rgba(255,255,255,0.09) !important;
+}
+
+/* table of contents */
+.table-of-contents__link {
+  color: #8d97aa;
+}
+.table-of-contents__link--active,
+.table-of-contents__link:hover {
+  color: #67e404;
+}
+
+/* footer */
+.footer {
+  background: #0a0d13 !important;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+/* pagination nav */
+.pagination-nav__link {
+  background: #131820 !important;
+  border-color: rgba(255,255,255,0.06) !important;
+}
+.pagination-nav__link:hover {
+  border-color: #67e404 !important;
+}
+
+/* admonitions */
+.alert {
+  background: #131820 !important;
+  border-left-color: #67e404 !important;
+}
+.alert--info { border-left-color: #60a5fa !important; }
+.alert--warning { border-left-color: #f59e0b !important; }
+.alert--danger { border-left-color: #f87171 !important; }
+.alert--success { border-left-color: #67e404 !important; }
+
 body {
   position: relative;
   min-height: 100vh;
-  color: #f2eee6;
+  color: #eaecf0;
 }
 
 body::before {
@@ -12,7 +133,7 @@ body::before {
   z-index: -1;
   width: 100vw;
   height: 100vh;
-  background-color: #111318;
+  background-color: #0d1117;
 }
 
 header#navbar .flex a,
@@ -80,11 +201,11 @@ nav.theme-doc-sidebar-menu {
 }
 
 .hide-scrollbar::-webkit-scrollbar-thumb {
-  background: #1b1d24;
+  background: #191f2b;
   border-radius: 4px;
 }
 
 .hide-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #1b1d24 transparent;
+  scrollbar-color: #191f2b transparent;
 }

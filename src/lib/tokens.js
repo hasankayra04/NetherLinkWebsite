@@ -3,19 +3,19 @@
 
 export const T = {
   // Backgrounds
-  bg:      "#0d0f14",
-  bgAlt:   "#0b0d11",
-  surface: "#13161e",
-  raised:  "#191c25",
+  bg:      "#0d1117",
+  bgAlt:   "#0a0d13",
+  surface: "#131820",
+  raised:  "#191f2b",
 
   // Borders
-  border:    "rgba(255,255,255,0.07)",
-  borderMid: "rgba(255,255,255,0.13)",
+  border:    "rgba(255,255,255,0.06)",
+  borderMid: "rgba(255,255,255,0.11)",
 
   // Text
-  text: "#eaebee",
-  sub:  "#8892a4",
-  muted:"#4e5666",
+  text: "#eaecf0",
+  sub:  "#8d97aa",
+  muted:"#4a5270",
 
   // Brand accents
   green:   "#67e404",

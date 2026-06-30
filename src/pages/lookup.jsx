@@ -2,15 +2,15 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import Layout from "@theme/Layout";
 
 const NL = {
-  bg:           "#111318",
-  surface:      "#191c23",
-  elevated:     "#1f232c",
-  subtle:       "#252931",
-  border:       "rgba(255,255,255,0.07)",
-  borderMid:    "rgba(255,255,255,0.12)",
-  text:         "#e8e9ec",
-  secondary:    "#9299a6",
-  muted:        "#5a6070",
+  bg:           "#0d1117",
+  surface:      "#131820",
+  elevated:     "#191f2b",
+  subtle:       "#1f2635",
+  border:       "rgba(255,255,255,0.06)",
+  borderMid:    "rgba(255,255,255,0.11)",
+  text:         "#eaecf0",
+  secondary:    "#8d97aa",
+  muted:        "#4a5270",
   accent:       "#67e404",
   accentDim:    "rgba(103,228,4,0.08)",
   accentBorder: "rgba(103,228,4,0.20)",
@@ -184,8 +184,8 @@ function SkinViewer3D({ skinUrl }) {
   const ctrlBtn = (active) => ({
     display: "inline-flex", alignItems: "center", justifyContent: "center",
     width: 30, height: 30, borderRadius: 8, padding: 0, cursor: "pointer",
-    background: active ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
-    border: `1px solid ${active ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.07)"}`,
+    background: active ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.04)",
+    border: `1px solid ${active ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.06)"}`,
     color: active ? NL.text : NL.muted,
     transition: "background 0.15s, color 0.15s",
   });

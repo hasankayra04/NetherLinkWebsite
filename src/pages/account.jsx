@@ -40,15 +40,15 @@ function SkinBody({ url, scale = 5 }) {
 }
 
 const NL = {
-  bg: "#111318",
-  surface: "#191c23",
-  elevated: "#1f232c",
-  subtle: "#252931",
-  border: "rgba(255,255,255,0.07)",
-  borderMid: "rgba(255,255,255,0.12)",
-  text: "#e8e9ec",
-  secondary: "#9299a6",
-  muted: "#5a6070",
+  bg: "#0d1117",
+  surface: "#131820",
+  elevated: "#191f2b",
+  subtle: "#1f2635",
+  border: "rgba(255,255,255,0.06)",
+  borderMid: "rgba(255,255,255,0.11)",
+  text: "#eaecf0",
+  secondary: "#8d97aa",
+  muted: "#4a5270",
   accent: "#67e404",
   accentDim: "rgba(103,228,4,0.10)",
   accentBorder: "rgba(103,228,4,0.22)",
@@ -589,7 +589,7 @@ function SubmitPackSection() {
             </div>
             {mdPreview ? (
               <div style={{ minHeight: 120, padding: "10px 14px", borderRadius: 9, border: `1px solid ${NL.borderMid}`, background: NL.subtle, color: NL.text, fontSize: 13, lineHeight: 1.7 }}
-                dangerouslySetInnerHTML={{ __html: form.longDescription ? DOMPurify.sanitize(marked.parse(form.longDescription)) : "<em style='color:#5a6070'>Nothing to preview</em>" }} />
+                dangerouslySetInnerHTML={{ __html: form.longDescription ? DOMPurify.sanitize(marked.parse(form.longDescription)) : "<em style='color:#4a5270'>Nothing to preview</em>" }} />
             ) : (
               <textarea value={form.longDescription} onChange={e => f("longDescription", e.target.value)}
                 placeholder={"## About this pack\n\nDescribe your resource pack in detail. Markdown is supported.\n\n- Feature 1\n- Feature 2"}

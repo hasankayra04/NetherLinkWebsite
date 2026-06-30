@@ -5,9 +5,9 @@ import { useAuth } from "../useAuth";
 import CommentsSection from "../components/CommentsSection";
 
 const C = {
-  bg: "#111318", surface: "#191c23", elevated: "#1f232c", subtle: "#252931",
-  border: "rgba(255,255,255,0.07)", borderMid: "rgba(255,255,255,0.12)",
-  text: "#e8e9ec", secondary: "#9299a6", muted: "#5a6070",
+  bg: "#0d1117", surface: "#131820", elevated: "#191f2b", subtle: "#1f2635",
+  border: "rgba(255,255,255,0.06)", borderMid: "rgba(255,255,255,0.11)",
+  text: "#eaecf0", secondary: "#8d97aa", muted: "#4a5270",
   accent: "#67e404", accentDim: "rgba(103,228,4,0.08)", accentBorder: "rgba(103,228,4,0.22)",
   danger: "#f87171", dangerDim: "rgba(248,113,113,0.08)", dangerBorder: "rgba(248,113,113,0.25)",
   info: "#60a5fa", infoDim: "rgba(96,165,250,0.08)", infoBorder: "rgba(96,165,250,0.22)",

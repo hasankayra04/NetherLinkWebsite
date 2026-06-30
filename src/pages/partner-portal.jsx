@@ -5,7 +5,7 @@ import { auth } from "../firebaseClient";
 import Layout from "@theme/Layout";
 import PartnerPanel from "../components/PartnerPanel";
 
-const NL = { bg: "#111318", surface: "#191c23", secondary: "#9299a6" };
+const NL = { bg: "#0d1117", surface: "#131820", secondary: "#8d97aa" };
 const font = "'Inter', system-ui, sans-serif";
 
 function Spinner({ size = 16 }) {
