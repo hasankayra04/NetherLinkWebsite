@@ -21,13 +21,13 @@ function SkinBody({ url, scale = 5 }) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.imageSmoothingEnabled = false;
       const s = scale;
-      ctx.drawImage(img,  8,  8, 8,  8,  4*s,  0,    8*s, 8*s);
-      ctx.drawImage(img, 40,  8, 8,  8,  4*s,  0,    8*s, 8*s);
-      ctx.drawImage(img, 20, 20, 8, 12,  4*s,  8*s,  8*s, 12*s);
-      ctx.drawImage(img, 44, 20, 4, 12,  0,    8*s,  4*s, 12*s);
-      ctx.drawImage(img, 36, 52, 4, 12,  12*s, 8*s,  4*s, 12*s);
-      ctx.drawImage(img,  4, 20, 4, 12,  4*s,  20*s, 4*s, 12*s);
-      ctx.drawImage(img, 20, 52, 4, 12,  8*s,  20*s, 4*s, 12*s);
+      ctx.drawImage(img, 8, 8, 8, 8, 4 * s, 0, 8 * s, 8 * s);
+      ctx.drawImage(img, 40, 8, 8, 8, 4 * s, 0, 8 * s, 8 * s);
+      ctx.drawImage(img, 20, 20, 8, 12, 4 * s, 8 * s, 8 * s, 12 * s);
+      ctx.drawImage(img, 44, 20, 4, 12, 0, 8 * s, 4 * s, 12 * s);
+      ctx.drawImage(img, 36, 52, 4, 12, 12 * s, 8 * s, 4 * s, 12 * s);
+      ctx.drawImage(img, 4, 20, 4, 12, 4 * s, 20 * s, 4 * s, 12 * s);
+      ctx.drawImage(img, 20, 52, 4, 12, 8 * s, 20 * s, 4 * s, 12 * s);
     };
     img.onerror = () => {
       const fb = new Image();
@@ -128,7 +128,7 @@ function MySkinsSection({ username, idToken }) {
       fetch(`${API_BASE}/api/skins/me`, { headers: { Authorization: `Bearer ${token}` } })
         .then(r => r.json())
         .then(d => setSkins(d.skins ?? []))
-        .catch(() => {})
+        .catch(() => { })
         .finally(() => setLoading(false));
     });
   }, [username]);
@@ -140,7 +140,7 @@ function MySkinsSection({ username, idToken }) {
       const token = await fetchIdToken();
       await fetch(`${API_BASE}/api/skins/me/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       setSkins(s => s.filter(x => x.id !== id));
-    } catch (_) {}
+    } catch (_) { }
     setDeleting(null);
   }
 
@@ -176,7 +176,7 @@ function MySkinsSection({ username, idToken }) {
   );
 }
 
-const PACK_CATEGORIES = ["realism","faithful","pvp","cartoon","dark","medieval","nature","themed","other"];
+const PACK_CATEGORIES = ["realism", "faithful", "pvp", "cartoon", "dark", "medieval", "nature", "themed", "other"];
 const STATUS_COLOR = { pending: "#f59e0b", approved: "#67e404", rejected: "#f87171" };
 const STATUS_BG = { pending: "rgba(251,191,36,0.08)", approved: "rgba(103,228,4,0.08)", rejected: "rgba(248,113,113,0.08)" };
 const STATUS_BORDER = { pending: "rgba(251,191,36,0.22)", approved: "rgba(103,228,4,0.22)", rejected: "rgba(248,113,113,0.22)" };
@@ -257,7 +257,7 @@ function MySubmissionsSection({ submissions, loadingSubs, loadSubmissions }) {
         }),
       });
       if (res.ok) { setEditingId(null); await loadSubmissions(); }
-    } catch (_) {}
+    } catch (_) { }
     setSaving(false);
   }
 
@@ -268,7 +268,7 @@ function MySubmissionsSection({ submissions, loadingSubs, loadSubmissions }) {
       const token = await fetchIdToken();
       const res = await fetch(`${API_BASE}/api/featured-packs/my-submissions/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) await loadSubmissions();
-    } catch (_) {}
+    } catch (_) { }
     setDeletingId(null);
   }
 
@@ -472,7 +472,7 @@ function SubmitPackSection() {
       if (!token) return;
       const res = await fetch(`${API_BASE}/api/featured-packs/my-submissions`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) { const d = await res.json(); setSubmissions(d.submissions ?? []); }
-    } catch (_) {}
+    } catch (_) { }
     finally { setLoadingSubs(false); }
   }, []);
 
@@ -791,6 +791,22 @@ export default function AccountPage() {
     }
   }
 
+  const [stats, setStats] = useState(null);
+  const [activity, setActivity] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(true);
+
+  useEffect(() => {
+    if (checking) return;
+    Promise.all([
+      fetchIdToken().then(t => t && fetch(`${API_BASE}/api/users/me/stats`, { headers: { Authorization: `Bearer ${t}` } }).then(r => r.ok ? r.json() : null)),
+      fetchIdToken().then(t => t && fetch(`${API_BASE}/api/users/me/activity`, { headers: { Authorization: `Bearer ${t}` } }).then(r => r.ok ? r.json() : null)),
+    ]).then(([s, a]) => {
+      if (s?.stats) setStats(s.stats);
+      if (a?.activity) setActivity(a.activity);
+      setActivityLoading(false);
+    }).catch(() => setActivityLoading(false));
+  }, [checking]);
+
   const inputStyle = {
     padding: "9px 12px", borderRadius: 9, border: `1px solid ${NL.borderMid}`,
     background: NL.subtle, color: NL.text, fontSize: 13, fontFamily: font,
@@ -813,212 +829,270 @@ export default function AccountPage() {
     </Layout>
   );
 
+  const ACTIVITY_LABELS = {
+    skin_upload: { icon: "🎨", label: "Uploaded skin", color: "#60a5fa" },
+    pack_submitted: { icon: "📦", label: "Submitted pack", color: NL.secondary },
+    pack_approved: { icon: "✅", label: "Pack approved", color: NL.success },
+    pack_rejected: { icon: "❌", label: "Pack rejected", color: NL.danger },
+    skin_liked: { icon: "❤️", label: "Skin got a like", color: "#f87171" },
+  };
+
+  function timeAgo(dateStr) {
+    const diff = (Date.now() - new Date(dateStr)) / 1000;
+    if (diff < 60) return "just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 86400 * 7) return `${Math.floor(diff / 86400)}d ago`;
+    return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  }
+
   return (
     <Layout>
-      <div style={{ minHeight: "100vh", background: NL.bg, fontFamily: font, paddingBottom: 80 }}>
-        <div style={{ maxWidth: 860, margin: "0 auto", padding: isMobile ? "28px 16px 0" : "48px 24px 0" }}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+        style={{ display: "none" }} onChange={e => uploadAvatar(e.target.files[0])} />
 
-          <div style={{ display: "flex", gap: 18, alignItems: "center", marginBottom: 32 }}>
-            <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif"
-              style={{ display: "none" }} onChange={e => uploadAvatar(e.target.files[0])} />
-            <div style={{ position: "relative", flexShrink: 0 }}>
-              {(avatarPreview || profile?.avatarUrl) ? (
-                <img src={avatarPreview || profile.avatarUrl} alt="avatar"
-                  style={{ width: isMobile ? 56 : 72, height: isMobile ? 56 : 72, borderRadius: 18, objectFit: "cover", border: `1px solid ${NL.borderMid}`, display: "block" }}
-                  onError={e => e.currentTarget.style.display = "none"} />
-              ) : (
-                <div style={{ width: isMobile ? 56 : 72, height: isMobile ? 56 : 72, borderRadius: 18, background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: isMobile ? 22 : 28, fontWeight: 700, color: NL.accent }}>
-                  {(profile?.username || firebaseUser?.email || "?")[0].toUpperCase()}
-                </div>
-              )}
-              <button onClick={() => avatarInputRef.current?.click()} disabled={avatarUploading}
-                style={{ position: "absolute", inset: 0, borderRadius: 18, background: "rgba(0,0,0,0.55)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.15s", fontSize: 11, color: "#fff", fontFamily: font, fontWeight: 600 }}
-                onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                onMouseLeave={e => e.currentTarget.style.opacity = 0}>
-                {avatarUploading ? <Spinner size={14} /> : "Edit"}
-              </button>
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              {profileLoading ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted }}><Spinner size={14} /> Loading…</div>
-              ) : profile ? (
-                <>
-                  <p style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: NL.text, margin: 0, fontFamily: mono, letterSpacing: "-0.02em" }}>{profile.username}</p>
-                  {profile.displayName && <p style={{ fontSize: 13, color: NL.secondary, margin: "2px 0 0" }}>{profile.displayName}</p>}
-                  <div style={{ display: "flex", gap: 8, marginTop: 4, flexWrap: "wrap", alignItems: "center" }}>
-                    {profile.createdAt && <span style={{ fontSize: 11, color: NL.muted }}>Member since {new Date(profile.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span>}
-                    <Badge color="default">user</Badge>
-                    {roles.map(r => <Badge key={r} color={r === "admin" ? "danger" : "accent"}>{r}</Badge>)}
-                  </div>
-                </>
-              ) : (
-                <div>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: NL.text, margin: 0 }}>{firebaseUser?.email}</p>
-                  <p style={{ fontSize: 12, color: NL.muted, margin: "4px 0 0" }}>No app profile yet. <a href="/register" style={{ color: NL.accent }}>Create one →</a></p>
-                </div>
-              )}
-            </div>
-            {profile && (
-              <button
-                onClick={() => {
-                  const url = `https://mccompanion.net/u?name=${profile.username}`;
-                  if (navigator.share) {
-                    navigator.share({ title: "Check out my MCCompanion profile!", url }).catch(() => {});
-                  } else {
-                    navigator.clipboard.writeText(url).then(() => { setInviteCopied(true); setTimeout(() => setInviteCopied(false), 2000); });
-                  }
-                }}
-                style={{ flexShrink: 0, padding: "8px 16px", borderRadius: 9, border: `1px solid ${inviteCopied ? NL.accentBorder : NL.borderMid}`, background: inviteCopied ? NL.accentDim : NL.elevated, color: inviteCopied ? NL.accent : NL.secondary, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: font, transition: "all 0.15s", display: isMobile ? "none" : "block" }}
-              >
-                {inviteCopied ? "✓ Copied!" : "Share profile"}
-              </button>
-            )}
-          </div>
+      <div style={{ minHeight: "100vh", background: NL.bg, fontFamily: font }}>
+        <div style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "24px 16px 60px" : "44px 24px 80px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "260px 1fr", gap: 20, alignItems: "start" }}>
 
-          <div style={{ display: "flex", borderBottom: `1px solid ${NL.border}`, marginBottom: 28 }}>
-            {TABS.filter(t => t.id !== "skins" && t.id !== "packs" || profile).map(tab => {
-              const active = activeTab === tab.id;
-              return (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  style={{ flex: 1, padding: "10px 4px", background: "none", border: "none", borderBottom: `2px solid ${active ? NL.accent : "transparent"}`, marginBottom: -1, color: active ? NL.accent : NL.muted, fontSize: isMobile ? 11 : 13, fontWeight: active ? 700 : 500, cursor: "pointer", fontFamily: font, textAlign: "center", transition: "color 0.15s, border-color 0.15s" }}>
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-            {activeTab === "profile" && (
-              !profile ? (
-                <Card>
-                  <div style={{ textAlign: "center", padding: "24px 0" }}>
-                    <p style={{ fontSize: 13, color: NL.secondary, margin: "0 0 6px" }}>No app account found.</p>
-                    <p style={{ fontSize: 12, color: NL.muted, margin: 0 }}>Download the MCCompanion app or <a href="/register" style={{ color: NL.accent }}>register via the website</a> to create a profile.</p>
-                  </div>
-                </Card>
-              ) : (
-                <Card title="Edit profile">
-                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: NL.muted, marginBottom: 4, letterSpacing: "0.06em", textTransform: "uppercase" }}>Display name</label>
-                      <input value={profileEdit.displayName} onChange={e => { setProfileEdit(p => ({ ...p, displayName: e.target.value })); setProfileDirty(true); }} placeholder="Optional display name…" maxLength={32} style={inputStyle} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: NL.muted, marginBottom: 4, letterSpacing: "0.06em", textTransform: "uppercase" }}>Bio</label>
-                      <textarea value={profileEdit.bio} onChange={e => { setProfileEdit(p => ({ ...p, bio: e.target.value })); setProfileDirty(true); }} placeholder="Tell something about yourself…" maxLength={200} rows={3} style={{ ...inputStyle, resize: "vertical", minHeight: 72 }} />
-                      <p style={{ fontSize: 10, color: NL.muted, margin: "4px 0 0", textAlign: "right" }}>{(profileEdit.bio || "").length}/200</p>
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: NL.muted, marginBottom: 6, letterSpacing: "0.06em", textTransform: "uppercase" }}>Avatar</label>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => avatarInputRef.current?.click()} disabled={avatarUploading}
-                          style={{ fontSize: 12, padding: "6px 14px", borderRadius: 7, border: `1px solid ${NL.border}`, background: NL.elevated, color: NL.secondary, cursor: "pointer", fontFamily: font }}>
-                          {avatarUploading ? <><Spinner size={12} /> Uploading…</> : "Upload photo"}
-                        </button>
-                        {(profile.avatarUrl || avatarPreview) && (
-                          <button onClick={removeAvatar} disabled={avatarUploading}
-                            style={{ fontSize: 12, padding: "6px 14px", borderRadius: 7, border: `1px solid ${NL.dangerBorder}`, background: NL.dangerDim, color: NL.danger, cursor: "pointer", fontFamily: font }}>
-                            Remove
-                          </button>
-                        )}
+              <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 16, overflow: "hidden" }}>
+                <div style={{ background: NL.elevated, padding: "24px 20px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, borderBottom: `1px solid ${NL.border}` }}>
+                  <div style={{ position: "relative" }}>
+                    {(avatarPreview || profile?.avatarUrl) ? (
+                      <img src={avatarPreview || profile.avatarUrl} alt="avatar"
+                        style={{ width: 88, height: 88, borderRadius: 22, objectFit: "cover", border: `2px solid ${NL.borderMid}`, display: "block" }}
+                        onError={e => e.currentTarget.style.display = "none"} />
+                    ) : (
+                      <div style={{ width: 88, height: 88, borderRadius: 22, background: NL.accentDim, border: `2px solid ${NL.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, fontWeight: 700, color: NL.accent }}>
+                        {(profile?.username || firebaseUser?.email || "?")[0].toUpperCase()}
                       </div>
-                      {avatarError && <p style={{ fontSize: 11, color: NL.danger, margin: "6px 0 0" }}>{avatarError}</p>}
-                    </div>
-                    {profileError && <p style={{ fontSize: 11, color: NL.danger, background: NL.dangerDim, border: `1px solid ${NL.dangerBorder}`, borderRadius: 6, padding: "8px 10px", margin: 0 }}>⚠ {profileError}</p>}
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Btn onClick={saveProfile} disabled={!profileDirty || profileSaving} size="sm">
-                        {profileSaving ? <><Spinner size={12} /> Saving…</> : "Save changes"}
-                      </Btn>
-                      {profileSuccess && <span style={{ fontSize: 12, color: NL.success }}>✓ Saved</span>}
-                    </div>
+                    )}
+                    <button onClick={() => avatarInputRef.current?.click()} disabled={avatarUploading}
+                      style={{ position: "absolute", inset: 0, borderRadius: 22, background: "rgba(0,0,0,0.55)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.15s", fontSize: 11, color: "#fff", fontFamily: font, fontWeight: 700 }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                      onMouseLeave={e => e.currentTarget.style.opacity = 0}>
+                      {avatarUploading ? <Spinner size={16} /> : "Edit"}
+                    </button>
                   </div>
-                </Card>
-              )
-            )}
+                  {profile ? (
+                    <>
+                      <div style={{ textAlign: "center" }}>
+                        <p style={{ fontSize: 18, fontWeight: 800, color: NL.text, margin: 0, fontFamily: mono, letterSpacing: "-0.02em" }}>{profile.username}</p>
+                        {profile.displayName && <p style={{ fontSize: 13, color: NL.secondary, margin: "3px 0 0" }}>{profile.displayName}</p>}
+                      </div>
+                      <div style={{ display: "flex", gap: 5, flexWrap: "wrap", justifyContent: "center" }}>
+                        <Badge color="default">user</Badge>
+                        {roles.map(r => <Badge key={r} color={r === "admin" ? "danger" : "accent"}>{r}</Badge>)}
+                      </div>
+                    </>
+                  ) : profileLoading ? (
+                    <div style={{ color: NL.muted }}><Spinner size={14} /></div>
+                  ) : (
+                    <div style={{ textAlign: "center" }}>
+                      <p style={{ fontSize: 13, color: NL.secondary, margin: 0 }}>No app profile</p>
+                      <a href="/register" style={{ fontSize: 12, color: NL.accent }}>Create one →</a>
+                    </div>
+                  )}
+                </div>
 
-            {activeTab === "account" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <Card title="Account details" action={
-                  <button onClick={loadProfile} title="Refresh" style={{ background: "none", border: "none", cursor: "pointer", color: NL.muted, fontSize: 16, padding: 4, borderRadius: 6 }}
-                    onMouseEnter={e => e.currentTarget.style.color = NL.text}
-                    onMouseLeave={e => e.currentTarget.style.color = NL.muted}>↻</button>
-                }>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
+                <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+                  {profile?.bio && (
+                    <p style={{ fontSize: 12, color: NL.secondary, margin: 0, lineHeight: 1.6 }}>{profile.bio}</p>
+                  )}
+                  {profile?.createdAt && (
+                    <p style={{ fontSize: 11, color: NL.muted, margin: 0 }}>
+                      🗓 Member since {new Date(profile.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+                    </p>
+                  )}
+                  {profile && (
+                    <button onClick={() => {
+                      const url = `https://mccompanion.net/u?name=${profile.username}`;
+                      if (navigator.share) navigator.share({ title: "My MCCompanion profile", url }).catch(() => { });
+                      else navigator.clipboard.writeText(url).then(() => { setInviteCopied(true); setTimeout(() => setInviteCopied(false), 2000); });
+                    }}
+                      style={{ width: "100%", padding: "7px 0", borderRadius: 8, border: `1px solid ${inviteCopied ? NL.accentBorder : NL.borderMid}`, background: inviteCopied ? NL.accentDim : NL.elevated, color: inviteCopied ? NL.accent : NL.secondary, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: font, transition: "all 0.15s" }}>
+                      {inviteCopied ? "✓ Link copied!" : "Share profile"}
+                    </button>
+                  )}
+                  {avatarError && <p style={{ fontSize: 11, color: NL.danger, margin: 0 }}>{avatarError}</p>}
+                </div>
+              </div>
+
+              {stats && (
+                <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14 }}>
+                  <div style={{ padding: "10px 14px", borderBottom: `1px solid ${NL.border}`, fontSize: 11, fontWeight: 700, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.07em" }}>Stats</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
                     {[
-                      { label: "Email", value: firebaseUser?.email, mono: true },
-                      { label: "UID", value: firebaseUser?.uid, mono: true, small: true },
-                      { label: "Roles", value: null },
-                    ].map(({ label, value, mono: isMono, small }, i, arr) => (
-                      <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: i < arr.length - 1 ? `1px solid ${NL.border}` : "none" }}>
-                        <span style={{ fontSize: 12, color: NL.muted }}>{label}</span>
-                        {value !== null && value !== undefined
-                          ? <span style={{ fontSize: small ? 11 : 13, color: NL.text, fontFamily: isMono ? mono : font, wordBreak: "break-all", textAlign: "right", marginLeft: 16 }}>{value}</span>
-                          : <div style={{ display: "flex", gap: 4 }}>
-                            <Badge color="default">user</Badge>
-                            {roles.map(r => <Badge key={r} color={r === "admin" ? "danger" : "accent"}>{r}</Badge>)}
-                          </div>
-                        }
+                      { label: "Skins", value: stats.skinCount },
+                      { label: "Skin likes", value: stats.skinLikes },
+                      { label: "Packs submitted", value: stats.packSubmissionCount },
+                      { label: "Packs approved", value: stats.packApprovedCount },
+                    ].map(({ label, value }, i) => (
+                      <div key={label} style={{ padding: "12px 14px", borderRight: i % 2 === 0 ? `1px solid ${NL.border}` : "none", borderBottom: i < 2 ? `1px solid ${NL.border}` : "none" }}>
+                        <p style={{ fontSize: 20, fontWeight: 800, color: NL.accent, margin: 0, fontFamily: mono }}>{value}</p>
+                        <p style={{ fontSize: 10, color: NL.muted, margin: "2px 0 0", lineHeight: 1.3 }}>{label}</p>
                       </div>
                     ))}
                   </div>
-                </Card>
+                </div>
+              )}
 
-                {profile && (
-                  <Card title="Minecraft accounts" subtitle="Linked via the MCCompanion app">
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                      <div>
-                        <p style={{ fontSize: 11, fontWeight: 700, color: NL.muted, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.07em" }}>Java Edition</p>
-                        {(profile.javaAccounts || []).length === 0 ? (
-                          <p style={{ fontSize: 13, color: NL.muted, margin: 0 }}>No Java account linked.</p>
-                        ) : (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                            {(profile.javaAccounts || []).map(a => (
+              <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, overflow: "hidden" }}>
+                <div style={{ padding: "10px 14px", borderBottom: `1px solid ${NL.border}`, fontSize: 11, fontWeight: 700, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.07em" }}>Recent activity</div>
+                {activityLoading ? (
+                  <div style={{ padding: "16px", display: "flex", justifyContent: "center", color: NL.muted }}><Spinner size={14} /></div>
+                ) : activity.length === 0 ? (
+                  <p style={{ padding: "14px 16px", fontSize: 12, color: NL.muted, margin: 0 }}>No activity yet.</p>
+                ) : (
+                  <div style={{ padding: "4px 0" }}>
+                    {activity.map((ev, i) => {
+                      const meta = ACTIVITY_LABELS[ev.type] ?? { icon: "•", label: ev.type, color: NL.muted };
+                      return (
+                        <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 14px", borderBottom: i < activity.length - 1 ? `1px solid ${NL.border}` : "none" }}>
+                          <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{meta.icon}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 11, color: meta.color, fontWeight: 600, margin: 0 }}>{meta.label}</p>
+                            <p style={{ fontSize: 11, color: NL.secondary, margin: "1px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ev.name}</p>
+                          </div>
+                          <span style={{ fontSize: 10, color: NL.muted, flexShrink: 0, marginTop: 2 }}>{timeAgo(ev.createdAt)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div style={{ display: "flex", background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 18 }}>
+                {TABS.filter(t => (t.id !== "skins" && t.id !== "packs") || profile).map(tab => {
+                  const active = activeTab === tab.id;
+                  return (
+                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                      style={{ flex: 1, padding: "11px 8px", background: active ? NL.accent : "transparent", border: "none", borderRight: `1px solid ${NL.border}`, color: active ? "#000" : NL.muted, fontSize: isMobile ? 11 : 12, fontWeight: active ? 700 : 500, cursor: "pointer", fontFamily: font, transition: "background 0.15s, color 0.15s", whiteSpace: "nowrap" }}>
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+                {activeTab === "profile" && (
+                  !profile ? (
+                    <Card>
+                      <div style={{ textAlign: "center", padding: "24px 0" }}>
+                        <p style={{ fontSize: 13, color: NL.secondary, margin: "0 0 6px" }}>No app account found.</p>
+                        <p style={{ fontSize: 12, color: NL.muted, margin: 0 }}>Download the MCCompanion app or <a href="/register" style={{ color: NL.accent }}>register via the website</a> to create a profile.</p>
+                      </div>
+                    </Card>
+                  ) : (
+                    <Card title="Edit profile">
+                      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: NL.muted, marginBottom: 4, letterSpacing: "0.06em", textTransform: "uppercase" }}>Display name</label>
+                          <input value={profileEdit.displayName} onChange={e => { setProfileEdit(p => ({ ...p, displayName: e.target.value })); setProfileDirty(true); }} placeholder="Optional display name…" maxLength={32} style={inputStyle} />
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: NL.muted, marginBottom: 4, letterSpacing: "0.06em", textTransform: "uppercase" }}>Bio</label>
+                          <textarea value={profileEdit.bio} onChange={e => { setProfileEdit(p => ({ ...p, bio: e.target.value })); setProfileDirty(true); }} placeholder="Tell something about yourself…" maxLength={200} rows={3} style={{ ...inputStyle, resize: "vertical", minHeight: 72 }} />
+                          <p style={{ fontSize: 10, color: NL.muted, margin: "4px 0 0", textAlign: "right" }}>{(profileEdit.bio || "").length}/200</p>
+                        </div>
+                        <div>
+                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: NL.muted, marginBottom: 6, letterSpacing: "0.06em", textTransform: "uppercase" }}>Avatar</label>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button onClick={() => avatarInputRef.current?.click()} disabled={avatarUploading}
+                              style={{ fontSize: 12, padding: "6px 14px", borderRadius: 7, border: `1px solid ${NL.border}`, background: NL.elevated, color: NL.secondary, cursor: "pointer", fontFamily: font }}>
+                              {avatarUploading ? <><Spinner size={12} /> Uploading…</> : "Upload photo"}
+                            </button>
+                            {(profile.avatarUrl || avatarPreview) && (
+                              <button onClick={removeAvatar} disabled={avatarUploading}
+                                style={{ fontSize: 12, padding: "6px 14px", borderRadius: 7, border: `1px solid ${NL.dangerBorder}`, background: NL.dangerDim, color: NL.danger, cursor: "pointer", fontFamily: font }}>
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        {profileError && <p style={{ fontSize: 11, color: NL.danger, background: NL.dangerDim, border: `1px solid ${NL.dangerBorder}`, borderRadius: 6, padding: "8px 10px", margin: 0 }}>⚠ {profileError}</p>}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <Btn onClick={saveProfile} disabled={!profileDirty || profileSaving} size="sm">
+                            {profileSaving ? <><Spinner size={12} /> Saving…</> : "Save changes"}
+                          </Btn>
+                          {profileSuccess && <span style={{ fontSize: 12, color: NL.success }}>✓ Saved</span>}
+                        </div>
+                      </div>
+                    </Card>
+                  )
+                )}
+
+                {activeTab === "account" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <Card title="Account details">
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        {[
+                          { label: "Email", value: firebaseUser?.email, mono: true },
+                          { label: "UID", value: firebaseUser?.uid, mono: true, small: true },
+                          { label: "Roles", value: null },
+                        ].map(({ label, value, mono: isMono, small }, i, arr) => (
+                          <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: i < arr.length - 1 ? `1px solid ${NL.border}` : "none" }}>
+                            <span style={{ fontSize: 12, color: NL.muted }}>{label}</span>
+                            {value !== null && value !== undefined
+                              ? <span style={{ fontSize: small ? 11 : 13, color: NL.text, fontFamily: isMono ? mono : font, wordBreak: "break-all", textAlign: "right", marginLeft: 16 }}>{value}</span>
+                              : <div style={{ display: "flex", gap: 4 }}>
+                                <Badge color="default">user</Badge>
+                                {roles.map(r => <Badge key={r} color={r === "admin" ? "danger" : "accent"}>{r}</Badge>)}
+                              </div>
+                            }
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                    {profile && (
+                      <Card title="Minecraft accounts" subtitle="Linked via the MCCompanion app">
+                        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                          {[{
+                            label: "Java Edition", accounts: profile.javaAccounts, renderItem: a => (
                               <div key={a.javaUuid} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, background: NL.elevated, border: `1px solid ${NL.border}` }}>
                                 <img src={`https://crafatar.com/avatars/${a.javaUuid}?size=32&overlay`} alt={a.javaUsername} style={{ width: 36, height: 36, borderRadius: 8, imageRendering: "pixelated", flexShrink: 0 }} onError={e => e.currentTarget.style.display = "none"} />
                                 <div style={{ flex: 1 }}>
                                   <p style={{ fontSize: 13, fontWeight: 600, color: NL.text, margin: 0 }}>{a.javaUsername}</p>
                                   <p style={{ fontFamily: mono, fontSize: 10, color: NL.muted, margin: 0 }}>{a.javaUuid}</p>
                                 </div>
-                                {a.linkedAt && <span style={{ fontSize: 10, color: NL.muted, flexShrink: 0 }}>{new Date(a.linkedAt).toLocaleDateString("en-GB")}</span>}
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <p style={{ fontSize: 11, fontWeight: 700, color: NL.muted, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.07em" }}>Bedrock Edition</p>
-                        {(profile.bedrockAccounts || []).length === 0 ? (
-                          <p style={{ fontSize: 13, color: NL.muted, margin: 0 }}>No Bedrock account linked.</p>
-                        ) : (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                            {(profile.bedrockAccounts || []).map(a => (
+                            )
+                          }, {
+                            label: "Bedrock Edition", accounts: profile.bedrockAccounts, renderItem: a => (
                               <div key={a.xboxXuid} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, background: NL.elevated, border: `1px solid ${NL.border}` }}>
                                 <div style={{ width: 36, height: 36, borderRadius: 8, background: NL.elevated, border: `1px solid ${NL.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🎮</div>
                                 <div style={{ flex: 1 }}>
                                   <p style={{ fontSize: 13, fontWeight: 600, color: NL.text, margin: 0 }}>{a.xboxGamertag}</p>
                                   <p style={{ fontFamily: mono, fontSize: 10, color: NL.muted, margin: 0 }}>XUID: {a.xboxXuid}</p>
                                 </div>
-                                {a.linkedAt && <span style={{ fontSize: 10, color: NL.muted, flexShrink: 0 }}>{new Date(a.linkedAt).toLocaleDateString("en-GB")}</span>}
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <p style={{ fontSize: 11, color: NL.muted, margin: 0 }}>Link accounts via the MCCompanion app.</p>
-                    </div>
-                  </Card>
+                            )
+                          }].map(({ label, accounts, renderItem }) => (
+                            <div key={label}>
+                              <p style={{ fontSize: 11, fontWeight: 700, color: NL.muted, margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</p>
+                              {(accounts || []).length === 0
+                                ? <p style={{ fontSize: 13, color: NL.muted, margin: 0 }}>No {label.split(" ")[0]} account linked.</p>
+                                : <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>{(accounts || []).map(renderItem)}</div>
+                              }
+                            </div>
+                          ))}
+                          <p style={{ fontSize: 11, color: NL.muted, margin: 0 }}>Link accounts via the MCCompanion app.</p>
+                        </div>
+                      </Card>
+                    )}
+                  </div>
                 )}
+
+                {activeTab === "skins" && profile && <MySkinsSection username={profile.username} />}
+                {activeTab === "packs" && profile && <SubmitPackSection />}
               </div>
-            )}
-
-            {activeTab === "skins" && profile && (
-              <MySkinsSection username={profile.username} />
-            )}
-
-            {activeTab === "packs" && profile && (
-              <SubmitPackSection />
-            )}
+            </div>
 
           </div>
         </div>

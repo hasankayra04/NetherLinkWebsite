@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import Layout from "@theme/Layout";
 import { useLocation } from "@docusaurus/router";
 import { useAuth } from "../useAuth";
+import CommentsSection from "../components/CommentsSection";
 
 const C = {
   bg: "#111318", surface: "#191c23", elevated: "#1f232c", subtle: "#252931",
@@ -69,13 +70,13 @@ function SkinViewer3D({ skinUrl, scale = 5 }) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.imageSmoothingEnabled = false;
       const s = scale;
-      ctx.drawImage(img,  8,  8, 8,  8,  4*s,  0,    8*s, 8*s);
-      ctx.drawImage(img, 40,  8, 8,  8,  4*s,  0,    8*s, 8*s);
-      ctx.drawImage(img, 20, 20, 8, 12,  4*s,  8*s,  8*s, 12*s);
-      ctx.drawImage(img, 44, 20, 4, 12,  0,    8*s,  4*s, 12*s);
-      ctx.drawImage(img, 36, 52, 4, 12,  12*s, 8*s,  4*s, 12*s);
-      ctx.drawImage(img,  4, 20, 4, 12,  4*s,  20*s, 4*s, 12*s);
-      ctx.drawImage(img, 20, 52, 4, 12,  8*s,  20*s, 4*s, 12*s);
+      ctx.drawImage(img, 8, 8, 8, 8, 4 * s, 0, 8 * s, 8 * s);
+      ctx.drawImage(img, 40, 8, 8, 8, 4 * s, 0, 8 * s, 8 * s);
+      ctx.drawImage(img, 20, 20, 8, 12, 4 * s, 8 * s, 8 * s, 12 * s);
+      ctx.drawImage(img, 44, 20, 4, 12, 0, 8 * s, 4 * s, 12 * s);
+      ctx.drawImage(img, 36, 52, 4, 12, 12 * s, 8 * s, 4 * s, 12 * s);
+      ctx.drawImage(img, 4, 20, 4, 12, 4 * s, 20 * s, 4 * s, 12 * s);
+      ctx.drawImage(img, 20, 52, 4, 12, 8 * s, 20 * s, 4 * s, 12 * s);
     };
     img.src = skinUrl;
   }, [skinUrl, scale]);
@@ -97,11 +98,11 @@ function LiveSkinViewer3D({ getDataUrl, triggerRef, width = 220, height = 320 })
       viewer.autoRotate = true;
       viewer.autoRotateSpeed = 0.4;
       viewerRef.current = viewer;
-      if (url) viewer.loadSkin(url).catch(() => {});
+      if (url) viewer.loadSkin(url).catch(() => { });
 
       if (triggerRef) {
         triggerRef.current = (dataUrl) => {
-          if (viewerRef.current) viewerRef.current.loadSkin(dataUrl).catch(() => {});
+          if (viewerRef.current) viewerRef.current.loadSkin(dataUrl).catch(() => { });
         };
       }
     });
@@ -130,18 +131,18 @@ const CANVAS_SIZE = 64;
 const DISPLAY_SIZE = 512;
 
 const SKIN_REGIONS = [
-  { label: "Head",        x: 0,  y: 0,  w: 32, h: 16, color: "#ff6b6b" },
-  { label: "Body",        x: 16, y: 16, w: 24, h: 16, color: "#4ecdc4" },
-  { label: "R.Leg",       x: 0,  y: 16, w: 16, h: 16, color: "#feca57" },
-  { label: "R.Arm",       x: 40, y: 16, w: 16, h: 16, color: "#45b7d1" },
-  { label: "L.Leg",       x: 16, y: 48, w: 16, h: 16, color: "#ff9ff3" },
-  { label: "L.Arm",       x: 32, y: 48, w: 16, h: 16, color: "#96ceb4" },
-  { label: "Hat",         x: 32, y: 0,  w: 32, h: 16, color: "#ff6b6b" },
-  { label: "Jacket",      x: 16, y: 32, w: 24, h: 16, color: "#4ecdc4" },
-  { label: "R.Leg OL",    x: 0,  y: 32, w: 16, h: 16, color: "#feca57" },
-  { label: "R.Arm OL",    x: 40, y: 32, w: 16, h: 16, color: "#45b7d1" },
-  { label: "L.Leg OL",    x: 0,  y: 48, w: 16, h: 16, color: "#ff9ff3" },
-  { label: "L.Arm OL",    x: 48, y: 48, w: 16, h: 16, color: "#96ceb4" },
+  { label: "Head", x: 0, y: 0, w: 32, h: 16, color: "#ff6b6b" },
+  { label: "Body", x: 16, y: 16, w: 24, h: 16, color: "#4ecdc4" },
+  { label: "R.Leg", x: 0, y: 16, w: 16, h: 16, color: "#feca57" },
+  { label: "R.Arm", x: 40, y: 16, w: 16, h: 16, color: "#45b7d1" },
+  { label: "L.Leg", x: 16, y: 48, w: 16, h: 16, color: "#ff9ff3" },
+  { label: "L.Arm", x: 32, y: 48, w: 16, h: 16, color: "#96ceb4" },
+  { label: "Hat", x: 32, y: 0, w: 32, h: 16, color: "#ff6b6b" },
+  { label: "Jacket", x: 16, y: 32, w: 24, h: 16, color: "#4ecdc4" },
+  { label: "R.Leg OL", x: 0, y: 32, w: 16, h: 16, color: "#feca57" },
+  { label: "R.Arm OL", x: 40, y: 32, w: 16, h: 16, color: "#45b7d1" },
+  { label: "L.Leg OL", x: 0, y: 48, w: 16, h: 16, color: "#ff9ff3" },
+  { label: "L.Arm OL", x: 48, y: 48, w: 16, h: 16, color: "#96ceb4" },
 ];
 
 function UVEditor({ bufferRef, onUpdate, renderRef }) {
@@ -150,18 +151,29 @@ function UVEditor({ bufferRef, onUpdate, renderRef }) {
   const [tool, setTool] = useState("draw");
   const [color, setColor] = useState("#ff0000");
   const [brushSize, setBrushSize] = useState(1);
-  const [zoom, setZoom] = useState(1);
+  const [fitZoom, setFitZoom] = useState(1);
+  const [zoomOffset, setZoomOffset] = useState(0);
+  const zoom = Math.max(0.25, Math.min(6, +(fitZoom + zoomOffset).toFixed(2)));
   const [showGuide, setShowGuide] = useState(true);
   const lineStart = useRef(null);
   const lineSnapshot = useRef(null);
 
   useEffect(() => {
-    const t = setTimeout(() => {
+    function recalc() {
       const col = containerRef.current?.closest('[data-uvcol]');
-      const w = col ? col.clientWidth : containerRef.current?.parentElement?.clientWidth;
-      if (w > 50) setZoom(Math.max(0.5, Math.min(4, Math.round((w / DISPLAY_SIZE) * 4) / 4)));
-    }, 50);
-    return () => clearTimeout(t);
+      const el = col ?? containerRef.current?.parentElement;
+      if (!el) return;
+      const w = el.clientWidth - 4;
+      const h = window.innerHeight - 340;
+      const fit = Math.floor(Math.min(w, h) / DISPLAY_SIZE * 8) / 8;
+      setFitZoom(Math.max(0.25, Math.min(4, fit)));
+    }
+    const t = setTimeout(recalc, 50);
+    const col = containerRef.current?.closest('[data-uvcol]') ?? containerRef.current?.parentElement;
+    const ro = col && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(recalc) : null;
+    if (ro && col) ro.observe(col);
+    window.addEventListener('resize', recalc);
+    return () => { clearTimeout(t); ro?.disconnect(); window.removeEventListener('resize', recalc); };
   }, []);
   const [recentColors, setRecentColors] = useState([]);
   const undoStack = useRef([]);
@@ -184,28 +196,28 @@ function UVEditor({ bufferRef, onUpdate, renderRef }) {
       }
     }
     ctx.drawImage(buf, 0, 0, size, size);
-    if (zoom >= 1) {
-      ctx.strokeStyle = "rgba(255,255,255,0.05)";
-      ctx.lineWidth = 0.5;
-      for (let i = 0; i <= CANVAS_SIZE; i++) {
-        ctx.beginPath(); ctx.moveTo(i * px, 0); ctx.lineTo(i * px, size); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, i * px); ctx.lineTo(size, i * px); ctx.stroke();
-      }
-    }
+
     if (showGuide) {
       const fontSize = Math.max(8, Math.min(px * 2.5, 14));
       ctx.font = `bold ${fontSize}px monospace`;
       ctx.textBaseline = "top";
       SKIN_REGIONS.forEach(({ label, x, y, w, h, color: rc }) => {
         const rx = x * px, ry = y * px, rw = w * px, rh = h * px;
-        ctx.fillStyle = rc + "22";
-        ctx.fillRect(rx, ry, rw, rh);
-        ctx.strokeStyle = rc + "cc";
+        ctx.strokeStyle = rc + "dd";
         ctx.lineWidth = 1.5;
         ctx.strokeRect(rx + 0.75, ry + 0.75, rw - 1.5, rh - 1.5);
-        ctx.fillStyle = rc;
+        ctx.fillStyle = rc + "cc";
         ctx.fillText(label, rx + 3, ry + 3);
       });
+    }
+
+    if (zoom >= 0.75) {
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i <= CANVAS_SIZE; i++) {
+        ctx.beginPath(); ctx.moveTo(i * px, 0); ctx.lineTo(i * px, size); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i * px); ctx.lineTo(size, i * px); ctx.stroke();
+      }
     }
   }, [zoom, showGuide, bufferRef]);
 
@@ -465,6 +477,16 @@ function UVEditor({ bufferRef, onUpdate, renderRef }) {
         <div style={{ width: 1, height: 24, background: C.border, margin: "0 2px" }} />
         <Btn small onClick={undo} title="Undo (Ctrl+Z)">↩</Btn>
         <Btn small variant="danger" onClick={clearCanvas}>Clear</Btn>
+        <div style={{ width: 1, height: 24, background: C.border, margin: "0 2px" }} />
+        <button type="button" onClick={() => setZoomOffset(o => +(o - 0.25).toFixed(2))} title="Zoom out"
+          style={{ fontFamily: font, fontSize: 14, fontWeight: 700, width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.border}`, background: C.elevated, color: C.secondary, cursor: "pointer" }}>−</button>
+        <span style={{ fontSize: 11, color: C.muted, fontFamily: font, minWidth: 36, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
+        <button type="button" onClick={() => setZoomOffset(o => +(o + 0.25).toFixed(2))} title="Zoom in"
+          style={{ fontFamily: font, fontSize: 14, fontWeight: 700, width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.border}`, background: C.elevated, color: C.secondary, cursor: "pointer" }}>+</button>
+        {zoomOffset !== 0 && (
+          <button type="button" onClick={() => setZoomOffset(0)} title="Fit to screen"
+            style={{ fontFamily: font, fontSize: 10, fontWeight: 600, padding: "0 8px", height: 28, borderRadius: 6, border: `1px solid ${C.accentBorder}`, background: C.accentDim, color: C.accent, cursor: "pointer" }}>Fit</button>
+        )}
         <label style={{
           fontFamily: font, fontWeight: 500, fontSize: 12, padding: "5px 10px",
           borderRadius: 8, border: `1px solid ${C.border}`, background: C.elevated,
@@ -493,7 +515,7 @@ function UVEditor({ bufferRef, onUpdate, renderRef }) {
         </div>
       )}
 
-      <div ref={containerRef} style={{ overflow: "auto", maxWidth: "100%", maxHeight: "65vh", borderRadius: 10, border: `1px solid ${C.border}`, touchAction: "none" }}>
+      <div ref={containerRef} style={{ overflow: "auto", height: "calc(100vh - 340px)", minHeight: 300, width: "fit-content", maxWidth: "100%", borderRadius: 10, border: `1px solid ${C.border}`, touchAction: "none" }}>
         <canvas
           ref={displayRef}
           width={displayPx}
@@ -509,11 +531,22 @@ function UVEditor({ bufferRef, onUpdate, renderRef }) {
   );
 }
 
-function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initialLiked = false }) {
+function timeAgo(dateStr) {
+  if (!dateStr) return "";
+  const diff = (Date.now() - new Date(dateStr)) / 1000;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 86400 * 7) return `${Math.floor(diff / 86400)}d ago`;
+  return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initialLiked = false, currentUsername = null }) {
   const [deleting, setDeleting] = useState(false);
   const [likes, setLikes] = useState(initialSkin.like_count ?? 0);
   const [liked, setLiked] = useState(initialLiked);
   const [liking, setLiking] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const lastLike = useRef(0);
 
   async function download() {
@@ -539,69 +572,93 @@ function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initial
         setLiked(d.liked);
         setLikes(d.like_count);
       }
-    } catch (_) {}
+    } catch (_) { }
     setLiking(false);
   }
 
+  const commentCount = initialSkin.comment_count ?? 0;
+
   return (
-    <div
-      onClick={onEdit ? () => onEdit(initialSkin) : undefined}
-      style={{
-        background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14,
-        padding: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-        transition: "border-color .2s, transform .15s",
-        cursor: onEdit ? "pointer" : "default",
-      }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = C.accentBorder; e.currentTarget.style.transform = "translateY(-2px)"; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = "translateY(0)"; }}
-    >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 160 }}>
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column", transition: "border-color .2s" }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = C.accentBorder}
+      onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+
+      <div style={{ background: C.elevated, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 0", minHeight: 180 }}>
         <SkinViewer3D skinUrl={initialSkin.public_url} scale={5} />
       </div>
-      <div style={{ textAlign: "center", width: "100%" }}>
-        <div style={{ fontFamily: font, fontWeight: 600, color: C.text, fontSize: 14, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {initialSkin.name || "Unnamed"}
+
+      {initialSkin.username && !isOwn && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px 0" }}>
+          {initialSkin.avatar_url ? (
+            <img src={initialSkin.avatar_url} alt={initialSkin.username} style={{ width: 22, height: 22, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} onError={e => e.currentTarget.style.display = "none"} />
+          ) : (
+            <div style={{ width: 22, height: 22, borderRadius: "50%", background: C.accentDim, border: `1px solid ${C.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: C.accent, flexShrink: 0 }}>
+              {(initialSkin.username || "?")[0].toUpperCase()}
+            </div>
+          )}
+          <a href={`/u?name=${initialSkin.username}`} style={{ fontSize: 11, fontWeight: 600, color: C.accent, textDecoration: "none", flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {initialSkin.display_name || initialSkin.username}
+          </a>
+          <span style={{ fontSize: 10, color: C.muted, flexShrink: 0 }}>{timeAgo(initialSkin.created_at)}</span>
         </div>
-        {initialSkin.username && (
-          <div style={{ fontSize: 11, color: C.secondary, marginBottom: 4 }}>
-            Created by:{" "}
-            <a href={`/u?name=${initialSkin.username}`}
-              onClick={e => e.stopPropagation()}
-              style={{ color: C.accent, textDecoration: "none" }}>
-              {initialSkin.display_name || initialSkin.username}
-            </a>
-          </div>
-        )}
-        {isOwn && <Tag color={C.accent}>Yours</Tag>}
+      )}
+
+      <div style={{ padding: "8px 12px 10px", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 6 }}>
+        <p style={{ margin: 0, fontWeight: 700, fontSize: 13, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+          {initialSkin.name || "Unnamed"}
+        </p>
+        {isOwn && initialSkin.created_at && <span style={{ fontSize: 10, color: C.muted, flexShrink: 0 }}>{timeAgo(initialSkin.created_at)}</span>}
       </div>
-      <div onClick={e => e.stopPropagation()} style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
-        <Btn small onClick={download}>⬇ Download</Btn>
-        {!isOwn && (idToken ? (
-          <button type="button" onClick={toggleLike} disabled={liking} style={{
-            display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 10px",
-            borderRadius: 8, border: `1px solid ${liked ? "#f8717144" : C.border}`,
-            background: liked ? "#f8717112" : "transparent", cursor: "pointer",
-            color: liked ? "#f87171" : C.secondary, fontSize: 12, fontFamily: font, fontWeight: 500,
-          }}>
-            {liked ? "♥" : "♡"} {likes > 0 ? likes : ""}
+
+      <div onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center", borderTop: `1px solid ${C.border}`, marginTop: "auto" }}>
+        <button onClick={download} title="Download" style={{ flex: 1, padding: "10px 0", background: "transparent", border: "none", borderRight: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={C.secondary} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+        </button>
+        {!isOwn && (
+          <button onClick={toggleLike} disabled={liking} title={liked ? "Unlike" : "Like"} style={{ padding: "10px 0", flex: 1, background: "transparent", border: "none", borderRight: `1px solid ${C.border}`, cursor: idToken ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={liked ? "#f87171" : "none"} stroke={liked ? "#f87171" : C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+            {likes > 0 && <span style={{ fontSize: 11, color: liked ? "#f87171" : C.muted, fontFamily: font }}>{likes}</span>}
           </button>
-        ) : likes > 0 ? (
-          <span style={{ fontSize: 12, color: C.secondary, fontFamily: font }}>♡ {likes}</span>
-        ) : null)}
+        )}
+        <button onClick={() => setShowComments(true)} title="Comments" style={{ padding: "10px 0", flex: 1, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 3, borderRight: isOwn ? `1px solid ${C.border}` : "none" }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={commentCount > 0 ? C.secondary : C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+          {commentCount > 0 && <span style={{ fontSize: 11, color: C.secondary, fontFamily: font }}>{commentCount}</span>}
+        </button>
         {isOwn && (
           <>
-            <Btn small variant="ghost" onClick={() => onEdit(initialSkin)}>✏️ Edit</Btn>
-            <Btn small variant="danger" disabled={deleting} onClick={async () => {
-              if (!confirm(`Delete "${initialSkin.name}"?`)) return;
-              setDeleting(true);
-              await onDelete(initialSkin.id);
-              setDeleting(false);
-            }}>
-              {deleting ? "…" : "🗑"}
-            </Btn>
+            <button onClick={() => onEdit(initialSkin)} title="Edit" style={{ padding: "10px 0", flex: 1, background: "transparent", border: "none", borderRight: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+            </button>
+            <button disabled={deleting} title="Delete" onClick={async () => { if (!confirm(`Delete "${initialSkin.name}"?`)) return; setDeleting(true); await onDelete(initialSkin.id); setDeleting(false); }}
+              style={{ padding: "10px 0", flex: 1, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: deleting ? 0.4 : 1 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.danger} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" /></svg>
+            </button>
           </>
         )}
       </div>
+
+      {showComments && (
+        <div onClick={e => e.stopPropagation()}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.82)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onMouseDown={e => { if (e.target === e.currentTarget) setShowComments(false); }}>
+          <div style={{ background: C.surface, border: `1px solid ${C.borderMid}`, borderRadius: 18, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <SkinViewer3D skinUrl={initialSkin.public_url} scale={4} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{initialSkin.name || "Unnamed"}</p>
+                {initialSkin.username && <a href={`/u?name=${initialSkin.username}`} style={{ fontSize: 12, color: C.accent, textDecoration: "none" }}>by {initialSkin.display_name || initialSkin.username}</a>}
+              </div>
+              <button onClick={() => setShowComments(false)} style={{ background: C.elevated, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.secondary, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✕</button>
+            </div>
+            <CommentsSection
+              targetType="skin"
+              targetId={initialSkin.id}
+              currentUsername={currentUsername}
+              getToken={async () => { const { fetchIdToken } = await import("../firebaseAuthHelpers"); return fetchIdToken(); }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -634,7 +691,7 @@ function GalleryTab({ user, idToken, onEditSkin }) {
     fetch(`${API}/api/skins/me/likes`, { headers: { Authorization: `Bearer ${idToken}` } })
       .then(r => r.json())
       .then(d => setLikedIds(new Set(d.liked || [])))
-      .catch(() => {});
+      .catch(() => { });
   }, [idToken]);
 
   useEffect(() => {
@@ -655,65 +712,70 @@ function GalleryTab({ user, idToken, onEditSkin }) {
     setPublicSkins(prev => prev.filter(s => s.id !== skinId));
   }
 
-  const gridStyle = {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-    gap: 16,
-  };
+  const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 14 };
+
+  function SectionHeader({ emoji, title, sub }) {
+    return (
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
+        <h2 style={{ fontFamily: font, color: C.text, fontSize: 17, fontWeight: 800, margin: 0, letterSpacing: "-0.02em" }}>{emoji} {title}</h2>
+        {sub && <span style={{ fontSize: 11, color: C.muted }}>{sub}</span>}
+      </div>
+    );
+  }
+
+  const newSkins = [...publicSkins].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 8);
+  const weekAgo = Date.now() - 7 * 86400_000;
+  const hotSkins = topSkins.filter(s => new Date(s.created_at || s.createdAt).getTime() > weekAgo).slice(0, 5);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-      {user && (
+    <div style={{ display: "flex", flexDirection: "column", gap: 36 }}>
+      {error && <div style={{ background: C.dangerDim, border: `1px solid ${C.dangerBorder}`, borderRadius: 10, padding: 12 }}><p style={{ fontFamily: font, color: C.danger, margin: 0 }}>{error}</p></div>}
+
+      {user && mySkins.length > 0 && (
         <section>
-          <h2 style={{ fontFamily: font, color: C.text, fontSize: 18, fontWeight: 700, marginBottom: 16, marginTop: 0 }}>
-            My Cloud Skins
-          </h2>
-          {loadingMine ? (
-            <p style={{ fontFamily: font, color: C.muted }}>Loading…</p>
-          ) : mySkins.length === 0 ? (
-            <p style={{ fontFamily: font, color: C.muted }}>No cloud skins yet. Upload one in the Editor tab!</p>
-          ) : (
-            <div style={gridStyle}>
-              {mySkins.map(s => (
-                <SkinCard key={s.id} skin={s} isOwn onEdit={onEditSkin} onDelete={deleteSkin} />
-              ))}
-            </div>
-          )}
+          <SectionHeader emoji="🎨" title="My Cloud Skins" sub={`${mySkins.length} skin${mySkins.length !== 1 ? "s" : ""}`} />
+          <div style={grid}>
+            {mySkins.map(s => <SkinCard key={s.id} skin={s} isOwn onEdit={onEditSkin} onDelete={deleteSkin} currentUsername={user?.username} />)}
+          </div>
         </section>
       )}
 
-      {error && (
-        <div style={{ background: C.dangerDim, border: `1px solid ${C.dangerBorder}`, borderRadius: 10, padding: 12 }}>
-          <p style={{ fontFamily: font, color: C.danger, margin: 0 }}>{error}</p>
-        </div>
+      {hotSkins.length > 0 && (
+        <section>
+          <SectionHeader emoji="🔥" title="Hot this week" sub="Most liked in the last 7 days" />
+          <div style={{ ...grid, gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))" }}>
+            {hotSkins.map(s => <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} currentUsername={user?.username} />)}
+          </div>
+        </section>
+      )}
+
+      {!loadingPublic && newSkins.length > 0 && (
+        <section>
+          <SectionHeader emoji="✨" title="Newest uploads" sub="Just added by the community" />
+          <div style={grid}>
+            {newSkins.map(s => <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} currentUsername={user?.username} />)}
+          </div>
+        </section>
       )}
 
       {topSkins.length > 0 && (
         <section>
-          <h2 style={{ fontFamily: font, color: C.text, fontSize: 18, fontWeight: 700, marginBottom: 16, marginTop: 0, display: "flex", alignItems: "center", gap: 8 }}>
-            🏆 Top 30
-          </h2>
-          <div style={gridStyle}>
-            {topSkins.map(s => (
-              <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} />
-            ))}
+          <SectionHeader emoji="🏆" title="Most liked" sub="All time top skins" />
+          <div style={grid}>
+            {topSkins.slice(0, 12).map(s => <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} currentUsername={user?.username} />)}
           </div>
         </section>
       )}
 
       <section>
-        <h2 style={{ fontFamily: font, color: C.text, fontSize: 18, fontWeight: 700, marginBottom: 16, marginTop: 0 }}>
-          All Skins
-        </h2>
+        <SectionHeader emoji="🌍" title="All skins" sub={`${publicSkins.length} community skins`} />
         {loadingPublic ? (
           <p style={{ fontFamily: font, color: C.muted }}>Loading…</p>
         ) : publicSkins.length === 0 ? (
           <p style={{ fontFamily: font, color: C.muted }}>No public skins yet.</p>
         ) : (
-          <div style={gridStyle}>
-            {publicSkins.map(s => (
-              <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} />
-            ))}
+          <div style={grid}>
+            {publicSkins.map(s => <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} currentUsername={user?.username} />)}
           </div>
         )}
       </section>
@@ -836,17 +898,15 @@ function EditorTab({ user, idToken, initialSkin, onSaved }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{
-        display: "flex", gap: 24, flexWrap: "wrap", alignItems: "flex-start",
-      }}>
-        <div data-uvcol style={{ flex: "1 1 300px", minWidth: 280 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, alignItems: "start" }}>
+        <div data-uvcol style={{ minWidth: 0, position: "relative" }}>
           <h3 style={{ fontFamily: font, color: C.text, fontWeight: 700, fontSize: 16, marginTop: 0, marginBottom: 12 }}>
             2D UV Editor
           </h3>
           <UVEditor bufferRef={bufferRef} onUpdate={scheduleUpdate3D} renderRef={renderRef} />
         </div>
 
-        <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, flexShrink: 0, position: "sticky", top: 20 }}>
           <h3 style={{ fontFamily: font, color: C.text, fontWeight: 700, fontSize: 16, marginTop: 0, marginBottom: 0 }}>
             3D Preview
           </h3>
@@ -1079,7 +1139,8 @@ function UploadTab({ user, idToken, onSaved }) {
 export default function SkinsPage() {
   const { user, idToken, checking } = useAuth();
   const location = useLocation();
-  const [tab, setTab] = useState("gallery");
+  const [showEditor, setShowEditor] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
   const [editSkin, setEditSkin] = useState(null);
   const [galleryKey, setGalleryKey] = useState(0);
 
@@ -1091,73 +1152,87 @@ export default function SkinsPage() {
       .then(skin => {
         if (!skin) return;
         setEditSkin(skin);
-        setTab("editor");
+        setShowEditor(true);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [location.search]);
 
   function handleEditSkin(skin) {
     setEditSkin(skin);
-    setTab("editor");
+    setShowEditor(true);
   }
 
   function handleSkinSaved() {
     setGalleryKey(k => k + 1);
+    setShowEditor(false);
+    setShowUpload(false);
   }
 
-  const tabs = [
-    { id: "gallery", label: "Gallery" },
-    { id: "editor", label: "Editor" },
-    { id: "upload", label: "Upload" },
-  ];
+  function openEditor() {
+    setEditSkin(null);
+    setShowEditor(true);
+  }
 
   return (
-    <Layout title="Skins">
+    <Layout title="Skin Workshop">
       <div style={{ background: C.bg, minHeight: "100vh", fontFamily: font }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 20px" }}>
-          <div style={{ marginBottom: 32 }}>
-            <h1 style={{ color: C.text, fontSize: 28, fontWeight: 800, margin: 0, marginBottom: 8 }}>
-              Skin Workshop
-            </h1>
-            <p style={{ color: C.secondary, fontSize: 15, margin: 0 }}>
-              Browse community skins or create your own with the built-in UV editor.
-            </p>
-          </div>
 
-          <div style={{
-            display: "flex", gap: 4, marginBottom: 28,
-            background: C.surface, borderRadius: 12, padding: 4,
-            border: `1px solid ${C.border}`, width: "fit-content",
-          }}>
-            {tabs.map(t => (
-              <button
-                type="button"
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                style={{
-                  fontFamily: font, fontWeight: 600, fontSize: 14,
-                  padding: "8px 20px", borderRadius: 9, border: "none", cursor: "pointer",
-                  background: tab === t.id ? C.elevated : "transparent",
-                  color: tab === t.id ? C.text : C.secondary,
-                  boxShadow: tab === t.id ? `inset 0 0 0 1px ${C.border}` : "none",
-                  transition: "all .15s",
-                }}
-              >
-                {t.label}
+        {showEditor ? (
+          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
+              <button type="button" onClick={() => setShowEditor(false)}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9, border: `1px solid ${C.borderMid}`, background: C.elevated, color: C.secondary, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: font }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+                Back to gallery
               </button>
-            ))}
+              <h1 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: C.text }}>
+                {editSkin ? `Editing: ${editSkin.name}` : "Create skin"}
+              </h1>
+            </div>
+            <EditorTab user={user} idToken={idToken} initialSkin={editSkin} onSaved={handleSkinSaved} />
           </div>
 
-          {tab === "gallery" && (
+        ) : (
+          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 20px" }}>
+
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 32, gap: 16, flexWrap: "wrap" }}>
+              <div>
+                <h1 style={{ color: C.text, fontSize: 28, fontWeight: 800, margin: 0, marginBottom: 6 }}>Skin Workshop</h1>
+                <p style={{ color: C.secondary, fontSize: 15, margin: 0 }}>Browse community skins or create your own.</p>
+              </div>
+              {user && (
+                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  <button onClick={() => setShowUpload(true)}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: `1px solid ${C.borderMid}`, background: C.elevated, color: C.secondary, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: font }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                    Upload PNG
+                  </button>
+                  <button onClick={openEditor}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "none", background: C.accent, color: "#000", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: font }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+                    Create skin
+                  </button>
+                </div>
+              )}
+            </div>
+
             <GalleryTab key={galleryKey} user={user} idToken={idToken} onEditSkin={handleEditSkin} />
-          )}
-          {tab === "editor" && (
-            <EditorTab user={user} idToken={idToken} initialSkin={editSkin} onSaved={handleSkinSaved} />
-          )}
-          {tab === "upload" && (
-            <UploadTab user={user} idToken={idToken} onSaved={handleSkinSaved} />
-          )}
-        </div>
+          </div>
+        )}
+
+        {showUpload && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.82)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+            onMouseDown={e => { if (e.target === e.currentTarget) setShowUpload(false); }}>
+            <div style={{ background: C.surface, border: `1px solid ${C.borderMid}`, borderRadius: 18, width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto", padding: 28 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: C.text }}>Upload skin</h2>
+                <button onClick={() => setShowUpload(false)} style={{ background: C.elevated, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.secondary, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>✕</button>
+              </div>
+              <UploadTab user={user} idToken={idToken} onSaved={handleSkinSaved} />
+            </div>
+          </div>
+        )}
+
       </div>
     </Layout>
   );

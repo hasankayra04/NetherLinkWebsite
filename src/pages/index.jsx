@@ -298,6 +298,52 @@ function SkinsSection({ skins }) {
   );
 }
 
+function CommunitySection({ skins }) {
+  const creators = [];
+  const seen = new Set();
+  for (const s of skins) {
+    if (s.username && !seen.has(s.username)) {
+      seen.add(s.username);
+      creators.push(s);
+    }
+    if (creators.length >= 8) break;
+  }
+  if (creators.length < 3) return null;
+
+  return (
+    <section style={{ background: T.bgAlt, borderTop: "1px solid " + T.border, padding: "56px 24px" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 28 }}>
+          <div>
+            <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#a78bfa", margin: "0 0 4px" }}>Community</p>
+            <h2 style={{ fontSize: "clamp(20px,3vw,32px)", fontWeight: 800, color: T.text, margin: 0, letterSpacing: "-0.02em" }}>Meet the creators.</h2>
+          </div>
+          <a href="/skins" style={{ fontSize: 13, fontWeight: 600, color: "#a78bfa", textDecoration: "none" }}>All skins →</a>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
+          {creators.map(s => (
+            <a key={s.username} href={`/u?name=${s.username}`} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: T.surface, border: "1px solid " + T.border, textDecoration: "none", transition: "border-color 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "#a78bfa50"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = T.border}>
+              {s.avatar_url ? (
+                <img src={s.avatar_url} alt={s.username} style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} onError={e => e.currentTarget.style.display = "none"} />
+              ) : (
+                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(167,139,250,0.12)", border: "1px solid rgba(167,139,250,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#a78bfa", flexShrink: 0 }}>
+                  {(s.username || "?")[0].toUpperCase()}
+                </div>
+              )}
+              <div style={{ minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.display_name || s.username}</p>
+                <p style={{ margin: 0, fontSize: 10, color: T.sub }}>@{s.username}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ServersSection() {
   return (
     <section style={{ background: T.bg, borderTop: "1px solid " + T.border, padding: "56px 24px" }}>
@@ -363,6 +409,7 @@ export default function Home() {
         <FeaturesSection />
         <WebToolsSection />
         <SkinsSection skins={skins} />
+        <CommunitySection skins={skins} />
         <ServersSection />
         <DownloadCTA />
       </div>

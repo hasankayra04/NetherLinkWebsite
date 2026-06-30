@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import Layout from "@theme/Layout";
 import { marked } from "marked";
 import DOMPurify from 'dompurify';
+import CommentsSection from "../components/CommentsSection";
 
 marked.use({ breaks: true });
 
@@ -131,11 +132,25 @@ function Pagination({ page, totalPages, onChange }) {
 }
 
 function DetailModal({ pack, onClose }) {
+  const [currentUsername, setCurrentUsername] = useState(null);
+
   useEffect(() => {
     const handler = e => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
+
+  useEffect(() => {
+    import("../firebaseAuthHelpers").then(({ fetchIdToken }) =>
+      fetchIdToken().then(token => {
+        if (!token) return;
+        fetch("https://api.mccompanion.net/api/users/me", { headers: { Authorization: `Bearer ${token}` } })
+          .then(r => r.ok ? r.json() : null)
+          .then(d => { if (d?.user?.username) setCurrentUsername(d.user.username); })
+          .catch(() => { });
+      })
+    ).catch(() => { });
+  }, []);
 
   return (
     <div
@@ -208,6 +223,13 @@ function DetailModal({ pack, onClose }) {
               Download
             </a>
           </div>
+
+          <CommentsSection
+            targetType="pack"
+            targetId={String(pack.id)}
+            currentUsername={currentUsername}
+            getToken={() => import("../firebaseAuthHelpers").then(m => m.fetchIdToken())}
+          />
         </div>
       </div>
     </div>
@@ -260,8 +282,6 @@ export default function PacksPage() {
     }
   }
 
-  const allTags = Array.from(new Set(packs.flatMap(p => p.tags || [])));
-
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -288,48 +308,55 @@ export default function PacksPage() {
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   }
 
+  const allTags = Array.from(new Set(packs.flatMap(p => p.tags || [])));
   const totalPages = Math.ceil(packs.length / PAGE_SIZE);
   const pagePacks = packs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const cols = isMobile ? "1fr" : "repeat(auto-fill, minmax(260px, 1fr))";
+  const trending = [...packs].sort((a, b) => (b.downloadCount ?? 0) - (a.downloadCount ?? 0)).slice(0, 5);
+  const catCounts = CATEGORIES.reduce((acc, c) => {
+    acc[c] = packs.filter(p => p.category === c).length;
+    return acc;
+  }, {});
+
+  const sideCard = (children) => (
+    <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 14 }}>
+      {children}
+    </div>
+  );
+  const sideTitle = (label) => (
+    <div style={{ padding: "10px 14px", borderBottom: `1px solid ${NL.border}`, fontSize: 11, fontWeight: 700, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</div>
+  );
 
   return (
     <Layout title="Resource Packs" description="Curated resource packs for Minecraft Bedrock">
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         .pack-search:focus { border-color: rgba(255,255,255,0.2) !important; }
+        .cat-pill-btn:hover { border-color: rgba(96,165,250,0.4) !important; color: #60a5fa !important; }
       `}</style>
       <div style={{ minHeight: "100vh", background: NL.bg, fontFamily: font }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "48px 24px 80px" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: isMobile ? "32px 16px 60px" : "44px 24px 80px" }}>
 
-          <div style={{ marginBottom: 32 }}>
-            <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: NL.accent }}>Community</p>
-            <h1 style={{ fontSize: "clamp(28px,5vw,40px)", fontWeight: 900, color: NL.text, margin: "0 0 8px", letterSpacing: "-0.03em" }}>Resource Packs</h1>
-            <p style={{ margin: 0, color: NL.secondary, fontSize: 15 }}>Curated packs for Minecraft Bedrock — downloaded directly in the app.</p>
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: NL.accent }}>Community</p>
+            <h1 style={{ fontSize: "clamp(24px,4vw,36px)", fontWeight: 900, color: NL.text, margin: "0 0 6px", letterSpacing: "-0.03em" }}>Resource Packs</h1>
+            <p style={{ margin: 0, color: NL.secondary, fontSize: 14 }}>Curated packs for Minecraft Bedrock — downloaded directly in the app.</p>
           </div>
 
-          <div style={{ position: "relative", marginBottom: 16 }}>
-            <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: NL.muted, pointerEvents: "none" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-            <input
-              ref={searchInputRef}
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Search packs…"
-              className="pack-search"
-              style={{ width: "100%", background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 12, padding: "11px 16px 11px 40px", color: NL.text, fontSize: 14, fontFamily: font, outline: "none", boxSizing: "border-box", transition: "border-color 0.15s" }}
-            />
-            {query && (
-              <button onClick={() => { setQuery(""); if (searchInputRef.current) searchInputRef.current.value = ""; }}
-                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: NL.muted, fontSize: 16, lineHeight: 1, padding: 4 }}>✕</button>
-            )}
+          <div style={{ position: "relative", marginBottom: 12 }}>
+            <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: NL.muted, pointerEvents: "none" }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            <input ref={searchInputRef} value={query} onChange={e => setQuery(e.target.value)} placeholder="Search packs…" className="pack-search"
+              style={{ width: "100%", background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 10, padding: "10px 14px 10px 38px", color: NL.text, fontSize: 14, fontFamily: font, outline: "none", boxSizing: "border-box", transition: "border-color 0.15s" }} />
+            {query && <button onClick={() => { setQuery(""); if (searchInputRef.current) searchInputRef.current.value = ""; }}
+              style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: NL.muted, fontSize: 15, lineHeight: 1, padding: 4 }}>✕</button>}
           </div>
 
-          <div style={{ display: "flex", overflowX: "auto", gap: 6, marginBottom: allTags.length > 0 ? 10 : 24, paddingBottom: 4 }}>
+          <div style={{ display: "flex", overflowX: "auto", gap: 6, marginBottom: 12, paddingBottom: 2 }}>
             {[null, ...CATEGORIES].map(cat => {
               const active = selectedCategory === cat;
               return (
-                <button key={cat ?? "all"} onClick={() => { setSelectedCategory(cat); setQuery(""); if (searchInputRef.current) searchInputRef.current.value = ""; }}
-                  style={{ fontSize: 12, padding: "6px 16px", borderRadius: 20, cursor: "pointer", fontFamily: font, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0, background: active ? "rgba(96,165,250,0.12)" : NL.surface, border: `1px solid ${active ? "rgba(96,165,250,0.40)" : NL.border}`, color: active ? "#60a5fa" : NL.secondary, transition: "all 0.15s" }}>
+                <button key={cat ?? "all"} onClick={() => { setSelectedCategory(cat); setQuery(""); if (searchInputRef.current) searchInputRef.current.value = ""; }} className="cat-pill-btn"
+                  style={{ fontSize: 12, padding: "5px 14px", borderRadius: 20, cursor: "pointer", fontFamily: font, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0, background: active ? "rgba(96,165,250,0.12)" : NL.surface, border: `1px solid ${active ? "rgba(96,165,250,0.40)" : NL.border}`, color: active ? "#60a5fa" : NL.secondary, transition: "all 0.15s" }}>
                   {cat === null ? "All" : `${CAT_ICONS[cat]} ${cat.charAt(0).toUpperCase() + cat.slice(1)}`}
                 </button>
               );
@@ -337,12 +364,12 @@ export default function PacksPage() {
           </div>
 
           {allTags.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 24 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 20 }}>
               {allTags.map(tag => {
                 const active = selectedTags.includes(tag);
                 return (
                   <button key={tag} onClick={() => toggleTag(tag)}
-                    style={{ fontSize: 11, padding: "4px 10px", borderRadius: 20, cursor: "pointer", fontFamily: mono, background: active ? NL.accentDim : NL.subtle, border: `1px solid ${active ? NL.accentBorder : NL.border}`, color: active ? NL.accent : NL.muted, transition: "all 0.15s" }}>
+                    style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, cursor: "pointer", fontFamily: mono, background: active ? NL.accentDim : NL.subtle, border: `1px solid ${active ? NL.accentBorder : NL.border}`, color: active ? NL.accent : NL.muted, transition: "all 0.15s" }}>
                     #{tag}
                   </button>
                 );
@@ -350,33 +377,83 @@ export default function PacksPage() {
             </div>
           )}
 
-          {!loading && packs.length > 0 && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <p style={{ margin: 0, fontSize: 13, color: NL.muted }}>
-                {packs.length} pack{packs.length !== 1 ? "s" : ""}
-                {totalPages > 1 && ` — page ${page} of ${totalPages}`}
-              </p>
-            </div>
-          )}
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 240px", gap: 20, alignItems: "start" }}>
 
-          {loading ? (
-            <div style={{ display: "flex", justifyContent: "center", padding: 80, color: NL.muted }}>
-              <Spinner size={32} />
+            <div>
+              {!loading && packs.length > 0 && (
+                <p style={{ margin: "0 0 14px", fontSize: 12, color: NL.muted }}>
+                  {packs.length} pack{packs.length !== 1 ? "s" : ""}
+                  {totalPages > 1 && ` · page ${page} of ${totalPages}`}
+                </p>
+              )}
+
+              {loading ? (
+                <div style={{ display: "flex", justifyContent: "center", padding: 80, color: NL.muted }}><Spinner size={28} /></div>
+              ) : packs.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "80px 0" }}>
+                  <span style={{ fontSize: 44, display: "block", marginBottom: 12 }}>📦</span>
+                  <p style={{ color: NL.secondary, fontSize: 15, margin: "0 0 4px", fontWeight: 600 }}>No packs found</p>
+                  <p style={{ color: NL.muted, fontSize: 13 }}>Try a different search or category</p>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14 }}>
+                    {pagePacks.map(pack => <PackCard key={pack.id} pack={pack} onDetails={openDetail} />)}
+                  </div>
+                  <Pagination page={page} totalPages={totalPages} onChange={p => { setPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+                </>
+              )}
             </div>
-          ) : packs.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "80px 0" }}>
-              <span style={{ fontSize: 48, display: "block", marginBottom: 16 }}>📦</span>
-              <p style={{ color: NL.secondary, fontSize: 16, margin: "0 0 6px", fontWeight: 600 }}>No packs found</p>
-              <p style={{ color: NL.muted, fontSize: 13 }}>Try a different search or category</p>
-            </div>
-          ) : (
-            <>
-              <div style={{ display: "grid", gridTemplateColumns: cols, gap: 16 }}>
-                {pagePacks.map(pack => <PackCard key={pack.id} pack={pack} onDetails={openDetail} />)}
+
+            {!isMobile && (
+              <div style={{ position: "sticky", top: 24 }}>
+                {trending.length > 0 && sideCard(
+                  <>
+                    {sideTitle("🔥 Trending")}
+                    <div style={{ padding: "6px 0" }}>
+                      {trending.map((p, i) => (
+                        <div key={p.id} onClick={() => openDetail(p)}
+                          style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 14px", cursor: "pointer", transition: "background 0.1s" }}
+                          onMouseEnter={e => e.currentTarget.style.background = NL.elevated}
+                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: NL.accent, width: 16, flexShrink: 0 }}>{i + 1}</span>
+                          {p.thumbnailUrl
+                            ? <img src={p.thumbnailUrl} alt={p.name} style={{ width: 32, height: 32, borderRadius: 6, objectFit: "cover", imageRendering: "pixelated", flexShrink: 0 }} />
+                            : <div style={{ width: 32, height: 32, borderRadius: 6, background: NL.elevated, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>📦</div>
+                          }
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: NL.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</p>
+                            <span style={{ fontSize: 10, color: NL.muted }}>↓ {p.downloadCount ?? 0}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {sideCard(
+                  <>
+                    {sideTitle("Categories")}
+                    <div style={{ padding: "8px 14px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+                      {CATEGORIES.filter(c => catCounts[c] > 0).map(c => (
+                        <button key={c} onClick={() => { setSelectedCategory(c); setQuery(""); if (searchInputRef.current) searchInputRef.current.value = ""; }}
+                          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 8px", borderRadius: 7, border: `1px solid ${selectedCategory === c ? "rgba(96,165,250,0.35)" : "transparent"}`, background: selectedCategory === c ? "rgba(96,165,250,0.10)" : "transparent", cursor: "pointer", fontFamily: font, transition: "all 0.12s", width: "100%" }}>
+                          <span style={{ fontSize: 12, color: selectedCategory === c ? "#60a5fa" : NL.secondary }}>{CAT_ICONS[c]} {c.charAt(0).toUpperCase() + c.slice(1)}</span>
+                          <span style={{ fontSize: 10, color: NL.muted, fontFamily: mono }}>{catCounts[c]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                <div style={{ background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, borderRadius: 14, padding: "16px 14px" }}>
+                  <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 700, color: NL.accent }}>Submit your pack</p>
+                  <p style={{ margin: "0 0 12px", fontSize: 11, color: NL.secondary, lineHeight: 1.5 }}>Have a resource pack? Submit it to get featured in the app.</p>
+                  <a href="/account" style={{ display: "block", textAlign: "center", padding: "7px 0", borderRadius: 8, background: NL.accent, color: "#000", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Submit pack →</a>
+                </div>
               </div>
-              <Pagination page={page} totalPages={totalPages} onChange={p => { setPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
-            </>
-          )}
+            )}
+          </div>
         </div>
       </div>
 

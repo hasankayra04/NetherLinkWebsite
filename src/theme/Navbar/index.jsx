@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FaDiscord, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaCircle, FaLayerGroup, FaFlask, FaUser, FaSignOutAlt, FaPalette, FaChartBar, FaStar, FaPlug, FaEnvelope, FaShieldAlt, FaFileAlt } from "react-icons/fa";
+import { FaDiscord, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaCircle, FaLayerGroup, FaFlask, FaUser, FaSignOutAlt, FaPalette, FaChartBar, FaStar, FaPlug, FaEnvelope, FaShieldAlt, FaFileAlt, FaGamepad, FaUsers, FaServer, FaWrench, FaQuestionCircle } from "react-icons/fa";
 import { useHistory, useLocation } from "@docusaurus/router";
 import sidebars from "../../../sidebars.js";
 import { signOut } from "firebase/auth";
@@ -61,6 +61,42 @@ function SidebarDropdown({ items, onClose, level = 0 }) {
   );
 }
 
+const WIKI_GROUPS = [
+  {
+    label: "Connect from console",
+    items: [
+      { label: "Overview", desc: "How the relay works", path: "/docs/overview", icon: <FaBook size={13} /> },
+      { label: "Friends Mode", desc: "Join via friend list", path: "/docs/howto/friend-howto", icon: <FaUsers size={13} /> },
+      { label: "Java Mode", desc: "Connect to Java servers", path: "/docs/howto/java-howto", icon: <FaCode size={13} /> },
+      { label: "Nintendo Switch", desc: "Setup guide for Switch", path: "/docs/howto/nintendo-howto", icon: <FaGamepad size={13} /> },
+      { label: "PlayStation & Xbox", desc: "Setup for PS & Xbox", path: "/docs/howto/playstation-xbox-howto", icon: <FaGamepad size={13} /> },
+    ],
+  },
+  {
+    label: "Features",
+    items: [
+      { label: "Account & Profile", desc: "Manage your account", path: "/docs/features/account", icon: <FaUser size={13} /> },
+      { label: "Player Lookup", desc: "Search any Bedrock player", path: "/docs/features/player-lookup", icon: <FaSearch size={13} /> },
+      { label: "Server Tracker", desc: "Track servers in-app", path: "/docs/features/server-tracker", icon: <FaServer size={13} /> },
+      { label: "Skins", desc: "Cloud skins & workshop", path: "/docs/features/skins", icon: <FaPalette size={13} /> },
+      { label: "Friends & Chat", desc: "In-app social features", path: "/docs/features/friends-chat", icon: <FaUsers size={13} /> },
+      { label: "Resource Packs", desc: "Browse & submit packs", path: "/docs/features/resource-packs", icon: <FaLayerGroup size={13} /> },
+    ],
+  },
+  {
+    label: "Server owners & help",
+    items: [
+      { label: "Partner Program", desc: "Feature your server", path: "/docs/partner-servers/partner-overview", icon: <FaHandshake size={13} /> },
+      { label: "Discord Bot", desc: "Live status embeds", path: "/docs/discord-bot/discord-bot-setup", icon: <FaDiscord size={13} />, iconColor: "#7289da" },
+      { label: "API", desc: "Integrate with our API", path: "/docs/api/api-overview", icon: <FaPlug size={13} /> },
+      { label: "Nintendo DNS issue", desc: "Fix DNS not working", path: "/docs/issues/dns-issue", icon: <FaQuestionCircle size={13} /> },
+      { label: "Not appearing", desc: "MCCompanion not showing", path: "/docs/issues/does-not-appear-issue", icon: <FaQuestionCircle size={13} /> },
+      { label: "Friends mode fix", desc: "Friends mode not working", path: "/docs/issues/friend-issue", icon: <FaQuestionCircle size={13} /> },
+      { label: "Connection failed", desc: "Multiplayer connection fix", path: "/docs/issues/mcf-issue", icon: <FaQuestionCircle size={13} /> },
+    ],
+  },
+];
+
 const MEGA_GROUPS = [
   {
     label: "TOOLS",
@@ -75,6 +111,7 @@ const MEGA_GROUPS = [
   {
     label: "COMMUNITY",
     items: [
+      { label: "Leaderboards", desc: "Top skins & resource packs", path: "/leaderboards", icon: <FaChartBar size={14} /> },
       { label: "Discord", desc: "Chat with the community", href: "https://discord.gg/xvaNzE35Rs", icon: <FaDiscord size={14} />, iconColor: "#7289da" },
       { label: "Discord Bot", desc: "Live server status in Discord", path: "/discord-bot", icon: <FaDiscord size={14} />, iconColor: "#5865f2" },
       { label: "Partner Program", desc: "Grow with MCCompanion", path: "/partner", icon: <FaHandshake size={14} /> },
@@ -191,7 +228,8 @@ export default function Navbar() {
   function MegaItem({ item }) {
     const [hov, setHov] = useState(false);
     const handleClick = () => {
-      if (item.href) { window.open(item.href, "_blank", "noopener,noreferrer"); setMegaDrop(false); }
+      setMegaDrop(false); setWikiDrop(false);
+      if (item.href) window.open(item.href, "_blank", "noopener,noreferrer");
       else navigate(item.path);
     };
     return (
@@ -255,7 +293,6 @@ export default function Navbar() {
         {!isMobile && (
           <nav style={{ display: "flex", alignItems: "center", gap: 2 }}>
 
-            {/* Wiki dropdown */}
             <div ref={wikiRef} style={{ position: "relative" }}>
               <button onClick={() => setWikiDrop(x => !x)} style={{
                 ...btnReset,
@@ -271,20 +308,24 @@ export default function Navbar() {
                 <FaBook size={12} /> Wiki
                 <FaChevronDown size={9} style={{ transition: "transform 0.2s", transform: wikiDrop ? "rotate(180deg)" : "none" }} />
               </button>
-              {wikiDrop && DOC_SIDEBAR.length > 0 && (
+              {wikiDrop && (
                 <div style={{
-                  position: "absolute", right: 0, top: "calc(100% + 8px)", minWidth: 220,
+                  position: "absolute", right: 0, top: "calc(100% + 8px)",
                   background: NL.surface, border: `1px solid ${NL.borderMid}`,
-                  borderRadius: 12, padding: 6,
-                  boxShadow: "0 12px 40px rgba(0,0,0,0.4)", zIndex: 1001,
-                  maxHeight: "calc(100vh - 100px)", overflowY: "auto",
+                  borderRadius: 14, padding: 16,
+                  boxShadow: "0 16px 48px rgba(0,0,0,0.5)", zIndex: 1001,
+                  display: "flex", gap: 8, minWidth: 560,
                 }}>
-                  <SidebarDropdown items={DOC_SIDEBAR} onClose={() => setWikiDrop(false)} />
+                  {WIKI_GROUPS.map(group => (
+                    <div key={group.label} style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: NL.muted, textTransform: "uppercase", padding: "0 10px", marginBottom: 6 }}>{group.label}</div>
+                      {group.items.map(item => <MegaItem key={item.label} item={{ ...item, _closeWiki: true }} />)}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Mega dropdown */}
             <div ref={megaRef} style={{ position: "relative" }}>
               <button onClick={() => setMegaDrop(x => !x)} style={{
                 ...btnReset,
@@ -434,7 +475,6 @@ export default function Navbar() {
               </div>
             )}
 
-            {/* Mobile: flat list grouped by section */}
             <div style={{ height: 1, background: NL.border, margin: "4px 0" }} />
             <div style={{ padding: "4px 12px 2px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: NL.muted, textTransform: "uppercase" }}>Tools</div>
             {MEGA_GROUPS[0].items.map(item => (
