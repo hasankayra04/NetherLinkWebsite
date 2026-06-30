@@ -410,6 +410,94 @@ function MySubmissionsSection({ submissions, loadingSubs, loadSubmissions }) {
   );
 }
 
+const NOTIF_PREFS_META = [
+  { key: "skin_liked",       label: "Skin liked",               desc: "When someone likes one of your skins" },
+  { key: "comment_received", label: "Comment received",         desc: "When someone comments on your skin or pack" },
+  { key: "pack_approved",    label: "Pack approved",            desc: "When your submitted pack gets approved" },
+  { key: "pack_rejected",    label: "Pack rejected",            desc: "When your submitted pack is not approved" },
+  { key: "friend_request",   label: "Friend request",           desc: "When someone sends you a friend request" },
+  { key: "friend_accepted",  label: "Request accepted",         desc: "When someone accepts your friend request" },
+  { key: "message_received", label: "New message",              desc: "When you receive a direct message" },
+];
+
+function NotificationsTab({ getToken }) {
+  const [prefs, setPrefs] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = await getToken();
+        const r = await fetch(`${API_BASE}/api/notifications/prefs`, { headers: { Authorization: `Bearer ${token}` } });
+        if (r.ok) { const d = await r.json(); setPrefs(d.prefs); }
+      } catch (_) {}
+    })();
+  }, []);
+
+  async function toggle(key) {
+    setPrefs(prev => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  async function save() {
+    setSaving(true);
+    try {
+      const token = await getToken();
+      const r = await fetch(`${API_BASE}/api/notifications/prefs`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(prefs),
+      });
+      if (r.ok) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
+    } catch (_) {}
+    setSaving(false);
+  }
+
+  if (!prefs) return <div style={{ padding: 32, color: NL.muted, fontSize: 13 }}>Loading…</div>;
+
+  return (
+    <div>
+      <p style={{ margin: "0 0 20px", fontSize: 13, color: NL.secondary }}>
+        Choose which events you want to be notified about (in-app and push).
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {NOTIF_PREFS_META.map(({ key, label, desc }) => (
+          <label key={key} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", borderRadius: 10, cursor: "pointer", background: "transparent", transition: "background 0.1s" }}
+            onMouseEnter={e => e.currentTarget.style.background = NL.elevated}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: NL.text }}>{label}</p>
+              <p style={{ margin: "2px 0 0", fontSize: 12, color: NL.secondary }}>{desc}</p>
+            </div>
+            <div onClick={() => toggle(key)} style={{
+              width: 40, height: 22, borderRadius: 11, flexShrink: 0, cursor: "pointer", position: "relative",
+              background: prefs[key] ? NL.accent : NL.elevated,
+              border: `1px solid ${prefs[key] ? NL.accent : NL.borderMid}`,
+              transition: "background 0.2s, border-color 0.2s",
+            }}>
+              <div style={{
+                position: "absolute", top: 2, left: prefs[key] ? 20 : 2,
+                width: 16, height: 16, borderRadius: "50%", background: prefs[key] ? "#0d1117" : NL.muted,
+                transition: "left 0.2s, background 0.2s",
+              }} />
+            </div>
+          </label>
+        ))}
+      </div>
+      <div style={{ marginTop: 20 }}>
+        <button type="button" onClick={save} disabled={saving} style={{
+          padding: "9px 22px", borderRadius: 8, border: "none", cursor: saving ? "not-allowed" : "pointer",
+          background: saved ? NL.success : NL.accent, color: "#0d1117", fontWeight: 700, fontSize: 13,
+          opacity: saving ? 0.7 : 1, transition: "background 0.2s",
+        }}>
+          {saved ? "Saved ✓" : saving ? "Saving…" : "Save"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SubmitPackSection() {
   const inputStyle = { padding: "9px 12px", borderRadius: 9, border: `1px solid ${NL.borderMid}`, background: NL.subtle, color: NL.text, fontSize: 13, fontFamily: font, outline: "none", width: "100%", boxSizing: "border-box" };
 
@@ -818,6 +906,7 @@ export default function AccountPage() {
     { id: "account", label: "Account" },
     { id: "skins", label: "Cloud Skins" },
     { id: "packs", label: "Resource Packs" },
+    { id: "notifications", label: "Notifications" },
   ];
   const [activeTab, setActiveTab] = useState("profile");
 
@@ -854,11 +943,35 @@ export default function AccountPage() {
 
       <div style={{ minHeight: "100vh", background: NL.bg, fontFamily: font }}>
         <div style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "24px 16px 60px" : "44px 24px 80px" }}>
+          {isMobile && profile && (
+            <div style={{ display: "flex", alignItems: "center", gap: 14, background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, padding: "14px 16px", marginBottom: 16 }}>
+              {(avatarPreview || profile.avatarUrl) ? (
+                <img src={avatarPreview || profile.avatarUrl} alt="avatar" style={{ width: 52, height: 52, borderRadius: 13, objectFit: "cover", border: `2px solid ${NL.borderMid}`, flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 52, height: 52, borderRadius: 13, background: NL.accentDim, border: `2px solid ${NL.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: NL.accent, flexShrink: 0 }}>
+                  {(profile.username || "?")[0].toUpperCase()}
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 16, fontWeight: 800, color: NL.text, margin: 0, fontFamily: mono }}>{profile.username}</p>
+                {profile.displayName && <p style={{ fontSize: 12, color: NL.secondary, margin: "2px 0 4px" }}>{profile.displayName}</p>}
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  <Badge color="default">user</Badge>
+                  {roles.map(r => <Badge key={r} color={r === "admin" ? "danger" : "accent"}>{r}</Badge>)}
+                </div>
+              </div>
+              <button type="button" onClick={() => avatarInputRef.current?.click()} disabled={avatarUploading}
+                style={{ padding: "6px 12px", borderRadius: 7, border: `1px solid ${NL.borderMid}`, background: NL.elevated, color: NL.secondary, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: font, flexShrink: 0 }}>
+                {avatarUploading ? <Spinner size={12} /> : "Edit photo"}
+              </button>
+            </div>
+          )}
+
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "260px 1fr", gap: 20, alignItems: "start" }}>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: isMobile ? "none" : "flex", flexDirection: "column", gap: 14 }}>
 
-              <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 16, overflow: "hidden" }}>
+              {!isMobile && <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 16, overflow: "hidden" }}>
                 <div style={{ background: NL.elevated, padding: "24px 20px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, borderBottom: `1px solid ${NL.border}` }}>
                   <div style={{ position: "relative" }}>
                     {(avatarPreview || profile?.avatarUrl) ? (
@@ -919,7 +1032,7 @@ export default function AccountPage() {
                   )}
                   {avatarError && <p style={{ fontSize: 11, color: NL.danger, margin: 0 }}>{avatarError}</p>}
                 </div>
-              </div>
+              </div>}
 
               {stats && (
                 <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14 }}>
@@ -971,7 +1084,7 @@ export default function AccountPage() {
                 {TABS.filter(t => (t.id !== "skins" && t.id !== "packs") || profile).map(tab => {
                   const active = activeTab === tab.id;
                   return (
-                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                    <button type="button" key={tab.id} onClick={() => setActiveTab(tab.id)}
                       style={{ flex: 1, padding: "11px 8px", background: active ? NL.accent : "transparent", border: "none", borderRight: `1px solid ${NL.border}`, color: active ? "#000" : NL.muted, fontSize: isMobile ? 11 : 12, fontWeight: active ? 700 : 500, cursor: "pointer", fontFamily: font, transition: "background 0.15s, color 0.15s", whiteSpace: "nowrap" }}>
                       {tab.label}
                     </button>
@@ -1026,6 +1139,52 @@ export default function AccountPage() {
                       </div>
                     </Card>
                   )
+                )}
+
+                {activeTab === "profile" && isMobile && stats && (
+                  <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14 }}>
+                    <div style={{ padding: "10px 14px", borderBottom: `1px solid ${NL.border}`, fontSize: 11, fontWeight: 700, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.07em" }}>Stats</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+                      {[
+                        { label: "Skins", value: stats.skinCount },
+                        { label: "Skin likes", value: stats.skinLikes },
+                        { label: "Packs submitted", value: stats.packSubmissionCount },
+                        { label: "Packs approved", value: stats.packApprovedCount },
+                      ].map(({ label, value }, i) => (
+                        <div key={label} style={{ padding: "12px 14px", borderRight: i % 2 === 0 ? `1px solid ${NL.border}` : "none", borderBottom: i < 2 ? `1px solid ${NL.border}` : "none" }}>
+                          <p style={{ fontSize: 20, fontWeight: 800, color: NL.accent, margin: 0, fontFamily: mono }}>{value}</p>
+                          <p style={{ fontSize: 10, color: NL.muted, margin: "2px 0 0", lineHeight: 1.3 }}>{label}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "profile" && isMobile && (
+                  <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, overflow: "hidden" }}>
+                    <div style={{ padding: "10px 14px", borderBottom: `1px solid ${NL.border}`, fontSize: 11, fontWeight: 700, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.07em" }}>Recent activity</div>
+                    {activityLoading ? (
+                      <div style={{ padding: "16px", display: "flex", justifyContent: "center", color: NL.muted }}><Spinner size={14} /></div>
+                    ) : activity.length === 0 ? (
+                      <p style={{ padding: "14px 16px", fontSize: 12, color: NL.muted, margin: 0 }}>No activity yet.</p>
+                    ) : (
+                      <div style={{ padding: "4px 0" }}>
+                        {activity.map((ev, i) => {
+                          const meta = ACTIVITY_LABELS[ev.type] ?? { icon: "•", label: ev.type, color: NL.muted };
+                          return (
+                            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 14px", borderBottom: i < activity.length - 1 ? `1px solid ${NL.border}` : "none" }}>
+                              <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{meta.icon}</span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ fontSize: 11, color: meta.color, fontWeight: 600, margin: 0 }}>{meta.label}</p>
+                                <p style={{ fontSize: 11, color: NL.secondary, margin: "1px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ev.name}</p>
+                              </div>
+                              <span style={{ fontSize: 10, color: NL.muted, flexShrink: 0, marginTop: 2 }}>{timeAgo(ev.createdAt)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {activeTab === "account" && (
@@ -1091,6 +1250,7 @@ export default function AccountPage() {
 
                 {activeTab === "skins" && profile && <MySkinsSection username={profile.username} />}
                 {activeTab === "packs" && profile && <SubmitPackSection />}
+                {activeTab === "notifications" && <NotificationsTab getToken={fetchIdToken} />}
               </div>
             </div>
 

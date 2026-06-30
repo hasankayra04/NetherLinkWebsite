@@ -1,5 +1,23 @@
 import { useState, useEffect, useRef } from "react";
-import { FaDiscord, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaCircle, FaLayerGroup, FaFlask, FaUser, FaSignOutAlt, FaPalette, FaChartBar, FaStar, FaPlug, FaEnvelope, FaShieldAlt, FaFileAlt, FaGamepad, FaUsers, FaServer, FaWrench, FaQuestionCircle } from "react-icons/fa";
+import { FaDiscord, FaBook, FaChevronDown, FaSearch, FaCode, FaTachometerAlt, FaHandshake, FaHeart, FaBug, FaCircle, FaLayerGroup, FaFlask, FaUser, FaSignOutAlt, FaPalette, FaChartBar, FaStar, FaPlug, FaEnvelope, FaShieldAlt, FaFileAlt, FaGamepad, FaUsers, FaServer, FaWrench, FaQuestionCircle, FaBell } from "react-icons/fa";
+
+function timeAgo(iso) {
+  const s = Math.floor((Date.now() - new Date(iso)) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
+const NOTIF_TEXT = {
+  skin_liked:       n => `${n.actor_username} liked your skin "${n.target_name}"`,
+  comment_received: n => `${n.actor_username} commented on "${n.target_name}"`,
+  pack_approved:    n => `Your pack "${n.target_name}" has been approved!`,
+  pack_rejected:    n => `Your pack "${n.target_name}" was not approved.`,
+  friend_request:   n => `${n.actor_username} sent you a friend request`,
+  friend_accepted:  n => `${n.actor_username} accepted your friend request`,
+  message_received: n => `New message from ${n.actor_username}`,
+};
 import { useHistory, useLocation } from "@docusaurus/router";
 import sidebars from "../../../sidebars.js";
 import { signOut } from "firebase/auth";
@@ -146,6 +164,10 @@ export default function Navbar() {
   const [megaDrop, setMegaDrop] = useState(false);
   const [megaDropMobile, setMegaDropMobile] = useState({});
   const [userDrop, setUserDrop] = useState(false);
+  const [bellOpen, setBellOpen] = useState(false);
+  const [notifs, setNotifs] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const bellRef = useRef();
   const [isMobile, setIsMobile] = useState(false);
   const menuRef = useRef();
   const hamburgerRef = useRef();
@@ -205,6 +227,42 @@ export default function Navbar() {
     window.addEventListener("scroll", h);
     return () => window.removeEventListener("scroll", h);
   }, []);
+
+  const API_BASE = "https://api.mccompanion.net";
+
+  useEffect(() => {
+    if (!user) { setNotifs([]); setUnreadCount(0); return; }
+    const load = async () => {
+      try {
+        const token = await user.getIdToken();
+        const r = await fetch(`${API_BASE}/api/notifications?limit=20`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!r.ok) return;
+        const d = await r.json();
+        setNotifs(d.notifications ?? []);
+        setUnreadCount(d.unreadCount ?? 0);
+      } catch (_) {}
+    };
+    load();
+    const iv = setInterval(load, 60_000);
+    return () => clearInterval(iv);
+  }, [user]);
+
+  useEffect(() => {
+    if (!bellOpen) return;
+    const h = e => { if (bellRef.current && !bellRef.current.contains(e.target)) setBellOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [bellOpen]);
+
+  async function markAllRead() {
+    if (!user || unreadCount === 0) return;
+    try {
+      const token = await user.getIdToken();
+      await fetch(`${API_BASE}/api/notifications/read`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      setNotifs(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (_) {}
+  }
 
   function navigate(path) {
     history.push(path);
@@ -375,6 +433,77 @@ export default function Navbar() {
 
             <span style={{ width: 1, height: 18, background: NL.border, margin: "0 4px" }} />
 
+            {user && (
+              <div ref={bellRef} style={{ position: "relative" }}>
+                <button type="button" onClick={() => { setBellOpen(x => !x); if (!bellOpen) markAllRead(); }} style={{
+                  ...btnReset, position: "relative",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: 32, height: 32, borderRadius: "50%",
+                  background: bellOpen ? NL.elevated : "transparent",
+                  border: `1px solid ${bellOpen ? NL.borderMid : "transparent"}`,
+                  color: unreadCount > 0 ? NL.accent : NL.secondary,
+                  transition: "background 0.15s",
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.background = NL.elevated; e.currentTarget.style.borderColor = NL.borderMid; }}
+                  onMouseLeave={e => { if (!bellOpen) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "transparent"; } }}
+                  title="Notificaties"
+                >
+                  <FaBell size={13} />
+                  {unreadCount > 0 && (
+                    <span style={{ position: "absolute", top: 3, right: 3, width: 8, height: 8, borderRadius: "50%", background: "#f87171", border: "1.5px solid #0d1117" }} />
+                  )}
+                </button>
+                {bellOpen && (
+                  <div style={{
+                    position: "absolute", right: 0, top: "calc(100% + 8px)", width: 320,
+                    background: NL.surface, border: `1px solid ${NL.borderMid}`,
+                    borderRadius: 12, overflow: "hidden",
+                    boxShadow: "0 12px 40px rgba(0,0,0,0.5)", zIndex: 1001,
+                  }}>
+                    <div style={{ padding: "10px 14px", borderBottom: `1px solid ${NL.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: NL.text }}>Notifications</span>
+                      {unreadCount > 0 && (
+                        <button type="button" onClick={markAllRead} style={{ ...btnReset, fontSize: 11, color: NL.accent }}>Mark all read</button>
+                      )}
+                    </div>
+                    <div style={{ maxHeight: 360, overflowY: "auto" }}>
+                      {notifs.length === 0 ? (
+                        <div style={{ padding: "24px 14px", textAlign: "center", color: NL.muted, fontSize: 13 }}>No notifications yet</div>
+                      ) : notifs.map(n => (
+                        <div key={n.id} style={{
+                          display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 14px",
+                          borderBottom: `1px solid ${NL.border}`,
+                          background: n.read ? "transparent" : "rgba(103,228,4,0.04)",
+                        }}>
+                          {n.actor_avatar ? (
+                            <img src={n.actor_avatar} alt="" style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, marginTop: 1 }} />
+                          ) : (
+                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: NL.elevated, flexShrink: 0, marginTop: 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: NL.muted }}>
+                              {(n.actor_username ?? "?")[0].toUpperCase()}
+                            </div>
+                          )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: 0, fontSize: 12, color: NL.text, lineHeight: 1.4 }}>
+                              {NOTIF_TEXT[n.type]?.(n) ?? n.type}
+                            </p>
+                            <p style={{ margin: "2px 0 0", fontSize: 11, color: NL.muted }}>
+                              {timeAgo(n.created_at)}
+                            </p>
+                          </div>
+                          {!n.read && <span style={{ width: 7, height: 7, borderRadius: "50%", background: NL.accent, flexShrink: 0, marginTop: 4 }} />}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ padding: "8px 14px", borderTop: `1px solid ${NL.border}` }}>
+                      <button type="button" onClick={() => { navigate("/account"); setBellOpen(false); }} style={{ ...btnReset, fontSize: 12, color: NL.accent }}>
+                        Notification settings →
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {user ? (
               <div ref={userRef} style={{ position: "relative" }}>
                 <button onClick={() => setUserDrop(x => !x)} style={{
@@ -429,21 +558,71 @@ export default function Navbar() {
         )}
 
         {isMobile && (
-          <button ref={hamburgerRef} onClick={() => setDrawerOpen(v => !v)} aria-label="Toggle menu"
-            style={{ ...btnReset, display: "flex", flexDirection: "column", gap: 5, padding: 6 }}
-          >
-            {[0, 1, 2].map(i => (
-              <span key={i} style={{
-                display: "block", width: 22, height: 2, borderRadius: 1, background: NL.secondary,
-                transition: "transform 0.2s, opacity 0.2s",
-                transform: drawerOpen
-                  ? i === 0 ? "translateY(7px) rotate(45deg)"
-                    : i === 2 ? "translateY(-7px) rotate(-45deg)" : "none"
-                  : "none",
-                opacity: drawerOpen && i === 1 ? 0 : 1,
-              }} />
-            ))}
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {user && (
+              <div ref={bellRef} style={{ position: "relative" }}>
+                <button type="button" onClick={() => { setBellOpen(x => !x); if (!bellOpen) markAllRead(); }} style={{
+                  ...btnReset, position: "relative",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: 32, height: 32, borderRadius: "50%",
+                  color: unreadCount > 0 ? NL.accent : NL.secondary,
+                }} title="Notifications">
+                  <FaBell size={15} />
+                  {unreadCount > 0 && (
+                    <span style={{ position: "absolute", top: 3, right: 3, width: 8, height: 8, borderRadius: "50%", background: "#f87171", border: "1.5px solid #131820" }} />
+                  )}
+                </button>
+                {bellOpen && (
+                  <div style={{
+                    position: "fixed", top: H + 6, right: 10, left: 10,
+                    background: NL.surface, border: `1px solid ${NL.borderMid}`,
+                    borderRadius: 12, overflow: "hidden",
+                    boxShadow: "0 12px 40px rgba(0,0,0,0.5)", zIndex: 1100,
+                  }}>
+                    <div style={{ padding: "10px 14px", borderBottom: `1px solid ${NL.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: NL.text }}>Notifications</span>
+                      <button type="button" onClick={() => setBellOpen(false)} style={{ ...btnReset, fontSize: 11, color: NL.muted }}>✕</button>
+                    </div>
+                    <div style={{ maxHeight: "50vh", overflowY: "auto" }}>
+                      {notifs.length === 0 ? (
+                        <div style={{ padding: "24px 14px", textAlign: "center", color: NL.muted, fontSize: 13 }}>No notifications yet</div>
+                      ) : notifs.map(n => (
+                        <div key={n.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 14px", borderBottom: `1px solid ${NL.border}`, background: n.read ? "transparent" : "rgba(103,228,4,0.04)" }}>
+                          {n.actor_avatar
+                            ? <img src={n.actor_avatar} alt="" style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, marginTop: 1 }} />
+                            : <div style={{ width: 28, height: 28, borderRadius: "50%", background: NL.elevated, flexShrink: 0, marginTop: 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: NL.muted }}>{(n.actor_username ?? "?")[0].toUpperCase()}</div>
+                          }
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: 0, fontSize: 12, color: NL.text, lineHeight: 1.4 }}>{NOTIF_TEXT[n.type]?.(n) ?? n.type}</p>
+                            <p style={{ margin: "2px 0 0", fontSize: 11, color: NL.muted }}>{timeAgo(n.created_at)}</p>
+                          </div>
+                          {!n.read && <span style={{ width: 7, height: 7, borderRadius: "50%", background: NL.accent, flexShrink: 0, marginTop: 4 }} />}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ padding: "8px 14px", borderTop: `1px solid ${NL.border}` }}>
+                      <button type="button" onClick={() => { navigate("/account"); setBellOpen(false); }} style={{ ...btnReset, fontSize: 12, color: NL.accent }}>Notification settings →</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            <button ref={hamburgerRef} onClick={() => setDrawerOpen(v => !v)} aria-label="Toggle menu"
+              style={{ ...btnReset, display: "flex", flexDirection: "column", gap: 5, padding: 6 }}
+            >
+              {[0, 1, 2].map(i => (
+                <span key={i} style={{
+                  display: "block", width: 22, height: 2, borderRadius: 1, background: NL.secondary,
+                  transition: "transform 0.2s, opacity 0.2s",
+                  transform: drawerOpen
+                    ? i === 0 ? "translateY(7px) rotate(45deg)"
+                      : i === 2 ? "translateY(-7px) rotate(-45deg)" : "none"
+                    : "none",
+                  opacity: drawerOpen && i === 1 ? 0 : 1,
+                }} />
+              ))}
+            </button>
+          </div>
         )}
       </div>
 
