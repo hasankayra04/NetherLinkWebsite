@@ -14,7 +14,7 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initialLiked = false, currentUsername = null }) {
+function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initialLiked = false, currentUsername = null, compact = false }) {
   const [deleting, setDeleting] = useState(false);
   const [likes, setLikes] = useState(initialSkin.like_count ?? 0);
   const [liked, setLiked] = useState(initialLiked);
@@ -56,8 +56,8 @@ function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initial
       onMouseEnter={e => e.currentTarget.style.borderColor = C.accentBorder}
       onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
 
-      <div style={{ background: C.elevated, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px 0", minHeight: 160 }}>
-        <SkinViewerFrontBack skinUrl={initialSkin.public_url} scale={4} />
+      <div style={{ background: C.elevated, display: "flex", alignItems: "center", justifyContent: "center", padding: compact ? "10px 0" : "16px 0", minHeight: compact ? 110 : 160 }}>
+        <SkinViewerFrontBack skinUrl={initialSkin.public_url} scale={compact ? 3 : 4} />
       </div>
 
       {initialSkin.username && !isOwn && (
@@ -134,26 +134,74 @@ function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initial
   );
 }
 
+const ALL_SKINS_PER_PAGE = 24;
+const CARD_W = 160;
+
+function SectionHeader({ emoji, title, sub, action }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        <h2 style={{ fontFamily: font, color: C.text, fontSize: 15, fontWeight: 800, margin: 0, letterSpacing: "-0.01em" }}>{emoji} {title}</h2>
+        {sub && <span style={{ fontSize: 11, color: C.muted }}>{sub}</span>}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function Carousel({ children }) {
+  const ref = useRef(null);
+  function scroll(dir) {
+    if (ref.current) ref.current.scrollBy({ left: dir * (CARD_W + 12) * 3, behavior: "smooth" });
+  }
+  return (
+    <div style={{ position: "relative" }}>
+      <button onClick={() => scroll(-1)} style={{ position: "absolute", left: 4, top: "50%", transform: "translateY(-50%)", zIndex: 2, width: 28, height: 28, borderRadius: "50%", border: `1px solid ${C.borderMid}`, background: C.elevated, color: C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>‹</button>
+      <div ref={ref} style={{ display: "flex", gap: 12, overflowX: "auto", padding: "0 36px 4px", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+        {children}
+      </div>
+      <button onClick={() => scroll(1)} style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", zIndex: 2, width: 28, height: 28, borderRadius: "50%", border: `1px solid ${C.borderMid}`, background: C.elevated, color: C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>›</button>
+    </div>
+  );
+}
+
 function GalleryTab({ user, idToken, onEditSkin }) {
-  const [publicSkins, setPublicSkins] = useState([]);
+  const [recentSkins, setRecentSkins] = useState([]);
   const [topSkins, setTopSkins] = useState([]);
   const [mySkins, setMySkins] = useState([]);
   const [likedIds, setLikedIds] = useState(new Set());
   const [loadingPublic, setLoadingPublic] = useState(true);
   const [loadingMine, setLoadingMine] = useState(false);
   const [error, setError] = useState(null);
+  const [allSkins, setAllSkins] = useState([]);
+  const [allPage, setAllPage] = useState(0);
+  const [allTotal, setAllTotal] = useState(null);
+  const [loadingAll, setLoadingAll] = useState(false);
 
   useEffect(() => {
     setLoadingPublic(true);
     fetch(`${API}/api/skins/gallery`)
       .then(r => r.json())
       .then(d => {
-        setPublicSkins(d.recent || []);
+        setRecentSkins(d.recent || []);
         setTopSkins(d.top || []);
         setLoadingPublic(false);
       })
       .catch(() => { setError("Failed to load skins."); setLoadingPublic(false); });
   }, []);
+
+  useEffect(() => {
+    setLoadingAll(true);
+    const offset = allPage * ALL_SKINS_PER_PAGE;
+    fetch(`${API}/api/skins/gallery/all?limit=${ALL_SKINS_PER_PAGE}&offset=${offset}`)
+      .then(r => r.json())
+      .then(d => {
+        setAllSkins(d.skins || []);
+        if (d.total != null) setAllTotal(d.total);
+        setLoadingAll(false);
+      })
+      .catch(() => setLoadingAll(false));
+  }, [allPage]);
 
   useEffect(() => {
     if (!user || !idToken) { setLikedIds(new Set()); return; }
@@ -169,78 +217,82 @@ function GalleryTab({ user, idToken, onEditSkin }) {
   }, [user, idToken]);
 
   async function deleteSkin(skinId) {
-    await fetch(`${API}/api/skins/me/${skinId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${idToken}` },
-    });
+    await fetch(`${API}/api/skins/me/${skinId}`, { method: "DELETE", headers: { Authorization: `Bearer ${idToken}` } });
     setMySkins(prev => prev.filter(s => s.id !== skinId));
-    setPublicSkins(prev => prev.filter(s => s.id !== skinId));
+    setRecentSkins(prev => prev.filter(s => s.id !== skinId));
+    setAllSkins(prev => prev.filter(s => s.id !== skinId));
   }
 
-  const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 14 };
-
-  function SectionHeader({ emoji, title, sub }) {
-    return (
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}>
-        <h2 style={{ fontFamily: font, color: C.text, fontSize: 17, fontWeight: 800, margin: 0, letterSpacing: "-0.02em" }}>{emoji} {title}</h2>
-        {sub && <span style={{ fontSize: 11, color: C.muted }}>{sub}</span>}
-      </div>
-    );
-  }
-
-  const newSkins = [...publicSkins].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 8);
-  const weekAgo = Date.now() - 7 * 86400_000;
-  const hotSkins = topSkins.filter(s => new Date(s.created_at || s.createdAt).getTime() > weekAgo).slice(0, 5);
+  const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(155px, 1fr))", gap: 12 };
+  const carouselCard = { flexShrink: 0, width: CARD_W };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 36 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
       {error && <div style={{ background: C.dangerDim, border: `1px solid ${C.dangerBorder}`, borderRadius: 10, padding: 12 }}><p style={{ fontFamily: font, color: C.danger, margin: 0 }}>{error}</p></div>}
 
       {user && mySkins.length > 0 && (
         <section>
           <SectionHeader emoji="🎨" title="My Cloud Skins" sub={`${mySkins.length} skin${mySkins.length !== 1 ? "s" : ""}`} />
-          <div style={grid}>
-            {mySkins.map(s => <SkinCard key={s.id} skin={s} isOwn onEdit={onEditSkin} onDelete={deleteSkin} currentUsername={user?.username} />)}
-          </div>
-        </section>
-      )}
-
-      {hotSkins.length > 0 && (
-        <section>
-          <SectionHeader emoji="🔥" title="Hot this week" sub="Most liked in the last 7 days" />
-          <div style={{ ...grid, gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))" }}>
-            {hotSkins.map(s => <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} currentUsername={user?.username} />)}
-          </div>
-        </section>
-      )}
-
-      {!loadingPublic && newSkins.length > 0 && (
-        <section>
-          <SectionHeader emoji="✨" title="Newest uploads" sub="Just added by the community" />
-          <div style={grid}>
-            {newSkins.map(s => <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} currentUsername={user?.username} />)}
-          </div>
+          <Carousel>
+            {mySkins.map(s => (
+              <div key={s.id} style={carouselCard}>
+                <SkinCard skin={s} isOwn compact onEdit={onEditSkin} onDelete={deleteSkin} currentUsername={user?.username} />
+              </div>
+            ))}
+          </Carousel>
         </section>
       )}
 
       {topSkins.length > 0 && (
         <section>
-          <SectionHeader emoji="🏆" title="Most liked" sub="All time top skins" />
+          <SectionHeader emoji="🏆" title="Most liked" sub={`Top ${Math.min(topSkins.length, 20)}`} />
+          <Carousel>
+            {topSkins.slice(0, 20).map(s => (
+              <div key={s.id} style={carouselCard}>
+                <SkinCard skin={s} isOwn={user && s.uid === user.uid} compact onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} currentUsername={user?.username} />
+              </div>
+            ))}
+          </Carousel>
+        </section>
+      )}
+
+      {!loadingPublic && recentSkins.length > 0 && (
+        <section>
+          <SectionHeader emoji="✨" title="Newest uploads" sub="Just added by the community" />
           <div style={grid}>
-            {topSkins.slice(0, 12).map(s => <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} currentUsername={user?.username} />)}
+            {recentSkins.slice(0, 6).map(s => (
+              <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} currentUsername={user?.username} />
+            ))}
           </div>
         </section>
       )}
 
       <section>
-        <SectionHeader emoji="🌍" title="All skins" sub={`${publicSkins.length} community skins`} />
-        {loadingPublic ? (
-          <p style={{ fontFamily: font, color: C.muted }}>Loading…</p>
-        ) : publicSkins.length === 0 ? (
-          <p style={{ fontFamily: font, color: C.muted }}>No public skins yet.</p>
+        <SectionHeader
+          emoji="🌍"
+          title="Browse all"
+          sub={allTotal != null ? `${allTotal} unique skins` : undefined}
+          action={
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button onClick={() => setAllPage(p => Math.max(0, p - 1))} disabled={allPage === 0}
+                style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${C.border}`, background: C.elevated, color: allPage === 0 ? C.muted : C.text, cursor: allPage === 0 ? "default" : "pointer", fontFamily: font, fontSize: 12, fontWeight: 600 }}>←</button>
+              <span style={{ fontFamily: font, fontSize: 12, color: C.muted, minWidth: 60, textAlign: "center" }}>
+                {allPage + 1}{allTotal != null ? ` / ${Math.ceil(allTotal / ALL_SKINS_PER_PAGE)}` : ""}
+              </span>
+              <button onClick={() => setAllPage(p => p + 1)} disabled={allSkins.length < ALL_SKINS_PER_PAGE}
+                style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${C.border}`, background: C.elevated, color: allSkins.length < ALL_SKINS_PER_PAGE ? C.muted : C.text, cursor: allSkins.length < ALL_SKINS_PER_PAGE ? "default" : "pointer", fontFamily: font, fontSize: 12, fontWeight: 600 }}>→</button>
+            </div>
+          }
+        />
+        {loadingAll ? (
+          <p style={{ fontFamily: font, color: C.muted, fontSize: 13 }}>Loading…</p>
+        ) : allSkins.length === 0 ? (
+          <p style={{ fontFamily: font, color: C.muted, fontSize: 13 }}>No public skins yet.</p>
         ) : (
           <div style={grid}>
-            {publicSkins.map(s => <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} currentUsername={user?.username} />)}
+            {allSkins.map(s => (
+              <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} currentUsername={user?.username} />
+            ))}
           </div>
         )}
       </section>

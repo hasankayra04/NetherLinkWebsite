@@ -1523,6 +1523,132 @@ function PackSubmissionsPanel() {
   );
 }
 
+function SkinsPanel() {
+  const [skins, setSkins] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [error, setError] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const [cleaning, setCleaning] = useState(false);
+  const [cleanResult, setCleanResult] = useState(null);
+  const [usernameInput, setUsernameInput] = useState("");
+  const [activeUsername, setActiveUsername] = useState("");
+
+  async function load(username = "") {
+    setLoading(true); setError(null);
+    try {
+      const token = await fetchIdToken();
+      const qs = username ? `?username=${encodeURIComponent(username)}` : "";
+      const res = await fetch(`${API_BASE}/api/admin/skins${qs}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`${res.status}`);
+      setSkins((await res.json()).skins || []);
+      setSearched(true);
+      setActiveUsername(username);
+    } catch (e) { setError("Failed: " + e.message); }
+    finally { setLoading(false); }
+  }
+
+  function handleSearch(e) {
+    e.preventDefault();
+    load(usernameInput.trim());
+  }
+
+  async function deleteSkin(skin) {
+    if (!confirm(`Delete skin "${skin.name}" by ${skin.username || skin.uid}?`)) return;
+    setDeleting(skin.id);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/admin/skins/${skin.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`${res.status}`);
+      setSkins(p => p.filter(s => s.id !== skin.id));
+    } catch (e) { alert("Failed: " + e.message); }
+    finally { setDeleting(null); }
+  }
+
+  async function runCleanup() {
+    if (!confirm("This will delete all blank/empty skins from R2 and DB, and backfill image hashes. Continue?")) return;
+    setCleaning(true); setCleanResult(null);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/admin/skins/cleanup-empty`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      setCleanResult(data);
+    } catch (e) { setCleanResult({ error: e.message }); }
+    finally { setCleaning(false); }
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <Card title="Skin tools" subtitle="Maintenance actions">
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <Btn variant="danger" onClick={runCleanup} disabled={cleaning}>
+            {cleaning ? <><Spinner size={12} /> Running…</> : "🧹 Cleanup empty skins + backfill hashes"}
+          </Btn>
+          {cleanResult && (
+            <div style={{ background: cleanResult.error ? NL.dangerDim : NL.successDim, border: `1px solid ${cleanResult.error ? NL.dangerBorder : "rgba(52,211,153,0.22)"}`, borderRadius: 8, padding: "10px 14px", fontSize: 12, fontFamily: mono, color: cleanResult.error ? NL.danger : NL.success }}>
+              {cleanResult.error
+                ? `Error: ${cleanResult.error}`
+                : `✓ Deleted ${cleanResult.deleted} empty skins · Skipped ${cleanResult.skipped} valid skins${cleanResult.errors?.length ? ` · ${cleanResult.errors.length} errors` : ""}`}
+            </div>
+          )}
+        </div>
+      </Card>
+
+      <Card title={searched ? `Skins${activeUsername ? ` — ${activeUsername}` : " (recent 50)"} (${skins.length})` : "Search skins by user"}
+        action={searched ? iconBtn(() => load(activeUsername), "Refresh", <IC.Refresh />) : null}>
+        <form onSubmit={handleSearch} style={{ display: "flex", gap: 8, marginBottom: searched ? 12 : 0 }}>
+          <input
+            placeholder="Username…"
+            value={usernameInput}
+            onChange={e => setUsernameInput(e.target.value)}
+            style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: `1px solid ${NL.borderMid}`, background: NL.subtle, color: NL.text, fontSize: 13, fontFamily: font, outline: "none" }}
+          />
+          <Btn type="submit" disabled={loading}>
+            {loading ? <Spinner size={12} /> : "Search"}
+          </Btn>
+          {usernameInput && <Btn variant="secondary" type="button" onClick={() => load("")}>Recent 50</Btn>}
+        </form>
+        {!searched ? null : loading ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13, padding: "24px 0", justifyContent: "center" }}><Spinner /> Loading…</div>
+        ) : error ? (
+          <p style={{ fontSize: 12, color: NL.danger, textAlign: "center", padding: "16px 0" }}>{error}</p>
+        ) : skins.length === 0 ? (
+          <p style={{ fontSize: 13, color: NL.muted, textAlign: "center", padding: "32px 0" }}>No skins found.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {skins.map(s => (
+              <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 10, background: NL.elevated, border: `1px solid ${NL.border}` }}>
+                <img src={s.public_url} alt={s.name} style={{ width: 32, height: 32, imageRendering: "pixelated", borderRadius: 4, flexShrink: 0, background: NL.subtle }} onError={e => e.currentTarget.style.opacity = "0.3"} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: NL.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name || "Unnamed"}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+                    <a href={`/u?name=${s.username}`} style={{ fontSize: 11, color: NL.accent, textDecoration: "none", fontFamily: mono }}>{s.username || s.uid?.slice(0, 8)}</a>
+                    <span style={{ fontSize: 10, color: NL.muted }}>{new Date(s.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
+                    {s.like_count > 0 && <span style={{ fontSize: 10, color: NL.muted }}>♥ {s.like_count}</span>}
+                    {!s.is_public && <Badge color="default">private</Badge>}
+                    {s.image_hash && <span style={{ fontSize: 9, fontFamily: mono, color: NL.muted }}>{s.image_hash.slice(0, 8)}</span>}
+                  </div>
+                </div>
+                <a href={s.public_url} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, background: NL.subtle, border: `1px solid ${NL.border}`, color: NL.secondary, textDecoration: "none", flexShrink: 0 }}>
+                  View
+                </a>
+                <button onClick={() => deleteSkin(s)} disabled={deleting === s.id}
+                  style={{ padding: "6px 8px", background: "none", border: "none", cursor: "pointer", color: NL.muted, borderRadius: 6, flexShrink: 0, opacity: deleting === s.id ? 0.4 : 1 }}
+                  onMouseEnter={e => { e.currentTarget.style.color = NL.danger; e.currentTarget.style.background = NL.dangerDim; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = NL.muted; e.currentTarget.style.background = "transparent"; }}
+                  title="Delete skin">
+                  {deleting === s.id ? <Spinner size={12} /> : <IC.Trash />}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
 const TABS = [
   { id: "overview", label: "Overview" },
   { id: "partners", label: "Partners" },
@@ -1530,6 +1656,7 @@ const TABS = [
   { id: "submissions", label: "Submissions" },
   { id: "moderation", label: "Mod" },
   { id: "feedback", label: "Feedback" },
+  { id: "skins", label: "Skins" },
 ];
 
 export default function AdminPage() {
@@ -1595,6 +1722,7 @@ export default function AdminPage() {
           {activeTab === "submissions" && <PackSubmissionsPanel />}
           {activeTab === "moderation" && <ModerationPanel isMobile={isMobile} />}
           {activeTab === "feedback" && <FeedbackPanel />}
+          {activeTab === "skins" && <SkinsPanel />}
         </div>
       </div>
     </Layout>
