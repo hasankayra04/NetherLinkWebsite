@@ -72,7 +72,15 @@ function Card({ title, subtitle, children, action, style: extra }) {
   );
 }
 
-function TabBar({ active, onChange, tabs }) {
+function TabBar({ active, onChange, tabs, mobile }) {
+  if (mobile) {
+    return (
+      <select value={active} onChange={e => onChange(e.target.value)}
+        style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: `1px solid ${NL.borderMid}`, background: NL.elevated, color: NL.text, fontSize: 14, fontFamily: font, fontWeight: 600, outline: "none", cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238d97aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center" }}>
+        {tabs.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+      </select>
+    );
+  }
   return (
     <div style={{ display: "flex", gap: 2, background: NL.subtle, borderRadius: 10, padding: 3, border: `1px solid ${NL.border}` }}>
       {tabs.map(t => (
@@ -1649,6 +1657,368 @@ function SkinsPanel() {
   );
 }
 
+const CACHE_NODES = [
+  { label: "EU", base: "https://eubackend.mccompanion.net" },
+  { label: "US", base: "https://usbackend.mccompanion.net" },
+];
+
+const IPV4_RE = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+const KNOWN_PREFIXES = ["tracker:live:", "auth:", "skins:", "home:", "user:", "leaderboard", "metrics:", "app:", "bots:", "comments:", "packs:", "stream_token:"];
+
+const KEY_CATEGORIES = [
+  { label: "All",        prefix: "",              match: null },
+  { label: "Players",    prefix: "__ip__",         match: k => IPV4_RE.test(k) },
+  { label: "Tracker",    prefix: "tracker:live:",  match: null },
+  { label: "Auth",       prefix: "auth:",          match: null },
+  { label: "Skins",      prefix: "skins:",         match: null },
+  { label: "Home",       prefix: "home:",          match: null },
+  { label: "User",       prefix: "user:",          match: null },
+  { label: "Leaderboard",prefix: "leaderboard",    match: null },
+  { label: "Metrics",    prefix: "metrics:",       match: null },
+  { label: "App",        prefix: "app:",           match: null },
+  { label: "Bots",       prefix: "bots:",          match: null },
+  { label: "Comments",   prefix: "comments:",      match: null },
+  { label: "Packs",      prefix: "packs:",         match: null },
+  { label: "Tokens",     prefix: "stream_token:",  match: null },
+  { label: "Other",      prefix: "__other__",      match: k => !IPV4_RE.test(k) && !KNOWN_PREFIXES.some(p => k.startsWith(p)) },
+];
+
+const EVENT_COLORS = {
+  set:     { bg: NL.accentDim,   border: NL.accentBorder,  text: NL.accent,   label: "SET" },
+  del:     { bg: NL.dangerDim,   border: NL.dangerBorder,  text: NL.danger,   label: "DEL" },
+  clear:   { bg: NL.warnDim,     border: "rgba(251,191,36,0.22)", text: NL.warn, label: "CLEAR" },
+};
+
+function formatTTL(ttlSec) {
+  if (ttlSec == null) return null;
+  if (ttlSec >= 3600) return `${Math.round(ttlSec / 60)}m`;
+  if (ttlSec >= 60) return `${Math.round(ttlSec / 60)}m ${ttlSec % 60}s`;
+  return `${ttlSec}s`;
+}
+
+function JsonViewer({ value }) {
+  const str = JSON.stringify(value, null, 2);
+  return (
+    <pre style={{ margin: 0, fontSize: 11, fontFamily: mono, color: NL.secondary, whiteSpace: "pre-wrap", wordBreak: "break-all", maxHeight: 320, overflowY: "auto", lineHeight: 1.7, padding: "10px 12px", background: "rgba(0,0,0,0.2)", borderRadius: 8 }}>
+      {str}
+    </pre>
+  );
+}
+
+function fmtTime(ts) {
+  if (!ts) return null;
+  return new Date(ts).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function CacheNodePanel({ nodeBase, visible }) {
+  const [entries, setEntries] = useState({});
+  const [timestamps, setTimestamps] = useState({}); // key → client-side ms when last set/seen
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState(null);
+  const [running, setRunning] = useState(false);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [page, setPage] = useState(0);
+  const [selectedKey, setSelectedKey] = useState(null);
+  const [activity, setActivity] = useState([]);
+  const esRef = useRef(null);
+  const PAGE_SIZE = 50;
+  const MAX_ACTIVITY = 150;
+
+  function addActivity(type, key, value) {
+    setActivity(prev => [{ type, key, value, time: Date.now(), id: `${Date.now()}-${Math.random()}` }, ...prev].slice(0, MAX_ACTIVITY));
+  }
+
+  function parseEntries(data) {
+    const all = data.entries ?? data;
+    const now = Date.now();
+    if (Array.isArray(all)) {
+      const map = {}; const ts = {};
+      for (const e of all) { map[e.key] = e; ts[e.key] = e.time ?? now; }
+      return { map, ts };
+    }
+    if (all && typeof all === "object") {
+      const map = {}; const ts = {};
+      for (const [k, v] of Object.entries(all)) { map[k] = { key: k, value: v }; ts[k] = now; }
+      return { map, ts };
+    }
+    return { map: {}, ts: {} };
+  }
+
+  function disconnect() {
+    if (esRef.current) { esRef.current.close(); esRef.current = null; }
+    setRunning(false); setStatus("idle");
+  }
+
+  async function connect() {
+    if (esRef.current) { esRef.current.close(); esRef.current = null; }
+    setStatus("connecting"); setError(null); setEntries({}); setTimestamps({}); setActivity([]); setPage(0);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${nodeBase}/cache/admin/cache/stream-token`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`${res.status}`);
+      const { streamToken } = await res.json();
+      const es = new EventSource(`${nodeBase}/cache/admin/cache/stream?streamToken=${encodeURIComponent(streamToken)}`);
+      esRef.current = es;
+      setRunning(true); setStatus("connected");
+
+      es.addEventListener("snapshot", e => {
+        const data = JSON.parse(e.data);
+        const { map, ts } = parseEntries(data);
+        setEntries(map);
+        setTimestamps(ts);
+        setPage(0);
+      });
+      es.addEventListener("set", e => {
+        const p = JSON.parse(e.data);
+        const now = Date.now();
+        setEntries(prev => ({ ...prev, [p.key]: p }));
+        setTimestamps(prev => ({ ...prev, [p.key]: p.time ?? now }));
+        addActivity("set", p.key, p.value);
+      });
+      es.addEventListener("del", e => {
+        const p = JSON.parse(e.data);
+        setEntries(prev => { const n = { ...prev }; delete n[p.key]; return n; });
+        setTimestamps(prev => { const n = { ...prev }; delete n[p.key]; return n; });
+        addActivity("del", p.key, p.value ?? null);
+      });
+      es.addEventListener("clear", () => {
+        setEntries({});
+        setTimestamps({});
+        addActivity("clear", "(all)", null);
+      });
+      es.onerror = () => { setStatus("error"); setError("Stream disconnected"); setRunning(false); es.close(); esRef.current = null; };
+    } catch (e) { setStatus("error"); setError(e.message); setRunning(false); }
+  }
+
+  useEffect(() => () => { if (esRef.current) { esRef.current.close(); esRef.current = null; } }, []);
+
+  const allKeys = useMemo(() => Object.keys(entries).sort(), [entries]);
+  const filteredKeys = useMemo(() => {
+    let keys = allKeys;
+    if (category) {
+      const cat = KEY_CATEGORIES.find(c => c.prefix === category);
+      if (cat?.match) keys = keys.filter(cat.match);
+      else if (category) keys = keys.filter(k => k.startsWith(category));
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      keys = keys.filter(k => {
+        if (k.toLowerCase().includes(q)) return true;
+        const v = entries[k]?.value;
+        if (!v) return false;
+        try { return JSON.stringify(v).toLowerCase().includes(q); } catch { return false; }
+      });
+    }
+    return keys;
+  }, [allKeys, category, search, entries]);
+
+  const totalPages = Math.ceil(filteredKeys.length / PAGE_SIZE);
+  const pageKeys = filteredKeys.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  const statusColor = { connecting: NL.warn, connected: NL.success, error: NL.danger, idle: NL.muted }[status];
+
+  function summarize(v) {
+    if (v == null) return <span style={{ color: NL.muted, fontStyle: "italic" }}>null</span>;
+    if (typeof v === "string") return <span style={{ color: NL.accent }}>"{v.length > 70 ? v.slice(0, 70) + "…" : v}"</span>;
+    if (typeof v === "number" || typeof v === "boolean") return <span style={{ color: "#60a5fa" }}>{String(v)}</span>;
+    if (Array.isArray(v)) return <span style={{ color: NL.secondary }}>[{v.length} item{v.length !== 1 ? "s" : ""}]</span>;
+    if (typeof v === "object") { const ks = Object.keys(v); return <span style={{ color: NL.secondary }}>{"{" + ks.slice(0, 3).join(", ") + (ks.length > 3 ? ", …" : "") + "}"}</span>; }
+    return <span style={{ color: NL.muted }}>{String(v)}</span>;
+  }
+
+  if (!visible) return null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "12px 16px", background: NL.surface, borderRadius: 12, border: `1px solid ${NL.border}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: statusColor, display: "inline-block", flexShrink: 0 }} />
+          <span style={{ fontSize: 12, fontFamily: mono, color: statusColor, fontWeight: 700 }}>{status}</span>
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          {!running ? (
+            <Btn onClick={connect} variant="primary" size="sm" disabled={status === "connecting"}>
+              {status === "connecting" ? <><Spinner size={11} /> Connecting…</> : "▶ Connect"}
+            </Btn>
+          ) : (
+            <Btn onClick={disconnect} variant="danger" size="sm">■ Disconnect</Btn>
+          )}
+          {running && <Btn onClick={connect} variant="secondary" size="sm"><IC.Refresh /> Reconnect</Btn>}
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 16, fontSize: 11, fontFamily: mono, color: NL.muted }}>
+          <span><span style={{ color: NL.text, fontWeight: 700 }}>{filteredKeys.length}</span> / {allKeys.length} keys</span>
+          {running && <span style={{ color: NL.success }}>● live</span>}
+        </div>
+        {error && <p style={{ width: "100%", margin: 0, fontSize: 11, color: NL.danger }}>{error}</p>}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 16px", background: NL.surface, borderRadius: 12, border: `1px solid ${NL.border}` }}>
+        <input
+          placeholder="Search key or value (playerName, server, gamertag…)"
+          value={search}
+          onChange={e => { setSearch(e.target.value); setPage(0); setSelectedKey(null); }}
+          style={{ padding: "8px 12px", borderRadius: 8, border: `1px solid ${NL.borderMid}`, background: NL.subtle, color: NL.text, fontSize: 12, fontFamily: mono, outline: "none", width: "100%", boxSizing: "border-box" }}
+        />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          {KEY_CATEGORIES.map(cat => {
+            const active = category === cat.prefix;
+            const count = cat.prefix === "" ? allKeys.length
+              : cat.match ? allKeys.filter(cat.match).length
+              : allKeys.filter(k => k.startsWith(cat.prefix)).length;
+            if (count === 0 && cat.prefix !== "") return null;
+            return (
+              <button key={cat.prefix} onClick={() => { setCategory(cat.prefix); setPage(0); setSelectedKey(null); }}
+                style={{ padding: "4px 10px", fontSize: 11, fontWeight: 600, borderRadius: 20, border: `1px solid ${active ? NL.accentBorder : NL.border}`, background: active ? NL.accentDim : NL.elevated, color: active ? NL.accent : NL.secondary, cursor: "pointer", fontFamily: font, transition: "all 0.12s", display: "flex", alignItems: "center", gap: 5 }}>
+                {cat.label}
+                <span style={{ fontSize: 10, opacity: 0.7 }}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {status === "idle" && (
+        <div style={{ textAlign: "center", padding: "48px 0", color: NL.muted, fontSize: 13 }}>Press Connect to start the live stream.</div>
+      )}
+
+      {(status !== "idle") && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 12, alignItems: "start" }}>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {status === "connecting" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13, padding: "32px 0", justifyContent: "center" }}><Spinner /> Loading snapshot…</div>
+            )}
+            {status === "connected" && filteredKeys.length === 0 && (
+              <div style={{ textAlign: "center", padding: "32px 0", color: NL.muted, fontSize: 13 }}>
+                {search || category ? "No keys match the current filter." : "Cache is empty."}
+              </div>
+            )}
+            {pageKeys.map(key => {
+              const entry = entries[key];
+              const ttlSec = entry.expiresAt ? Math.max(0, Math.round((entry.expiresAt - Date.now()) / 1000)) : null;
+              const isSelected = selectedKey === key;
+              const isIp = IPV4_RE.test(key);
+              const v = entry.value;
+              const playerLabel = isIp && v ? [v.gamertag, v.xuid ? `xuid:${String(v.xuid).slice(0,8)}` : null].filter(Boolean).join(" · ") : null;
+              const serverLabel = isIp && v ? [v.remoteServerIp, v.remoteServerPort ? `:${v.remoteServerPort}` : null].filter(Boolean).join("") : null;
+              return (
+                <div key={key} style={{ borderRadius: 10, background: NL.surface, border: `1px solid ${isSelected ? NL.accentBorder : NL.border}`, overflow: "hidden", transition: "border-color 0.12s" }}>
+                  <div onClick={() => setSelectedKey(isSelected ? null : key)}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", cursor: "pointer" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ fontSize: 12, fontFamily: mono, fontWeight: 700, color: isSelected ? NL.accent : NL.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{key}</div>
+                        {isIp && <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: "rgba(96,165,250,0.12)", border: "1px solid rgba(96,165,250,0.25)", color: "#60a5fa", fontFamily: mono, flexShrink: 0 }}>player</span>}
+                      </div>
+                      <div style={{ fontSize: 11, fontFamily: mono, color: NL.secondary, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {playerLabel || summarize(entry.value)}
+                        {serverLabel && <span style={{ color: NL.muted }}> → {serverLabel}</span>}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
+                      {timestamps[key] && (
+                        <span style={{ fontSize: 10, fontFamily: mono, color: NL.muted }}>{fmtTime(timestamps[key])}</span>
+                      )}
+                      {ttlSec !== null && (
+                        <span style={{ fontSize: 10, fontFamily: mono, color: ttlSec < 30 ? NL.danger : ttlSec < 120 ? NL.warn : NL.muted, background: NL.elevated, padding: "2px 6px", borderRadius: 4, border: `1px solid ${NL.border}` }}>
+                          {formatTTL(ttlSec)}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ color: NL.muted, fontSize: 10, flexShrink: 0 }}>{isSelected ? "▲" : "▼"}</span>
+                  </div>
+                  {isSelected && (
+                    <div style={{ borderTop: `1px solid ${NL.border}`, padding: "10px 12px", background: NL.bg }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.07em", fontFamily: mono }}>Value</span>
+                        <button onClick={() => navigator.clipboard?.writeText(JSON.stringify(entry.value, null, 2))}
+                          style={{ fontSize: 10, padding: "2px 8px", borderRadius: 5, background: NL.elevated, border: `1px solid ${NL.border}`, color: NL.secondary, cursor: "pointer", fontFamily: font }}>
+                          Copy JSON
+                        </button>
+                      </div>
+                      <JsonViewer value={entry.value} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {totalPages > 1 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", paddingTop: 4 }}>
+                <Btn variant="secondary" size="sm" disabled={page === 0} onClick={() => { setPage(p => p - 1); setSelectedKey(null); }}>‹ Prev</Btn>
+                <span style={{ fontSize: 11, color: NL.secondary, fontFamily: mono }}>{page + 1} / {totalPages}</span>
+                <Btn variant="secondary" size="sm" disabled={page >= totalPages - 1} onClick={() => { setPage(p => p + 1); setSelectedKey(null); }}>Next ›</Btn>
+              </div>
+            )}
+          </div>
+
+          {/* Live activity feed */}
+          <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 12, overflow: "hidden", position: "sticky", top: 80 }}>
+            <div style={{ padding: "10px 14px", borderBottom: `1px solid ${NL.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: NL.text }}>Live activity</span>
+              <div style={{ display: "flex", gap: 6 }}>
+                {activity.length > 0 && (
+                  <button onClick={() => setActivity([])} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 5, background: NL.elevated, border: `1px solid ${NL.border}`, color: NL.muted, cursor: "pointer", fontFamily: font }}>Clear</button>
+                )}
+                <span style={{ fontSize: 10, fontFamily: mono, color: NL.muted }}>{activity.length}</span>
+              </div>
+            </div>
+            <div style={{ maxHeight: 520, overflowY: "auto", padding: "6px 8px", display: "flex", flexDirection: "column", gap: 3 }}>
+              {activity.length === 0 && (
+                <p style={{ fontSize: 11, color: NL.muted, textAlign: "center", padding: "20px 0", margin: 0 }}>
+                  {running ? "Waiting for events…" : "Not connected."}
+                </p>
+              )}
+              {activity.map(ev => {
+                const c = EVENT_COLORS[ev.type] || EVENT_COLORS.set;
+                return (
+                  <div key={ev.id} onClick={() => setSelectedKey(ev.key !== "(all)" ? ev.key : null)}
+                    style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: "5px 7px", borderRadius: 7, background: c.bg, border: `1px solid ${c.border}`, cursor: ev.key !== "(all)" ? "pointer" : "default" }}>
+                    <span style={{ fontSize: 9, fontWeight: 800, color: c.text, fontFamily: mono, flexShrink: 0, marginTop: 1, padding: "1px 5px", borderRadius: 3, background: `${c.border}` }}>{c.label}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 10, fontFamily: mono, color: NL.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.key}</div>
+                      {ev.value != null && (
+                        <div style={{ fontSize: 10, fontFamily: mono, color: NL.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{summarize(ev.value)}</div>
+                      )}
+                    </div>
+                    <span style={{ fontSize: 9, color: NL.muted, flexShrink: 0, fontFamily: mono, marginTop: 1 }}>
+                      {new Date(ev.time).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CachePanel() {
+  const [activeNode, setActiveNode] = useState(0);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", gap: 3, background: NL.subtle, borderRadius: 10, padding: 3, border: `1px solid ${NL.border}`, width: "fit-content" }}>
+        {CACHE_NODES.map((n, i) => (
+          <button key={n.label} onClick={() => setActiveNode(i)}
+            style={{ padding: "6px 20px", fontSize: 13, fontWeight: 700, borderRadius: 8, border: "none", cursor: "pointer", fontFamily: font, background: activeNode === i ? NL.accent : "transparent", color: activeNode === i ? "#0d1a18" : NL.secondary, transition: "background 0.15s, color 0.15s" }}>
+            {n.label}
+            <span style={{ fontSize: 10, marginLeft: 6, opacity: 0.7, fontFamily: mono }}>{n.base.replace("https://", "").replace(".mccompanion.net", "")}</span>
+          </button>
+        ))}
+      </div>
+
+      {CACHE_NODES.map((n, i) => (
+        <CacheNodePanel key={n.label} nodeBase={n.base} visible={activeNode === i} />
+      ))}
+    </div>
+  );
+}
+
 const TABS = [
   { id: "overview", label: "Overview" },
   { id: "partners", label: "Partners" },
@@ -1657,6 +2027,7 @@ const TABS = [
   { id: "moderation", label: "Mod" },
   { id: "feedback", label: "Feedback" },
   { id: "skins", label: "Skins" },
+  { id: "cache", label: "Cache" },
 ];
 
 export default function AdminPage() {
@@ -1710,7 +2081,6 @@ export default function AdminPage() {
           {activeTab === "overview" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <RelayStatsCard />
-              <PartnersOverviewCard isMobile={isMobile} />
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
                 <NotificationCard />
                 <QuickActionsCard />
@@ -1723,6 +2093,7 @@ export default function AdminPage() {
           {activeTab === "moderation" && <ModerationPanel isMobile={isMobile} />}
           {activeTab === "feedback" && <FeedbackPanel />}
           {activeTab === "skins" && <SkinsPanel />}
+          {activeTab === "cache" && <CachePanel />}
         </div>
       </div>
     </Layout>
