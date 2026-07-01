@@ -536,7 +536,6 @@ export function EditorTab({ user, idToken, initialSkin, onSaved }) {
   const [nameInput, setNameInput] = useState("");
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Create canvas only on client
   useEffect(() => {
     const c = document.createElement("canvas");
     c.width = CANVAS_SIZE;
@@ -650,7 +649,15 @@ export function EditorTab({ user, idToken, initialSkin, onSaved }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, alignItems: "start" }}>
+      <style>{`
+        .editor-grid { display: grid; grid-template-columns: 1fr auto; gap: 24; align-items: start; }
+        .editor-preview { display: flex; flex-direction: column; align-items: center; gap: 16; flex-shrink: 0; position: sticky; top: 20; }
+        @media (max-width: 640px) {
+          .editor-grid { display: flex !important; flex-direction: column-reverse !important; gap: 16px !important; }
+          .editor-preview { position: static !important; width: 100% !important; flex-direction: row !important; align-items: flex-start !important; flex-wrap: wrap !important; }
+        }
+      `}</style>
+      <div className="editor-grid" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, alignItems: "start" }}>
         <div data-uvcol style={{ minWidth: 0, position: "relative" }}>
           <h3 style={{ fontFamily: font, color: C.text, fontWeight: 700, fontSize: 16, marginTop: 0, marginBottom: 12 }}>
             2D UV Editor
@@ -658,7 +665,7 @@ export function EditorTab({ user, idToken, initialSkin, onSaved }) {
           <UVEditor bufferRef={bufferRef} onUpdate={scheduleUpdate3D} renderRef={renderRef} />
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, flexShrink: 0, position: "sticky", top: 20 }}>
+        <div className="editor-preview" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, flexShrink: 0, position: "sticky", top: 20 }}>
           <h3 style={{ fontFamily: font, color: C.text, fontWeight: 700, fontSize: 16, marginTop: 0, marginBottom: 0 }}>
             3D Preview
           </h3>
