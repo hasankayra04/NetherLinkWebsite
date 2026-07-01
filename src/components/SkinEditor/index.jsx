@@ -65,7 +65,89 @@ export function Tag({ children, color }) {
   );
 }
 
-export function SkinViewer3D({ skinUrl, scale = 5 }) {
+function drawMirrored(ctx, img, sx, sy, sw, sh, dx, dy, dw, dh) {
+  ctx.save();
+  ctx.translate(dx + dw, dy);
+  ctx.scale(-1, 1);
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, dw, dh);
+  ctx.restore();
+}
+
+function detectSkinInfo(img) {
+  try {
+    const tmp = document.createElement("canvas");
+    tmp.width = 64; tmp.height = 64;
+    const c = tmp.getContext("2d");
+    c.drawImage(img, 0, 0);
+    const hasAlpha = (data) => data.some((v, i) => i % 4 === 3 && v > 0);
+    const is64x64 = img.naturalHeight >= 64 && hasAlpha(c.getImageData(0, 32, 64, 32).data);
+    const hasLeftArm = is64x64 && hasAlpha(c.getImageData(36, 52, 4, 12).data);
+    const hasLeftLeg = is64x64 && hasAlpha(c.getImageData(20, 52, 4, 12).data);
+    const isSlim = is64x64 && !hasAlpha(c.getImageData(54, 20, 1, 12).data);
+    return { is64x64, hasLeftArm, hasLeftLeg, isSlim };
+  } catch {
+    const is64x64 = img.naturalHeight >= 64;
+    return { is64x64, hasLeftArm: is64x64, hasLeftLeg: is64x64, isSlim: false };
+  }
+}
+
+function drawSkinOnCanvas(ctx, img, scale, view, skinInfo) {
+  const s = scale;
+  const { is64x64, hasLeftArm, hasLeftLeg, isSlim } = skinInfo || {
+    is64x64: img.naturalHeight >= 64, hasLeftArm: img.naturalHeight >= 64, hasLeftLeg: img.naturalHeight >= 64, isSlim: false,
+  };
+  const armW = isSlim ? 3 : 4;
+  const rArmBackX = isSlim ? 51 : 52;
+  const lArmBackX = isSlim ? 43 : 44;
+  const lArmOLBackX = isSlim ? 59 : 60;
+  const rArmOLBackX = isSlim ? 51 : 52;
+  ctx.imageSmoothingEnabled = false;
+  if (view === "back") {
+    ctx.drawImage(img, 24, 8, 8, 8, 4 * s, 0, 8 * s, 8 * s);
+    if (is64x64) ctx.drawImage(img, 56, 8, 8, 8, 4 * s, 0, 8 * s, 8 * s);
+    ctx.drawImage(img, 32, 20, 8, 12, 4 * s, 8 * s, 8 * s, 12 * s);
+    if (is64x64) ctx.drawImage(img, 32, 36, 8, 12, 4 * s, 8 * s, 8 * s, 12 * s);
+    if (hasLeftArm) {
+      ctx.drawImage(img, lArmBackX, 52, armW, 12, 0, 8 * s, 4 * s, 12 * s);
+      ctx.drawImage(img, lArmOLBackX, 52, armW, 12, 0, 8 * s, 4 * s, 12 * s);
+    } else {
+      drawMirrored(ctx, img, rArmBackX, 20, armW, 12, 0, 8 * s, 4 * s, 12 * s);
+    }
+    ctx.drawImage(img, rArmBackX, 20, armW, 12, 12 * s, 8 * s, 4 * s, 12 * s);
+    if (is64x64) ctx.drawImage(img, rArmOLBackX, 36, armW, 12, 12 * s, 8 * s, 4 * s, 12 * s);
+    if (hasLeftLeg) {
+      ctx.drawImage(img, 28, 52, 4, 12, 4 * s, 20 * s, 4 * s, 12 * s);
+      ctx.drawImage(img, 12, 52, 4, 12, 4 * s, 20 * s, 4 * s, 12 * s);
+    } else {
+      drawMirrored(ctx, img, 12, 20, 4, 12, 4 * s, 20 * s, 4 * s, 12 * s);
+    }
+    ctx.drawImage(img, 12, 20, 4, 12, 8 * s, 20 * s, 4 * s, 12 * s);
+    if (is64x64) ctx.drawImage(img, 12, 36, 4, 12, 8 * s, 20 * s, 4 * s, 12 * s);
+  } else {
+    ctx.drawImage(img, 8, 8, 8, 8, 4 * s, 0, 8 * s, 8 * s);
+    ctx.drawImage(img, 40, 8, 8, 8, 4 * s, 0, 8 * s, 8 * s);
+    ctx.drawImage(img, 20, 20, 8, 12, 4 * s, 8 * s, 8 * s, 12 * s);
+    if (is64x64) ctx.drawImage(img, 20, 36, 8, 12, 4 * s, 8 * s, 8 * s, 12 * s);
+    ctx.drawImage(img, 44, 20, armW, 12, 0, 8 * s, 4 * s, 12 * s);
+    if (is64x64) ctx.drawImage(img, 44, 36, armW, 12, 0, 8 * s, 4 * s, 12 * s);
+    if (hasLeftArm) {
+      ctx.drawImage(img, 36, 52, armW, 12, 12 * s, 8 * s, 4 * s, 12 * s);
+      ctx.drawImage(img, 52, 52, armW, 12, 12 * s, 8 * s, 4 * s, 12 * s);
+    } else {
+      drawMirrored(ctx, img, 44, 20, armW, 12, 12 * s, 8 * s, 4 * s, 12 * s);
+    }
+    ctx.drawImage(img, 4, 20, 4, 12, 4 * s, 20 * s, 4 * s, 12 * s);
+    if (is64x64) ctx.drawImage(img, 4, 36, 4, 12, 4 * s, 20 * s, 4 * s, 12 * s);
+    if (hasLeftLeg) {
+      ctx.drawImage(img, 20, 52, 4, 12, 8 * s, 20 * s, 4 * s, 12 * s);
+      ctx.drawImage(img, 4, 52, 4, 12, 8 * s, 20 * s, 4 * s, 12 * s);
+    } else {
+      drawMirrored(ctx, img, 4, 20, 4, 12, 8 * s, 20 * s, 4 * s, 12 * s);
+    }
+  }
+}
+
+export function SkinViewer3D({ skinUrl, scale = 5, view = "front" }) {
   const canvasRef = useRef(null);
   useEffect(() => {
     if (!canvasRef.current || !skinUrl) return;
@@ -75,19 +157,43 @@ export function SkinViewer3D({ skinUrl, scale = 5 }) {
     img.crossOrigin = "anonymous";
     img.onload = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.imageSmoothingEnabled = false;
-      const s = scale;
-      ctx.drawImage(img, 8, 8, 8, 8, 4 * s, 0, 8 * s, 8 * s);
-      ctx.drawImage(img, 40, 8, 8, 8, 4 * s, 0, 8 * s, 8 * s);
-      ctx.drawImage(img, 20, 20, 8, 12, 4 * s, 8 * s, 8 * s, 12 * s);
-      ctx.drawImage(img, 44, 20, 4, 12, 0, 8 * s, 4 * s, 12 * s);
-      ctx.drawImage(img, 36, 52, 4, 12, 12 * s, 8 * s, 4 * s, 12 * s);
-      ctx.drawImage(img, 4, 20, 4, 12, 4 * s, 20 * s, 4 * s, 12 * s);
-      ctx.drawImage(img, 20, 52, 4, 12, 8 * s, 20 * s, 4 * s, 12 * s);
+      drawSkinOnCanvas(ctx, img, scale, view, detectSkinInfo(img));
+    };
+    img.src = skinUrl;
+  }, [skinUrl, scale, view]);
+  return <canvas ref={canvasRef} width={16 * scale} height={32 * scale} style={{ display: "block", imageRendering: "pixelated" }} />;
+}
+
+export function SkinViewerFrontBack({ skinUrl, scale = 4 }) {
+  const frontRef = useRef(null);
+  const backRef = useRef(null);
+  useEffect(() => {
+    if (!skinUrl) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const info = detectSkinInfo(img);
+      if (frontRef.current) {
+        const ctx = frontRef.current.getContext("2d");
+        ctx.clearRect(0, 0, frontRef.current.width, frontRef.current.height);
+        drawSkinOnCanvas(ctx, img, scale, "front", info);
+      }
+      if (backRef.current) {
+        const ctx = backRef.current.getContext("2d");
+        ctx.clearRect(0, 0, backRef.current.width, backRef.current.height);
+        drawSkinOnCanvas(ctx, img, scale, "back", info);
+      }
     };
     img.src = skinUrl;
   }, [skinUrl, scale]);
-  return <canvas ref={canvasRef} width={16 * scale} height={32 * scale} style={{ display: "block", imageRendering: "pixelated" }} />;
+  const w = 16 * scale;
+  const h = 32 * scale;
+  return (
+    <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+      <canvas ref={frontRef} width={w} height={h} style={{ display: "block", imageRendering: "pixelated" }} />
+      <canvas ref={backRef} width={w} height={h} style={{ display: "block", imageRendering: "pixelated", opacity: 0.85 }} />
+    </div>
+  );
 }
 
 export function LiveSkinViewer3D({ getDataUrl, triggerRef, width = 220, height = 320 }) {
@@ -149,18 +255,17 @@ export function UVEditor({ bufferRef, onUpdate, renderRef }) {
 
   useEffect(() => {
     function recalc() {
-      const col = containerRef.current?.closest('[data-uvcol]');
-      const el = col ?? containerRef.current?.parentElement;
-      if (!el) return;
-      const w = el.clientWidth - 4;
-      const h = window.innerHeight - 340;
+      const canvas = containerRef.current;
+      if (!canvas) return;
+      const w = canvas.clientWidth - 4;
+      const h = window.innerHeight - 160;
       const fit = Math.floor(Math.min(w, h) / DISPLAY_SIZE * 8) / 8;
       setFitZoom(Math.max(0.25, Math.min(4, fit)));
     }
     const t = setTimeout(recalc, 50);
-    const col = containerRef.current?.closest('[data-uvcol]') ?? containerRef.current?.parentElement;
-    const ro = col && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(recalc) : null;
-    if (ro && col) ro.observe(col);
+    const ro = containerRef.current && typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(recalc) : null;
+    if (ro && containerRef.current) ro.observe(containerRef.current);
     window.addEventListener('resize', recalc);
     return () => { clearTimeout(t); ro?.disconnect(); window.removeEventListener('resize', recalc); };
   }, []);
@@ -187,16 +292,24 @@ export function UVEditor({ bufferRef, onUpdate, renderRef }) {
     ctx.drawImage(buf, 0, 0, size, size);
 
     if (showGuide) {
+      const bufCtx = buf.getContext("2d");
+      const bottomData = bufCtx.getImageData(0, 32, CANVAS_SIZE, 32);
+      const isLegacy = !bottomData.data.some((v, i) => i % 4 === 3 && v > 0);
+      const legacyRegions = new Set(["Head", "Body", "R.Leg", "R.Arm"]);
+
       const fontSize = Math.max(8, Math.min(px * 2.5, 14));
       ctx.font = `bold ${fontSize}px monospace`;
       ctx.textBaseline = "top";
+      const legacyLabelMap = { "R.Leg": "Leg", "R.Arm": "Arm" };
       SKIN_REGIONS.forEach(({ label, x, y, w, h, color: rc }) => {
+        if (isLegacy && !legacyRegions.has(label)) return;
+        const displayLabel = isLegacy ? (legacyLabelMap[label] || label) : label;
         const rx = x * px, ry = y * px, rw = w * px, rh = h * px;
         ctx.strokeStyle = rc + "dd";
         ctx.lineWidth = 1.5;
         ctx.strokeRect(rx + 0.75, ry + 0.75, rw - 1.5, rh - 1.5);
         ctx.fillStyle = rc + "cc";
-        ctx.fillText(label, rx + 3, ry + 3);
+        ctx.fillText(displayLabel, rx + 3, ry + 3);
       });
     }
 
@@ -412,11 +525,18 @@ export function UVEditor({ bufferRef, onUpdate, renderRef }) {
 
   function clearCanvas() {
     pushUndo();
-    const buf = bufferRef.current;
-    const ctx = buf.getContext("2d");
-    ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    renderDisplay();
-    onUpdate();
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const buf = bufferRef.current;
+      if (!buf) return;
+      const ctx = buf.getContext("2d");
+      ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      ctx.drawImage(img, 0, 0);
+      renderDisplay();
+      onUpdate();
+    };
+    img.src = STEVE_SKIN_URL;
   }
 
   function uploadPNG(file) {
@@ -432,7 +552,8 @@ export function UVEditor({ bufferRef, onUpdate, renderRef }) {
       const ctx = buf.getContext("2d");
       ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(img, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      const scale = img.width === 128 ? 0.5 : 1;
+      ctx.drawImage(img, 0, 0, img.width * scale, img.height * scale);
       renderDisplay();
       onUpdate();
     };
@@ -441,45 +562,128 @@ export function UVEditor({ bufferRef, onUpdate, renderRef }) {
 
   const displayPx = DISPLAY_SIZE * zoom;
 
+  const toolBtn = (id, emoji, label, key) => (
+    <button
+      key={id}
+      type="button"
+      title={`${label} (${key})`}
+      onClick={() => setTool(id)}
+      style={{
+        fontFamily: font, fontSize: 16, height: 38, borderRadius: 8,
+        border: `1px solid ${tool === id ? C.accent : C.border}`,
+        background: tool === id ? C.accent + "22" : C.elevated,
+        color: tool === id ? C.accent : C.secondary,
+        cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+        transition: "border-color .12s, background .12s",
+      }}
+    >{emoji}</button>
+  );
+
+  const divider = (
+    <div style={{ height: 1, background: C.borderMid, margin: "4px 0" }} />
+  );
+
+  const sidebarLabel = (text) => (
+    <span style={{ fontSize: 10, fontWeight: 600, color: C.muted, fontFamily: font, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+      {text}
+    </span>
+  );
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-        <Btn small variant={tool === "draw" ? "accent" : "default"} onClick={() => setTool("draw")} title="Draw (D)">✏️</Btn>
-        <Btn small variant={tool === "erase" ? "accent" : "default"} onClick={() => setTool("erase")} title="Erase (E)">🧹</Btn>
-        <Btn small variant={tool === "fill" ? "accent" : "default"} onClick={() => setTool("fill")} title="Fill (F)">🪣</Btn>
-        <Btn small variant={tool === "line" ? "accent" : "default"} onClick={() => setTool("line")} title="Line (L)">📏</Btn>
-        <Btn small variant={tool === "pick" ? "accent" : "default"} onClick={() => setTool("pick")} title="Pick color (P)">🩸</Btn>
-        <input type="color" value={color} onChange={e => handleColorChange(e.target.value)} title="Color"
-          style={{ width: 30, height: 30, border: `2px solid ${C.border}`, borderRadius: 6, cursor: "pointer", background: "none", padding: 0 }} />
-        <div style={{ width: 1, height: 24, background: C.border, margin: "0 2px" }} />
-        {[1, 2, 4].map(s => (
-          <button key={s} type="button" onClick={() => setBrushSize(s)} title={`Brush ${s}px`}
-            style={{
-              fontFamily: font, fontSize: 11, fontWeight: 700,
-              width: 28, height: 28, borderRadius: 6, border: `1px solid ${brushSize === s ? C.accent : C.border}`,
-              background: brushSize === s ? C.accent + "33" : C.elevated,
-              color: brushSize === s ? C.accent : C.secondary, cursor: "pointer",
-            }}>{s}px</button>
-        ))}
-        <div style={{ width: 1, height: 24, background: C.border, margin: "0 2px" }} />
-        <Btn small variant={showGuide ? "accent" : "default"} onClick={() => setShowGuide(g => !g)} title="Toggle UV guide">Guide</Btn>
-        <div style={{ width: 1, height: 24, background: C.border, margin: "0 2px" }} />
-        <Btn small onClick={undo} title="Undo (Ctrl+Z)">↩</Btn>
-        <Btn small variant="danger" onClick={clearCanvas}>Clear</Btn>
-        <div style={{ width: 1, height: 24, background: C.border, margin: "0 2px" }} />
-        <button type="button" onClick={() => setZoomOffset(o => +(o - 0.25).toFixed(2))} title="Zoom out"
-          style={{ fontFamily: font, fontSize: 14, fontWeight: 700, width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.border}`, background: C.elevated, color: C.secondary, cursor: "pointer" }}>−</button>
-        <span style={{ fontSize: 11, color: C.muted, fontFamily: font, minWidth: 36, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
-        <button type="button" onClick={() => setZoomOffset(o => +(o + 0.25).toFixed(2))} title="Zoom in"
-          style={{ fontFamily: font, fontSize: 14, fontWeight: 700, width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.border}`, background: C.elevated, color: C.secondary, cursor: "pointer" }}>+</button>
+    <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+      <div style={{
+        display: "flex", flexDirection: "column", gap: 6,
+        padding: "12px 10px", width: 116, flexShrink: 0,
+        background: C.elevated, borderRadius: 12,
+        border: `1px solid ${C.borderMid}`, boxSizing: "border-box",
+      }}>
+        {sidebarLabel("Tools")}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+          {toolBtn("draw", "✏️", "Draw", "D")}
+          {toolBtn("erase", "🧹", "Erase", "E")}
+          {toolBtn("fill", "🪣", "Fill", "F")}
+          {toolBtn("line", "📏", "Line", "L")}
+          {toolBtn("pick", "🩸", "Pick color", "P")}
+          <div style={{ position: "relative", height: 38, borderRadius: 8, border: `1px solid ${C.border}`, overflow: "hidden", cursor: "pointer" }}>
+            <div style={{ width: "100%", height: "100%", background: color }} />
+            <input
+              type="color" value={color}
+              onChange={e => handleColorChange(e.target.value)}
+              title="Active color"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }}
+            />
+          </div>
+        </div>
+
+        {divider}
+
+        {sidebarLabel("Brush")}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, width: "100%" }}>
+          {[1, 2, 4].map(s => (
+            <button key={s} type="button" onClick={() => setBrushSize(s)} title={`Brush ${s}px`}
+              style={{
+                fontFamily: font, fontSize: 10, fontWeight: 700,
+                height: 28, borderRadius: 6, border: `1px solid ${brushSize === s ? C.accent : C.border}`,
+                background: brushSize === s ? C.accent + "22" : "transparent",
+                color: brushSize === s ? C.accent : C.secondary, cursor: "pointer",
+              }}>{s}px</button>
+          ))}
+        </div>
+
+        {divider}
+
+        {recentColors.length > 0 && (
+          <>
+            {sidebarLabel("Recent")}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4 }}>
+              {recentColors.slice(0, 8).map(c => (
+                <button key={c} type="button" onClick={() => setColor(c)} title={c}
+                  style={{
+                    height: 18, borderRadius: 4,
+                    border: c === color ? `2px solid ${C.accent}` : `1px solid ${C.border}`,
+                    background: c, cursor: "pointer", padding: 0,
+                  }}
+                />
+              ))}
+            </div>
+            {divider}
+          </>
+        )}
+
+        {sidebarLabel("View")}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+          <button type="button" onClick={() => setZoomOffset(o => +(o - 0.25).toFixed(2))} title="Zoom out"
+            style={{ fontFamily: font, fontSize: 15, fontWeight: 700, height: 32, borderRadius: 6, border: `1px solid ${C.border}`, background: C.elevated, color: C.secondary, cursor: "pointer" }}>−</button>
+          <button type="button" onClick={() => setZoomOffset(o => +(o + 0.25).toFixed(2))} title="Zoom in"
+            style={{ fontFamily: font, fontSize: 15, fontWeight: 700, height: 32, borderRadius: 6, border: `1px solid ${C.border}`, background: C.elevated, color: C.secondary, cursor: "pointer" }}>+</button>
+        </div>
+        <span style={{ fontSize: 10, color: C.muted, fontFamily: font }}>{Math.round(zoom * 100)}%</span>
         {zoomOffset !== 0 && (
           <button type="button" onClick={() => setZoomOffset(0)} title="Fit to screen"
-            style={{ fontFamily: font, fontSize: 10, fontWeight: 600, padding: "0 8px", height: 28, borderRadius: 6, border: `1px solid ${C.accentBorder}`, background: C.accentDim, color: C.accent, cursor: "pointer" }}>Fit</button>
+            style={{ fontFamily: font, fontSize: 10, fontWeight: 600, padding: "0 8px", height: 26, width: "100%", borderRadius: 6, border: `1px solid ${C.accentBorder}`, background: C.accentDim, color: C.accent, cursor: "pointer" }}>Fit</button>
         )}
+        <button type="button" onClick={() => setShowGuide(g => !g)} title="Toggle UV guide"
+          style={{
+            fontFamily: font, fontSize: 11, fontWeight: 600, height: 28, width: "100%", borderRadius: 6,
+            border: `1px solid ${showGuide ? C.accent : C.border}`,
+            background: showGuide ? C.accent + "22" : "transparent",
+            color: showGuide ? C.accent : C.secondary, cursor: "pointer",
+          }}>Guide</button>
+
+        {divider}
+
+        {sidebarLabel("Edit")}
+        <button type="button" onClick={undo} title="Undo (Ctrl+Z)"
+          style={{ fontFamily: font, fontSize: 11, fontWeight: 600, height: 28, width: "100%", borderRadius: 6, border: `1px solid ${C.border}`, background: "transparent", color: C.secondary, cursor: "pointer" }}>↩ Undo</button>
+        <button type="button" onClick={clearCanvas}
+          style={{ fontFamily: font, fontSize: 11, fontWeight: 600, height: 28, width: "100%", borderRadius: 6, border: `1px solid ${C.dangerBorder}`, background: C.dangerDim, color: C.danger, cursor: "pointer" }}>Clear</button>
+
+        {divider}
+
         <label style={{
-          fontFamily: font, fontWeight: 500, fontSize: 12, padding: "5px 10px",
-          borderRadius: 8, border: `1px solid ${C.border}`, background: C.elevated,
-          color: C.text, cursor: "pointer",
+          fontFamily: font, fontWeight: 600, fontSize: 11, padding: "5px 0",
+          borderRadius: 8, border: `1px solid ${C.border}`, background: "transparent",
+          color: C.secondary, cursor: "pointer", textAlign: "center", width: "100%",
         }}>
           📂 PNG
           <input type="file" accept="image/png" style={{ display: "none" }}
@@ -487,24 +691,7 @@ export function UVEditor({ bufferRef, onUpdate, renderRef }) {
         </label>
       </div>
 
-      {recentColors.length > 0 && (
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <span style={{ fontSize: 12, color: C.muted, fontFamily: font }}>Recent:</span>
-          {recentColors.map(c => (
-            <button
-              type="button"
-              key={c}
-              onClick={() => setColor(c)}
-              style={{
-                width: 20, height: 20, borderRadius: 4, border: c === color ? `2px solid ${C.accent}` : `1px solid ${C.border}`,
-                background: c, cursor: "pointer", padding: 0,
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      <div ref={containerRef} style={{ overflow: "auto", height: "calc(100vh - 340px)", minHeight: 300, width: "fit-content", maxWidth: "100%", borderRadius: 10, border: `1px solid ${C.border}`, touchAction: "none" }}>
+      <div ref={containerRef} style={{ overflow: "auto", flex: 1, minWidth: 0, minHeight: 0, height: "calc(100vh - 148px)", touchAction: "none", display: "flex", alignItems: "flex-start", justifyContent: "center" }}>
         <canvas
           ref={displayRef}
           width={displayPx}
@@ -576,7 +763,18 @@ export function EditorTab({ user, idToken, initialSkin, onSaved }) {
 
   function getDataUrl() {
     if (!bufferRef.current) return null;
-    return bufferRef.current.toDataURL("image/png");
+    const buf = bufferRef.current;
+    const ctx = buf.getContext("2d");
+    const bottomData = ctx.getImageData(0, 32, CANVAS_SIZE, 32);
+    const isEmpty = !bottomData.data.some((v, i) => i % 4 === 3 && v > 0);
+    if (isEmpty) {
+      const tmp = document.createElement("canvas");
+      tmp.width = CANVAS_SIZE;
+      tmp.height = 32;
+      tmp.getContext("2d").drawImage(buf, 0, 0);
+      return tmp.toDataURL("image/png");
+    }
+    return buf.toDataURL("image/png");
   }
 
   function scheduleUpdate3D() {
@@ -648,90 +846,73 @@ export function EditorTab({ user, idToken, initialSkin, onSaved }) {
   if (!ready) return null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <style>{`
-        .editor-grid { display: grid; grid-template-columns: 1fr auto; gap: 24; align-items: start; }
-        .editor-preview { display: flex; flex-direction: column; align-items: center; gap: 16; flex-shrink: 0; position: sticky; top: 20; }
-        @media (max-width: 640px) {
-          .editor-grid { display: flex !important; flex-direction: column-reverse !important; gap: 16px !important; }
-          .editor-preview { position: static !important; width: 100% !important; flex-direction: row !important; align-items: flex-start !important; flex-wrap: wrap !important; }
-        }
-      `}</style>
-      <div className="editor-grid" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, alignItems: "start" }}>
-        <div data-uvcol style={{ minWidth: 0, position: "relative" }}>
-          <h3 style={{ fontFamily: font, color: C.text, fontWeight: 700, fontSize: 16, marginTop: 0, marginBottom: 12 }}>
-            2D UV Editor
-          </h3>
-          <UVEditor bufferRef={bufferRef} onUpdate={scheduleUpdate3D} renderRef={renderRef} />
+    <div style={{ display: "flex", gap: 16, alignItems: "flex-start", height: "100%" }}>
+      <div data-uvcol style={{ flex: 1, minWidth: 0, height: "100%", display: "flex", flexDirection: "column" }}>
+        <UVEditor bufferRef={bufferRef} onUpdate={scheduleUpdate3D} renderRef={renderRef} />
+      </div>
+
+      <div style={{
+        width: 200, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10,
+        position: "sticky", top: 16,
+      }}>
+        <div style={{ background: C.elevated, borderRadius: 14, border: `1px solid ${C.borderMid}`, overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center", padding: 10 }}>
+          <LiveSkinViewer3D
+            getDataUrl={getDataUrl}
+            triggerRef={update3DRef}
+            width={180}
+            height={280}
+          />
         </div>
 
-        <div className="editor-preview" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, flexShrink: 0, position: "sticky", top: 20 }}>
-          <h3 style={{ fontFamily: font, color: C.text, fontWeight: 700, fontSize: 16, marginTop: 0, marginBottom: 0 }}>
-            3D Preview
-          </h3>
-          <div style={{ background: C.elevated, borderRadius: 14, padding: 16, border: `1px solid ${C.border}` }}>
-            <LiveSkinViewer3D
-              getDataUrl={getDataUrl}
-              triggerRef={update3DRef}
-              width={220}
-              height={320}
-            />
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
-            <Btn onClick={downloadPNG} style={{ width: "100%", justifyContent: "center" }}>
-              ⬇ Download PNG
-            </Btn>
-            {user && (
-              <>
-                {!showNameInput ? (
-                  <Btn variant="accent" onClick={handleSaveClick} disabled={saving} style={{ width: "100%", justifyContent: "center" }}>
-                    {saving ? "Saving…" : savedSkinId ? "☁ Update Cloud Skin" : "☁ Save to Cloud"}
-                  </Btn>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <input
-                      type="text"
-                      placeholder="Skin name…"
-                      value={nameInput}
-                      onChange={e => setNameInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter") doSave(nameInput || "My Skin"); }}
-                      style={{
-                        fontFamily: font, fontSize: 14, padding: "8px 12px",
-                        borderRadius: 8, border: `1px solid ${C.borderMid}`,
-                        background: C.elevated, color: C.text, outline: "none", width: "100%", boxSizing: "border-box",
-                      }}
-                      autoFocus
-                    />
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <Btn variant="accent" onClick={() => doSave(nameInput || "My Skin")} disabled={saving} small style={{ flex: 1, justifyContent: "center" }}>
-                        {saving ? "…" : "Save"}
-                      </Btn>
-                      <Btn small onClick={() => setShowNameInput(false)} style={{ flex: 1, justifyContent: "center" }}>
-                        Cancel
-                      </Btn>
-                    </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <Btn onClick={downloadPNG} style={{ width: "100%", justifyContent: "center" }}>
+            ⬇ Download PNG
+          </Btn>
+          {user && (
+            <>
+              {!showNameInput ? (
+                <Btn variant="accent" onClick={handleSaveClick} disabled={saving} style={{ width: "100%", justifyContent: "center" }}>
+                  {saving ? "Saving…" : savedSkinId ? "☁ Update Cloud Skin" : "☁ Save to Cloud"}
+                </Btn>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <input
+                    type="text"
+                    placeholder="Skin name…"
+                    value={nameInput}
+                    onChange={e => setNameInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") doSave(nameInput || "My Skin"); }}
+                    style={{
+                      fontFamily: font, fontSize: 14, padding: "8px 12px",
+                      borderRadius: 8, border: `1px solid ${C.borderMid}`,
+                      background: C.elevated, color: C.text, outline: "none", width: "100%", boxSizing: "border-box",
+                    }}
+                    autoFocus
+                  />
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <Btn variant="accent" onClick={() => doSave(nameInput || "My Skin")} disabled={saving} small style={{ flex: 1, justifyContent: "center" }}>
+                      {saving ? "…" : "Save"}
+                    </Btn>
+                    <Btn small onClick={() => setShowNameInput(false)} style={{ flex: 1, justifyContent: "center" }}>
+                      Cancel
+                    </Btn>
                   </div>
-                )}
-              </>
-            )}
-            {!user && (
-              <p style={{ fontFamily: font, fontSize: 13, color: C.muted, textAlign: "center", margin: 0 }}>
-                Sign in to save to the cloud
-              </p>
-            )}
-            {saveSuccess && (
-              <p style={{ fontFamily: font, fontSize: 13, color: C.accent, textAlign: "center", margin: 0 }}>
-                Saved successfully!
-              </p>
-            )}
-            {saveError && (
-              <p style={{ fontFamily: font, fontSize: 13, color: C.danger, textAlign: "center", margin: 0 }}>
-                {saveError}
-              </p>
-            )}
-          </div>
+                </div>
+              )}
+            </>
+          )}
+          {!user && (
+            <p style={{ fontFamily: font, fontSize: 13, color: C.muted, textAlign: "center", margin: 0 }}>
+              Sign in to save to the cloud
+            </p>
+          )}
+          {saveSuccess && <p style={{ fontFamily: font, fontSize: 13, color: C.accent, textAlign: "center", margin: 0 }}>Saved!</p>}
+          {saveError && <p style={{ fontFamily: font, fontSize: 13, color: C.danger, textAlign: "center", margin: 0 }}>{saveError}</p>}
         </div>
+
+        <p style={{ fontFamily: font, fontSize: 10, color: C.muted, textAlign: "center", margin: 0, letterSpacing: "0.03em" }}>
+          3D PREVIEW
+        </p>
       </div>
     </div>
   );

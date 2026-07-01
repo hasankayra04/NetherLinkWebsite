@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import Layout from "@theme/Layout";
 import { useAuth } from "../useAuth";
 import CommentsSection from "../components/CommentsSection";
-import { C, font, API, UNDO_LIMIT, DEBOUNCE_MS, CANVAS_SIZE, DISPLAY_SIZE, SKIN_REGIONS, STEVE_SKIN_URL, Btn, Tag, SkinViewer3D, LiveSkinViewer3D, UVEditor, EditorTab } from "../components/SkinEditor";
+import { C, font, API, UNDO_LIMIT, DEBOUNCE_MS, CANVAS_SIZE, DISPLAY_SIZE, SKIN_REGIONS, STEVE_SKIN_URL, Btn, Tag, SkinViewer3D, SkinViewerFrontBack, LiveSkinViewer3D, UVEditor, EditorTab } from "../components/SkinEditor";
 
 function timeAgo(dateStr) {
   if (!dateStr) return "";
@@ -56,8 +56,8 @@ function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initial
       onMouseEnter={e => e.currentTarget.style.borderColor = C.accentBorder}
       onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
 
-      <div style={{ background: C.elevated, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 0", minHeight: 180 }}>
-        <SkinViewer3D skinUrl={initialSkin.public_url} scale={5} />
+      <div style={{ background: C.elevated, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px 0", minHeight: 160 }}>
+        <SkinViewerFrontBack skinUrl={initialSkin.public_url} scale={4} />
       </div>
 
       {initialSkin.username && !isOwn && (

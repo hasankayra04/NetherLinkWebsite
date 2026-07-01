@@ -334,7 +334,7 @@ export default function Navbar() {
         boxSizing: "border-box",
       }}>
 
-        <div onClick={() => history.push("/")} style={{ display: "flex", alignItems: "center", cursor: "pointer", userSelect: "none", flexShrink: 0 }}>
+        <div onClick={() => history.push("/")} style={{ display: "flex", alignItems: "center", cursor: "pointer", userSelect: "none", flexShrink: 0, height: H, overflow: "hidden" }}>
           <img src="/img/logo_big.png" alt="MCCompanion" style={{ height: 160, width: "auto" }} />
         </div>
 
