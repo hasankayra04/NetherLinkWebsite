@@ -107,6 +107,8 @@ async function buildMerged(packs, overrides = {}) {
   return { merged, conflicts: resolvedConflicts };
 }
 
+const isIOS = typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent);
+
 function DropZone({ onFiles, disabled }) {
   const [over, setOver] = useState(false);
   const input = useRef();
@@ -115,15 +117,17 @@ function DropZone({ onFiles, disabled }) {
     if (valid.length) onFiles(valid);
   }, [onFiles]);
   return (
-    <div onClick={() => !disabled && input.current?.click()}
-      onDragOver={e => { e.preventDefault(); if (!disabled) setOver(true); }}
-      onDragLeave={() => setOver(false)}
-      onDrop={e => { e.preventDefault(); setOver(false); if (!disabled) handle(e.dataTransfer.files); }}
-      style={{ border: `2px dashed ${over ? C.accent : C.borderMid}`, borderRadius: 16, padding: "32px 24px", textAlign: "center", cursor: disabled ? "not-allowed" : "pointer", background: over ? C.accentDim : C.surface, transition: "all 0.15s", opacity: disabled ? 0.5 : 1 }}>
-      <input ref={input} type="file" accept=".zip,.mcpack,application/zip,application/x-zip-compressed,application/octet-stream" multiple style={{ display: "none" }} onChange={e => handle(e.target.files)} />
-      <div style={{ fontSize: 32, marginBottom: 10 }}>📦</div>
-      <div style={{ color: C.text, fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Drop resource packs here</div>
-      <div style={{ color: C.muted, fontSize: 12 }}>.zip or .mcpack · no limit</div>
+    <div>
+      <div onClick={() => !disabled && input.current?.click()}
+        onDragOver={e => { e.preventDefault(); if (!disabled) setOver(true); }}
+        onDragLeave={() => setOver(false)}
+        onDrop={e => { e.preventDefault(); setOver(false); if (!disabled) handle(e.dataTransfer.files); }}
+        style={{ border: `2px dashed ${over ? C.accent : C.borderMid}`, borderRadius: 16, padding: "32px 24px", textAlign: "center", cursor: disabled ? "not-allowed" : "pointer", background: over ? C.accentDim : C.surface, transition: "all 0.15s", opacity: disabled ? 0.5 : 1 }}>
+        <input ref={input} type="file" accept={isIOS ? "*/*" : ".zip,.mcpack"} multiple style={{ display: "none" }} onChange={e => handle(e.target.files)} />
+        <div style={{ fontSize: 32, marginBottom: 10 }}>📦</div>
+        <div style={{ color: C.text, fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Drop resource packs here</div>
+        <div style={{ color: C.muted, fontSize: 12 }}>.zip or .mcpack · no limit</div>
+      </div>
     </div>
   );
 }
