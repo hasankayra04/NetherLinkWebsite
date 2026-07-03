@@ -14,123 +14,153 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initialLiked = false, currentUsername = null, compact = false }) {
+function SkinDetailModal({ skin, onClose, onEdit, onDelete, isOwn, idToken, currentUsername }) {
   const [deleting, setDeleting] = useState(false);
-  const [likes, setLikes] = useState(initialSkin.like_count ?? 0);
-  const [liked, setLiked] = useState(initialLiked);
+  const [likes, setLikes] = useState(skin.like_count ?? 0);
+  const [liked, setLiked] = useState(false);
   const [liking, setLiking] = useState(false);
-  const [showComments, setShowComments] = useState(false);
   const lastLike = useRef(0);
 
-  async function download() {
-    const res = await fetch(initialSkin.public_url);
+  async function download(e) {
+    e && e.stopPropagation();
+    const res = await fetch(skin.public_url);
     const blob = await res.blob();
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `${initialSkin.name || "skin"}.png`;
+    a.download = `${skin.name || "skin"}.png`;
     a.click();
   }
 
-  async function toggleLike() {
+  async function toggleLike(e) {
+    e && e.stopPropagation();
     if (!idToken || liking || Date.now() - lastLike.current < 2000) return;
     lastLike.current = Date.now();
     setLiking(true);
     try {
-      const res = await fetch(`${API}/api/skins/${initialSkin.id}/like`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${idToken}` },
-      });
-      if (res.ok) {
-        const d = await res.json();
-        setLiked(d.liked);
-        setLikes(d.like_count);
-      }
+      const res = await fetch(`${API}/api/skins/${skin.id}/like`, { method: "POST", headers: { Authorization: `Bearer ${idToken}` } });
+      if (res.ok) { const d = await res.json(); setLiked(d.liked); setLikes(d.like_count); }
     } catch (_) { }
     setLiking(false);
   }
 
-  const commentCount = initialSkin.comment_count ?? 0;
-
   return (
-    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column", transition: "border-color .2s" }}
-      onMouseEnter={e => e.currentTarget.style.borderColor = C.accentBorder}
-      onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.88)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+      onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background: C.surface, border: `1px solid ${C.borderMid}`, borderRadius: 20, width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", display: "flex", flexDirection: "column", boxShadow: "0 32px 80px rgba(0,0,0,0.6)" }}>
 
-      <div style={{ background: C.elevated, display: "flex", alignItems: "center", justifyContent: "center", padding: compact ? "10px 0" : "16px 0", minHeight: compact ? 110 : 160 }}>
-        <SkinViewerFrontBack skinUrl={initialSkin.public_url} scale={compact ? 3 : 4} />
-      </div>
-
-      {initialSkin.username && !isOwn && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px 0" }}>
-          {initialSkin.avatar_url ? (
-            <img src={initialSkin.avatar_url} alt={initialSkin.username} style={{ width: 22, height: 22, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} onError={e => e.currentTarget.style.display = "none"} />
-          ) : (
-            <div style={{ width: 22, height: 22, borderRadius: "50%", background: C.accentDim, border: `1px solid ${C.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: C.accent, flexShrink: 0 }}>
-              {(initialSkin.username || "?")[0].toUpperCase()}
-            </div>
-          )}
-          <a href={`/u?name=${initialSkin.username}`} style={{ fontSize: 11, fontWeight: 600, color: C.accent, textDecoration: "none", flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {initialSkin.display_name || initialSkin.username}
-          </a>
-          <span style={{ fontSize: 10, color: C.muted, flexShrink: 0 }}>{timeAgo(initialSkin.created_at)}</span>
-        </div>
-      )}
-
-      <div style={{ padding: "8px 12px 10px", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 6 }}>
-        <p style={{ margin: 0, fontWeight: 700, fontSize: 13, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
-          {initialSkin.name || "Unnamed"}
-        </p>
-        {isOwn && initialSkin.created_at && <span style={{ fontSize: 10, color: C.muted, flexShrink: 0 }}>{timeAgo(initialSkin.created_at)}</span>}
-      </div>
-
-      <div onClick={e => e.stopPropagation()} style={{ display: "flex", alignItems: "center", borderTop: `1px solid ${C.border}`, marginTop: "auto" }}>
-        <button onClick={download} title="Download" style={{ flex: 1, padding: "10px 0", background: "transparent", border: "none", borderRight: `1px solid ${C.border}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={C.secondary} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-        </button>
-        {!isOwn && (
-          <button onClick={toggleLike} disabled={liking} title={liked ? "Unlike" : "Like"} style={{ padding: "10px 0", flex: 1, background: "transparent", border: "none", borderRight: `1px solid ${C.border}`, cursor: idToken ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill={liked ? "#f87171" : "none"} stroke={liked ? "#f87171" : C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
-            {likes > 0 && <span style={{ fontSize: 11, color: liked ? "#f87171" : C.muted, fontFamily: font }}>{likes}</span>}
-          </button>
-        )}
-        <button onClick={() => setShowComments(true)} title="Comments" style={{ padding: "10px 0", flex: 1, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 3, borderRight: `1px solid ${C.border}` }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={commentCount > 0 ? C.secondary : C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-          {commentCount > 0 && <span style={{ fontSize: 11, color: C.secondary, fontFamily: font }}>{commentCount}</span>}
-        </button>
-        <button onClick={() => onEdit(initialSkin)} title={isOwn ? "Edit" : "Edit as template"} style={{ padding: "10px 0", flex: 1, background: "transparent", border: "none", borderRight: isOwn ? `1px solid ${C.border}` : "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-        </button>
-        {isOwn && (
-          <button disabled={deleting} title="Delete" onClick={async () => { if (!confirm(`Delete "${initialSkin.name}"?`)) return; setDeleting(true); await onDelete(initialSkin.id); setDeleting(false); }}
-            style={{ padding: "10px 0", flex: 1, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: deleting ? 0.4 : 1 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.danger} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" /></svg>
-          </button>
-        )}
-      </div>
-
-      {showComments && (
-        <div onClick={e => e.stopPropagation()}
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.82)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
-          onMouseDown={e => { if (e.target === e.currentTarget) setShowComments(false); }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.borderMid}`, borderRadius: 18, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <SkinViewer3D skinUrl={initialSkin.public_url} scale={4} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{initialSkin.name || "Unnamed"}</p>
-                {initialSkin.username && <a href={`/u?name=${initialSkin.username}`} style={{ fontSize: 12, color: C.accent, textDecoration: "none" }}>by {initialSkin.display_name || initialSkin.username}</a>}
-              </div>
-              <button onClick={() => setShowComments(false)} style={{ background: C.elevated, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", color: C.secondary, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✕</button>
-            </div>
-            <CommentsSection
-              targetType="skin"
-              targetId={initialSkin.id}
-              currentUsername={currentUsername}
-              getToken={async () => { const { fetchIdToken } = await import("../firebaseAuthHelpers"); return fetchIdToken(); }}
-            />
+        <div style={{ position: "relative", background: "linear-gradient(135deg, #0a1a08 0%, #0d1117 60%, #0a1a10 100%)", borderRadius: "20px 20px 0 0", padding: "32px 24px 24px", display: "flex", flexDirection: "column", alignItems: "center", overflow: "hidden" }}>
+          <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(ellipse at 30% 50%, rgba(103,228,4,0.08) 0%, transparent 60%), radial-gradient(ellipse at 70% 30%, rgba(52,211,153,0.05) 0%, transparent 50%)", pointerEvents: "none" }} />
+          <button onClick={onClose} style={{ position: "absolute", top: 12, right: 12, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, cursor: "pointer", color: "rgba(255,255,255,0.5)", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>✕</button>
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <SkinViewer3D skinUrl={skin.public_url} scale={5} />
+          </div>
+          <div style={{ position: "relative", zIndex: 1, textAlign: "center", marginTop: 16 }}>
+            <p style={{ margin: "0 0 6px", fontWeight: 900, fontSize: 22, color: "#fff", letterSpacing: "-0.02em" }}>{skin.name || "Unnamed"}</p>
+            {skin.username && (
+              <a href={`/u?name=${skin.username}`} style={{ fontSize: 12, color: "rgba(103,228,4,0.9)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <div style={{ width: 16, height: 16, borderRadius: "50%", background: "rgba(103,228,4,0.2)", border: "1px solid rgba(103,228,4,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 700, color: "#67e404" }}>
+                  {(skin.username || "?")[0].toUpperCase()}
+                </div>
+                {skin.display_name || skin.username}
+              </a>
+            )}
           </div>
         </div>
-      )}
+
+        <div style={{ display: "flex", gap: 8, padding: "14px 20px", borderBottom: `1px solid ${C.border}`, flexWrap: "wrap" }}>
+          {!isOwn && (
+            <button onClick={toggleLike} disabled={liking} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 10, border: `1px solid ${liked ? "rgba(248,113,113,0.5)" : C.border}`, background: liked ? "rgba(248,113,113,0.12)" : C.elevated, cursor: idToken ? "pointer" : "default", color: liked ? "#f87171" : C.secondary, fontSize: 13, fontWeight: 700, transition: "all 0.15s" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill={liked ? "#f87171" : "none"} stroke={liked ? "#f87171" : "currentColor"} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+              {likes > 0 ? likes : "Like"}
+            </button>
+          )}
+          <button onClick={download} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.elevated, cursor: "pointer", color: C.secondary, fontSize: 13, fontWeight: 700 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+            Download
+          </button>
+          {onEdit && (
+            <button onClick={e => { e.stopPropagation(); onEdit(skin); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 10, border: `1px solid rgba(103,228,4,0.3)`, background: "rgba(103,228,4,0.08)", cursor: "pointer", color: "#67e404", fontSize: 13, fontWeight: 700 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+              {isOwn ? "Edit" : "Edit as template"}
+            </button>
+          )}
+          {isOwn && onDelete && (
+            <button disabled={deleting} onClick={async e => { e.stopPropagation(); if (!confirm(`Delete "${skin.name}"?`)) return; setDeleting(true); await onDelete(skin.id); setDeleting(false); onClose(); }}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 10, border: `1px solid rgba(239,68,68,0.3)`, background: "rgba(239,68,68,0.08)", cursor: "pointer", color: C.danger, fontSize: 13, fontWeight: 700, opacity: deleting ? 0.4 : 1 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" /></svg>
+              Delete
+            </button>
+          )}
+        </div>
+
+        <div style={{ padding: "16px 20px 20px" }}>
+          <CommentsSection
+            targetType="skin"
+            targetId={skin.id}
+            currentUsername={currentUsername}
+            getToken={async () => { const { fetchIdToken } = await import("../firebaseAuthHelpers"); return fetchIdToken(); }}
+          />
+        </div>
+      </div>
     </div>
+  );
+}
+
+function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initialLiked = false, currentUsername = null, compact = false }) {
+  const [showDetail, setShowDetail] = useState(false);
+  const commentCount = initialSkin.comment_count ?? 0;
+  const likeCount = initialSkin.like_count ?? 0;
+
+  return (
+    <>
+      <div onClick={() => setShowDetail(true)} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column", cursor: "pointer", transition: "border-color .2s, transform .15s, box-shadow .15s" }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = C.accentBorder; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.3)"; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}>
+
+        <div style={{ background: C.elevated, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, height: 160, position: "relative" }}>
+          <SkinViewerFrontBack skinUrl={initialSkin.public_url} scale={4} />
+          {(likeCount > 0 || commentCount > 0) && (
+            <div style={{ position: "absolute", bottom: 6, right: 8, display: "flex", gap: 6 }}>
+              {likeCount > 0 && <span style={{ fontSize: 10, color: C.muted, display: "inline-flex", alignItems: "center", gap: 3, background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: 20 }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+                {likeCount}
+              </span>}
+              {commentCount > 0 && <span style={{ fontSize: 10, color: C.muted, display: "inline-flex", alignItems: "center", gap: 3, background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: 20 }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                {commentCount}
+              </span>}
+            </div>
+          )}
+        </div>
+
+        <div style={{ padding: "10px 12px 12px" }}>
+          <p style={{ margin: "0 0 4px", fontWeight: 700, fontSize: 13, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {initialSkin.name || "Unnamed"}
+          </p>
+          {initialSkin.username && (
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{ width: 14, height: 14, borderRadius: "50%", background: C.accentDim, border: `1px solid ${C.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 700, color: C.accent, flexShrink: 0 }}>
+                {(initialSkin.username || "?")[0].toUpperCase()}
+              </div>
+              <span style={{ fontSize: 11, color: C.accent, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{initialSkin.display_name || initialSkin.username}</span>
+              {initialSkin.created_at && <span style={{ fontSize: 10, color: C.muted, marginLeft: "auto", flexShrink: 0 }}>{timeAgo(initialSkin.created_at)}</span>}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showDetail && (
+        <SkinDetailModal
+          skin={initialSkin}
+          onClose={() => setShowDetail(false)}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          isOwn={isOwn}
+          idToken={idToken}
+          currentUsername={currentUsername}
+        />
+      )}
+    </>
   );
 }
 
@@ -177,6 +207,18 @@ function GalleryTab({ user, idToken, onEditSkin }) {
   const [allPage, setAllPage] = useState(0);
   const [allTotal, setAllTotal] = useState(null);
   const [loadingAll, setLoadingAll] = useState(false);
+  const [deepLinkedSkin, setDeepLinkedSkin] = useState(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const skinId = params.get("skin");
+    if (skinId) {
+      fetch(`${API}/api/skins/${skinId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) setDeepLinkedSkin(d); })
+        .catch(() => { });
+    }
+  }, []);
 
   useEffect(() => {
     setLoadingPublic(true);
@@ -228,6 +270,17 @@ function GalleryTab({ user, idToken, onEditSkin }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+      {deepLinkedSkin && (
+        <SkinDetailModal
+          skin={deepLinkedSkin}
+          onClose={() => setDeepLinkedSkin(null)}
+          onEdit={onEditSkin}
+          onDelete={deleteSkin}
+          isOwn={user && deepLinkedSkin.uid === user.uid}
+          idToken={idToken}
+          currentUsername={user?.username}
+        />
+      )}
       {error && <div style={{ background: C.dangerDim, border: `1px solid ${C.dangerBorder}`, borderRadius: 10, padding: 12 }}><p style={{ fontFamily: font, color: C.danger, margin: 0 }}>{error}</p></div>}
 
       {user && mySkins.length > 0 && (
@@ -236,7 +289,7 @@ function GalleryTab({ user, idToken, onEditSkin }) {
           <Carousel>
             {mySkins.map(s => (
               <div key={s.id} style={carouselCard}>
-                <SkinCard skin={s} isOwn compact onEdit={onEditSkin} onDelete={deleteSkin} currentUsername={user?.username} />
+                <SkinCard skin={s} isOwn onEdit={onEditSkin} onDelete={deleteSkin} currentUsername={user?.username} />
               </div>
             ))}
           </Carousel>
@@ -249,7 +302,7 @@ function GalleryTab({ user, idToken, onEditSkin }) {
           <Carousel>
             {topSkins.slice(0, 20).map(s => (
               <div key={s.id} style={carouselCard}>
-                <SkinCard skin={s} isOwn={user && s.uid === user.uid} compact onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} currentUsername={user?.username} />
+                <SkinCard skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} currentUsername={user?.username} />
               </div>
             ))}
           </Carousel>
@@ -268,22 +321,7 @@ function GalleryTab({ user, idToken, onEditSkin }) {
       )}
 
       <section>
-        <SectionHeader
-          emoji="🌍"
-          title="Browse all"
-          sub={allTotal != null ? `${allTotal} unique skins` : undefined}
-          action={
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <button onClick={() => setAllPage(p => Math.max(0, p - 1))} disabled={allPage === 0}
-                style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${C.border}`, background: C.elevated, color: allPage === 0 ? C.muted : C.text, cursor: allPage === 0 ? "default" : "pointer", fontFamily: font, fontSize: 12, fontWeight: 600 }}>←</button>
-              <span style={{ fontFamily: font, fontSize: 12, color: C.muted, minWidth: 60, textAlign: "center" }}>
-                {allPage + 1}{allTotal != null ? ` / ${Math.ceil(allTotal / ALL_SKINS_PER_PAGE)}` : ""}
-              </span>
-              <button onClick={() => setAllPage(p => p + 1)} disabled={allSkins.length < ALL_SKINS_PER_PAGE}
-                style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${C.border}`, background: C.elevated, color: allSkins.length < ALL_SKINS_PER_PAGE ? C.muted : C.text, cursor: allSkins.length < ALL_SKINS_PER_PAGE ? "default" : "pointer", fontFamily: font, fontSize: 12, fontWeight: 600 }}>→</button>
-            </div>
-          }
-        />
+        <SectionHeader emoji="🌍" title="Browse all" sub={allTotal != null ? `${allTotal} unique skins` : undefined} />
         {loadingAll ? (
           <p style={{ fontFamily: font, color: C.muted, fontSize: 13 }}>Loading…</p>
         ) : allSkins.length === 0 ? (
@@ -293,6 +331,17 @@ function GalleryTab({ user, idToken, onEditSkin }) {
             {allSkins.map(s => (
               <SkinCard key={s.id} skin={s} isOwn={user && s.uid === user.uid} onEdit={onEditSkin} onDelete={deleteSkin} idToken={idToken} initialLiked={likedIds.has(s.id)} currentUsername={user?.username} />
             ))}
+          </div>
+        )}
+        {(allPage > 0 || allSkins.length >= ALL_SKINS_PER_PAGE) && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 20 }}>
+            <button onClick={() => setAllPage(p => Math.max(0, p - 1))} disabled={allPage === 0}
+              style={{ padding: "8px 20px", borderRadius: 9, border: `1px solid ${C.border}`, background: C.elevated, color: allPage === 0 ? C.muted : C.text, cursor: allPage === 0 ? "default" : "pointer", fontFamily: font, fontSize: 13, fontWeight: 700 }}>←</button>
+            <span style={{ fontFamily: font, fontSize: 13, color: C.muted, minWidth: 70, textAlign: "center" }}>
+              {allPage + 1}{allTotal != null ? ` / ${Math.ceil(allTotal / ALL_SKINS_PER_PAGE)}` : ""}
+            </span>
+            <button onClick={() => setAllPage(p => p + 1)} disabled={allSkins.length < ALL_SKINS_PER_PAGE}
+              style={{ padding: "8px 20px", borderRadius: 9, border: `1px solid ${C.border}`, background: C.elevated, color: allSkins.length < ALL_SKINS_PER_PAGE ? C.muted : C.text, cursor: allSkins.length < ALL_SKINS_PER_PAGE ? "default" : "pointer", fontFamily: font, fontSize: 13, fontWeight: 700 }}>→</button>
           </div>
         )}
       </section>

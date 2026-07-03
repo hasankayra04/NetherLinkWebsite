@@ -44,7 +44,7 @@ function timeAgo(dateStr) {
 }
 
 const ACTIVITY_META = {
-  skin_upload: { color: "#a78bfa", tag: "new skin" },
+  skin_upload: { color: "#67e404", tag: "new skin" },
   pack_approved: { color: "#60a5fa", tag: "pack" },
   joined: { color: "#34d399", tag: "joined" },
 };
@@ -83,11 +83,6 @@ const WEB_TOOLS = [
   { e: "⚡", label: "API Docs", href: "/api-docs" },
 ];
 
-/* ─── sidebar: left ────────────────────────────────────────── */
-
-
-/* ─── sidebar: right ───────────────────────────────────────── */
-
 function RightSidebar({ activity }) {
   const uniqueActivity = [];
   const seenAct = new Set();
@@ -102,7 +97,7 @@ function RightSidebar({ activity }) {
 
       <div style={{ background: T.surface, border: "1px solid " + T.border, borderRadius: 12, overflow: "hidden" }}>
         <div style={{ padding: "12px 14px", borderBottom: "1px solid " + T.border }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#a78bfa" }}>Web tools</p>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#67e404" }}>Web tools</p>
         </div>
         <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: 2 }}>
           {WEB_TOOLS.map(w => (
@@ -157,8 +152,6 @@ function RightSidebar({ activity }) {
     </aside>
   );
 }
-
-/* ─── main content ─────────────────────────────────────────── */
 
 function DownloadCard({ stats }) {
   return (
@@ -242,134 +235,119 @@ function CardHeader({ label, labelColor, title, action }) {
   );
 }
 
-function SkinsCard({ skins }) {
-  if (!skins.length) return null;
-  const row = [...skins, ...skins, ...skins];
-  return (
-    <Card>
-      <CardHeader
-        label="Skin Workshop"
-        labelColor="#a78bfa"
-        title="Community skins"
-        action={<a href="/skins" style={{ fontSize: 12, fontWeight: 700, color: "#a78bfa", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>Browse & upload <FaArrowRight size={9} /></a>}
-      />
-      <div style={{ padding: "12px 0 12px", overflow: "hidden" }}>
-        <style>{`@keyframes sk{from{transform:translateX(0)}to{transform:translateX(-33.33%)}}.sk-row{display:flex;gap:8px;width:max-content;animation:sk 60s linear infinite}.sk-row:hover{animation-play-state:paused}`}</style>
-        <div style={{ paddingLeft: 12 }}>
-          <div className="sk-row">
-            {row.map((s, i) => (
-              <a key={i} href={`/skins?skin=${s.id}`}
-                style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "10px 8px", borderRadius: 10, background: T.bg, border: "1px solid " + T.border, width: 100, textDecoration: "none", transition: "border-color 0.15s" }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = "#a78bfa50"}
-                onMouseLeave={e => e.currentTarget.style.borderColor = T.border}>
-                <SkinBody url={s.public_url} scale={3} />
-                <div style={{ width: "100%", textAlign: "center" }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</div>
-                  {s.username && <div style={{ fontSize: 9, color: T.green, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.display_name || s.username}</div>}
-                  {s.like_count > 0 && <span style={{ fontSize: 9, color: "#f87171", display: "inline-flex", alignItems: "center", gap: 2 }}><FaHeart size={7} />{s.like_count}</span>}
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
+function TrendingCard({ skins, packs, packCreators }) {
+  const [filter, setFilter] = useState("all");
 
-function CreatorsCard({ skins, packCreators }) {
-  const [tab, setTab] = useState("skins");
+  const skinItems = skins.slice(0, 8).map(s => ({ type: "skin", ...s }));
+  const packItems = [...(packs || [])].sort((a, b) => (b.downloadCount ?? 0) - (a.downloadCount ?? 0)).slice(0, 6).map(p => ({ type: "pack", ...p }));
 
-  const skinCreators = [];
-  const seen = new Set();
-  for (const s of skins) {
-    if (s.username && !seen.has(s.username)) { seen.add(s.username); skinCreators.push(s); }
-    if (skinCreators.length >= 8) break;
+  const all = [];
+  let si = 0, pi = 0;
+  while (si < skinItems.length || pi < packItems.length) {
+    if (si < skinItems.length) all.push(skinItems[si++]);
+    if (si < skinItems.length) all.push(skinItems[si++]);
+    if (pi < packItems.length) all.push(packItems[pi++]);
   }
 
-  const hasSkins = skinCreators.length >= 1;
-  const hasPacks = packCreators && packCreators.length >= 1;
-  if (!hasSkins && !hasPacks) return null;
-  const activeTab = hasSkins && !hasPacks ? "skins" : !hasSkins ? "packs" : tab;
+  const items = filter === "skins" ? skinItems : filter === "packs" ? packItems : all;
+
+  const creators = [];
+  const seen = new Set();
+  for (const s of skins) {
+    if (s.username && !seen.has(s.username)) { seen.add(s.username); creators.push(s); }
+    if (creators.length >= 6) break;
+  }
+  for (const p of (packCreators || [])) {
+    if (p.username && !seen.has(p.username)) { seen.add(p.username); creators.push({ ...p, _isPack: true }); }
+    if (creators.length >= 8) break;
+  }
+
+  if (!skinItems.length && !packItems.length) return null;
 
   return (
     <Card>
       <CardHeader
         label="Community"
-        labelColor="#fb923c"
-        title="Meet the creators"
+        labelColor="#67e404"
+        title="Trending content"
         action={
-          hasSkins && hasPacks && (
-            <div style={{ display: "flex", gap: 3, background: T.bg, border: "1px solid " + T.border, borderRadius: 7, padding: 2 }}>
-              {[["skins", "🎨", "#a78bfa"], ["packs", "📦", "#60a5fa"]].map(([t, e, c]) => (
-                <button key={t} onClick={() => setTab(t)}
-                  style={{ padding: "3px 9px", borderRadius: 5, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, background: activeTab === t ? c : "transparent", color: activeTab === t ? "#fff" : T.sub, transition: "all 0.15s" }}>
-                  {e} {t}
-                </button>
-              ))}
-            </div>
-          )
+          <div style={{ display: "flex", gap: 3, background: T.bg, border: "1px solid " + T.border, borderRadius: 7, padding: 2 }}>
+            {[["all", "All"], ["skins", "🎨 Skins"], ["packs", "📦 Packs"]].map(([v, l]) => (
+              <button key={v} onClick={() => setFilter(v)}
+                style={{ padding: "3px 9px", borderRadius: 5, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, background: filter === v ? "#67e404" : "transparent", color: filter === v ? "#fff" : T.sub, transition: "all 0.15s" }}>
+                {l}
+              </button>
+            ))}
+          </div>
         }
       />
-      <div style={{ padding: "12px 14px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 8 }}>
-        {activeTab === "skins" && skinCreators.map(s => (
-          <a key={s.username} href={`/u?name=${s.username}`}
-            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 10, background: T.bg, border: "1px solid " + T.border, textDecoration: "none", transition: "border-color 0.15s, transform 0.15s" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "#a78bfa50"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; }}>
-            <SkinBody url={s.public_url} scale={3} />
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: T.text, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{s.display_name || s.username}</p>
-            {s.like_count > 0 && <span style={{ fontSize: 10, color: "#f87171", display: "inline-flex", alignItems: "center", gap: 3 }}><FaHeart size={7} />{s.like_count}</span>}
-          </a>
-        ))}
-        {activeTab === "packs" && packCreators.map(p => (
-          <a key={p.username} href={`/u?name=${p.username}`}
-            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "12px 8px", borderRadius: 10, background: T.bg, border: "1px solid " + T.border, textDecoration: "none", transition: "border-color 0.15s, transform 0.15s" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "#60a5fa50"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; }}>
-            {p.avatar_url
-              ? <img src={p.avatar_url} alt={p.username} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} onError={e => e.currentTarget.style.display = "none"} />
-              : <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(96,165,250,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#60a5fa" }}>{(p.username || "?")[0].toUpperCase()}</div>
-            }
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: T.text, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{p.display_name || p.username}</p>
-            <span style={{ fontSize: 9, color: "#60a5fa", fontWeight: 700, background: "rgba(96,165,250,0.12)", padding: "1px 6px", borderRadius: 20 }}>pack creator</span>
-          </a>
-        ))}
-      </div>
-    </Card>
-  );
-}
 
-function PacksCard({ packs }) {
-  if (!packs || packs.length === 0) return null;
-  return (
-    <Card>
-      <CardHeader
-        label="Resource Packs"
-        labelColor="#60a5fa"
-        title="Trending packs"
-        action={<a href="/packs" style={{ fontSize: 12, fontWeight: 700, color: "#60a5fa", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>Browse all <FaArrowRight size={9} /></a>}
-      />
-      <div style={{ padding: "12px 14px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 8 }}>
-        {[...packs].sort((a, b) => (b.downloadCount ?? 0) - (a.downloadCount ?? 0)).slice(0, 6).map(p => (
-          <a key={p.id} href={`/packs?pack=${p.slug || p.id}`}
-            style={{ display: "flex", flexDirection: "column", borderRadius: 10, overflow: "hidden", background: T.bg, border: "1px solid " + T.border, textDecoration: "none", transition: "border-color 0.15s, transform 0.15s" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "#60a5fa50"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; }}>
-            {p.thumbnailUrl
-              ? <img src={p.thumbnailUrl} alt={p.name} style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} />
-              : <div style={{ width: "100%", aspectRatio: "16/9", background: "rgba(96,165,250,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>📦</div>
-            }
-            <div style={{ padding: "8px 10px" }}>
-              <p style={{ margin: "0 0 3px", fontSize: 12, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</p>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                {p.category && <span style={{ fontSize: 10, color: "#60a5fa", fontWeight: 600 }}>{p.category}</span>}
-                {p.downloadCount > 0 && <span style={{ fontSize: 10, color: T.muted }}>↓ {p.downloadCount.toLocaleString()}</span>}
+      <div style={{ padding: "12px 14px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
+        {items.map((item, i) =>
+          item.type === "skin" ? (
+            <a key={"s" + i} href={`/skins?skin=${item.id}`}
+              style={{ display: "flex", flexDirection: "column", borderRadius: 10, overflow: "hidden", background: T.bg, border: "1px solid " + T.border, textDecoration: "none", transition: "border-color 0.15s, transform 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "#67e40450"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; }}>
+              <div style={{ background: "#131820", display: "flex", justifyContent: "center", alignItems: "flex-end", padding: "16px 12px 0", minHeight: 120, position: "relative" }}>
+                <span style={{ position: "absolute", top: 6, left: 8, fontSize: 9, fontWeight: 800, color: "#67e404", background: "rgba(103,228,4,0.15)", border: "1px solid rgba(103,228,4,0.3)", padding: "1px 6px", borderRadius: 20, letterSpacing: "0.05em" }}>🎨 SKIN</span>
+                <SkinBody url={item.public_url} scale={4} />
               </div>
-            </div>
-          </a>
-        ))}
+              <div style={{ padding: "8px 10px" }}>
+                <p style={{ margin: "0 0 2px", fontSize: 12, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</p>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  {item.username && <span style={{ fontSize: 10, color: T.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.display_name || item.username}</span>}
+                  {item.like_count > 0 && <span style={{ fontSize: 10, color: "#f87171", display: "inline-flex", alignItems: "center", gap: 2, flexShrink: 0 }}><FaHeart size={7} />{item.like_count}</span>}
+                </div>
+              </div>
+            </a>
+          ) : (
+            <a key={"p" + i} href={`/packs?slug=${item.slug || item.id}`}
+              style={{ display: "flex", flexDirection: "column", borderRadius: 10, overflow: "hidden", background: T.bg, border: "1px solid " + T.border, textDecoration: "none", transition: "border-color 0.15s, transform 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "#60a5fa50"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; }}>
+              <div style={{ position: "relative" }}>
+                {item.thumbnailUrl
+                  ? <img src={item.thumbnailUrl} alt={item.name} style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} />
+                  : <div style={{ width: "100%", aspectRatio: "16/9", background: "rgba(96,165,250,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>📦</div>
+                }
+                <span style={{ position: "absolute", top: 6, left: 8, fontSize: 9, fontWeight: 800, color: "#60a5fa", background: "rgba(96,165,250,0.2)", border: "1px solid rgba(96,165,250,0.35)", padding: "1px 6px", borderRadius: 20, letterSpacing: "0.05em" }}>📦 PACK</span>
+              </div>
+              <div style={{ padding: "8px 10px" }}>
+                <p style={{ margin: "0 0 2px", fontSize: 12, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</p>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  {item.category && <span style={{ fontSize: 10, color: "#60a5fa", fontWeight: 600 }}>{item.category}</span>}
+                  {item.downloadCount > 0 && <span style={{ fontSize: 10, color: T.muted }}>↓ {item.downloadCount.toLocaleString()}</span>}
+                </div>
+              </div>
+            </a>
+          )
+        )}
       </div>
+
+      {creators.length > 0 && (
+        <div style={{ padding: "10px 14px 14px", borderTop: "1px solid " + T.border }}>
+          <p style={{ margin: "0 0 8px", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: T.muted }}>Meet the creators</p>
+          <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 2 }}>
+            {creators.map((c, i) => (
+              <a key={i} href={`/u?name=${c.username}`}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, textDecoration: "none", flexShrink: 0, minWidth: 52 }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+                <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", background: c._isPack ? "rgba(96,165,250,0.12)" : "rgba(103,228,4,0.12)", border: "2px solid " + (c._isPack ? "rgba(96,165,250,0.3)" : "rgba(103,228,4,0.3)"), display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {c._isPack && c.avatar_url
+                    ? <img src={c.avatar_url} alt={c.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => e.currentTarget.style.display = "none"} />
+                    : c._isPack
+                      ? <span style={{ fontSize: 14, fontWeight: 700, color: "#60a5fa" }}>{(c.username || "?")[0].toUpperCase()}</span>
+                      : <SkinBody url={c.public_url} scale={2} />
+                  }
+                </div>
+                <span style={{ fontSize: 9, fontWeight: 600, color: T.sub, textAlign: "center", maxWidth: 52, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.display_name || c.username}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
@@ -389,8 +367,6 @@ function ServersCard() {
     </Card>
   );
 }
-
-/* ─── page ─────────────────────────────────────────────────── */
 
 export default function Home() {
   const [stats, setStats] = useState(null);
@@ -430,9 +406,7 @@ export default function Home() {
           <main style={{ minWidth: 0 }}>
 
             <DownloadCard stats={stats} />
-            <SkinsCard skins={skins} />
-            <CreatorsCard skins={skins} packCreators={packCreators} />
-            <PacksCard packs={featuredPacks} />
+            <TrendingCard skins={skins} packs={featuredPacks} packCreators={packCreators} />
             <ServersCard />
           </main>
 
