@@ -174,7 +174,7 @@ function DownloadCard({ stats }) {
             <span style={{ color: T.green }}>On every platform.</span>
           </h2>
           <p style={{ margin: "0 auto", fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.5, maxWidth: 460 }}>
-            Console relay · Skin workshop · Player lookup · Resource packs · 16 languages
+            Console connector · Skin workshop · Player lookup · Resource packs · 16 languages
           </p>
           {stats && (
             <div style={{ display: "inline-flex", gap: 24, marginTop: 12 }}>
