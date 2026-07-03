@@ -334,7 +334,7 @@ function TrendingCard({ skins, packs, packCreators }) {
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, textDecoration: "none", flexShrink: 0, minWidth: 52 }}
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-                <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", background: c._isPack ? "rgba(96,165,250,0.12)" : "rgba(103,228,4,0.12)", border: "2px solid " + (c._isPack ? "rgba(96,165,250,0.3)" : "rgba(103,228,4,0.3)"), display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", background: c._isPack ? "rgba(96,165,250,0.12)" : "rgba(103,228,4,0.12)", border: "2px solid " + (c._isPack ? "rgba(96,165,250,0.3)" : "rgba(103,228,4,0.3)"), display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 4 }}>
                   {c._isPack && c.avatar_url
                     ? <img src={c.avatar_url} alt={c.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => e.currentTarget.style.display = "none"} />
                     : c._isPack
