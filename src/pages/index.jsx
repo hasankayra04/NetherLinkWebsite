@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FaWindows, FaApple, FaAndroid, FaDownload, FaHeart, FaArrowRight, FaPlaystation, FaXbox, FaGamepad } from "react-icons/fa";
+import { FaWindows, FaApple, FaAndroid, FaDownload, FaHeart, FaArrowRight, FaPlaystation, FaXbox, FaGamepad, FaYoutube } from "react-icons/fa";
 import FeaturedServersCarousel from "../components/FeaturedServersCarousel";
 import Layout from "@theme/Layout";
 import { T } from "../lib/tokens";
@@ -289,7 +289,7 @@ function TrendingCard({ skins, packs, packCreators }) {
               style={{ display: "flex", flexDirection: "column", borderRadius: 10, overflow: "hidden", background: T.bg, border: "1px solid " + T.border, textDecoration: "none", transition: "border-color 0.15s, transform 0.15s" }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = "#67e40450"; e.currentTarget.style.transform = "translateY(-2px)"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; }}>
-              <div style={{ background: "#131820", display: "flex", justifyContent: "center", alignItems: "flex-end", padding: "16px 12px 0", minHeight: 120, position: "relative" }}>
+              <div style={{ background: "linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%)", display: "flex", justifyContent: "center", alignItems: "flex-end", padding: "16px 12px 0", minHeight: 120, position: "relative" }}>
                 <span style={{ position: "absolute", top: 6, left: 8, fontSize: 9, fontWeight: 800, color: "#67e404", background: "rgba(103,228,4,0.15)", border: "1px solid rgba(103,228,4,0.3)", padding: "1px 6px", borderRadius: 20, letterSpacing: "0.05em" }}>🎨 SKIN</span>
                 <SkinBody url={item.public_url} scale={4} />
               </div>
@@ -352,6 +352,38 @@ function TrendingCard({ skins, packs, packCreators }) {
   );
 }
 
+const TUTORIAL_VIDEO_ID = "sZUB2084P6E";
+
+function TutorialVideoCard() {
+  return (
+    <Card>
+      <CardHeader
+        label="Tutorial"
+        labelColor="#f87171"
+        title="See MCCompanion in action"
+        action={
+          <a href={`https://www.youtube.com/watch?v=${TUTORIAL_VIDEO_ID}`} target="_blank" rel="noopener noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, color: "#f87171", textDecoration: "none" }}>
+            <FaYoutube size={14} /> Watch on YouTube
+          </a>
+        }
+      />
+      <div style={{ padding: "12px 14px" }}>
+        <div style={{ position: "relative", aspectRatio: "16/9", borderRadius: 10, overflow: "hidden", background: "#000", border: "1px solid " + T.border }}>
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${TUTORIAL_VIDEO_ID}`}
+            title="MCCompanion tutorial"
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+          />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function ServersCard() {
   return (
     <Card>
@@ -406,6 +438,7 @@ export default function Home() {
           <main style={{ minWidth: 0 }}>
 
             <DownloadCard stats={stats} />
+            <TutorialVideoCard />
             <TrendingCard skins={skins} packs={featuredPacks} packCreators={packCreators} />
             <ServersCard />
           </main>

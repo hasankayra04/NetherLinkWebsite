@@ -51,7 +51,7 @@ function SkinDetailModal({ skin, onClose, onEdit, onDelete, isOwn, idToken, curr
         <div style={{ position: "relative", background: "linear-gradient(135deg, #0a1a08 0%, #0d1117 60%, #0a1a10 100%)", borderRadius: "20px 20px 0 0", padding: "32px 24px 24px", display: "flex", flexDirection: "column", alignItems: "center", overflow: "hidden" }}>
           <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(ellipse at 30% 50%, rgba(103,228,4,0.08) 0%, transparent 60%), radial-gradient(ellipse at 70% 30%, rgba(52,211,153,0.05) 0%, transparent 50%)", pointerEvents: "none" }} />
           <button onClick={onClose} style={{ position: "absolute", top: 12, right: 12, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, cursor: "pointer", color: "rgba(255,255,255,0.5)", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>✕</button>
-          <div style={{ position: "relative", zIndex: 1 }}>
+          <div style={{ position: "relative", zIndex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 12, padding: "12px 16px" }}>
             <SkinViewer3D skinUrl={skin.public_url} scale={5} />
           </div>
           <div style={{ position: "relative", zIndex: 1, textAlign: "center", marginTop: 16 }}>
@@ -117,7 +117,7 @@ function SkinCard({ skin: initialSkin, onEdit, onDelete, isOwn, idToken, initial
         onMouseEnter={e => { e.currentTarget.style.borderColor = C.accentBorder; e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.3)"; }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}>
 
-        <div style={{ background: C.elevated, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, height: 160, position: "relative" }}>
+        <div style={{ background: "linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, height: 160, position: "relative" }}>
           <SkinViewerFrontBack skinUrl={initialSkin.public_url} scale={4} />
           {(likeCount > 0 || commentCount > 0) && (
             <div style={{ position: "absolute", bottom: 6, right: 8, display: "flex", gap: 6 }}>
