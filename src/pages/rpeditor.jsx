@@ -37,28 +37,59 @@ function hexToUuid(hex) {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
 }
 
+function isJunkEntry(path) {
+  if (path.startsWith("__MACOSX/") || path.includes("/__MACOSX/")) return true;
+  const base = path.split("/").pop();
+  return base === ".DS_Store" || base === "Thumbs.db" || base === "desktop.ini";
+}
+
 async function parsePack(file) {
   const buf = await readFileAsArrayBuffer(file);
-  const data = unzipSync(new Uint8Array(buf));
+  let raw;
+  try {
+    raw = unzipSync(new Uint8Array(buf));
+  } catch {
+    throw new Error(`"${file.name}" is not a valid .zip/.mcpack file`);
+  }
+
+  let manifestPath = null, manifestDepth = Infinity, hasMcmeta = false;
+  for (const p of Object.keys(raw)) {
+    if (p.endsWith("/") || isJunkEntry(p)) continue;
+    const base = p.split("/").pop();
+    const depth = p.split("/").length - 1;
+    if (base === "manifest.json" && depth < manifestDepth) { manifestPath = p; manifestDepth = depth; }
+    if (base === "pack.mcmeta") hasMcmeta = true;
+  }
+  if (!manifestPath && hasMcmeta) {
+    throw new Error(`"${file.name}" is a Java Edition pack, only Bedrock packs are supported`);
+  }
+
+  const prefix = manifestPath ? manifestPath.slice(0, manifestPath.length - "manifest.json".length) : "";
+  const data = {};
+  for (const [p, bytes] of Object.entries(raw)) {
+    if (p.endsWith("/") || isJunkEntry(p)) continue;
+    if (prefix && !p.startsWith(prefix)) continue;
+    const rel = p.slice(prefix.length);
+    if (rel) data[rel] = bytes;
+  }
   const paths = Object.keys(data);
 
   let name = file.name.replace(/\.(zip|mcpack)$/i, "");
   let manifest = null;
-  for (const key of ["manifest.json", "pack_manifest.json"]) {
-    const match = paths.find(p => p === key || p.endsWith("/" + key));
-    if (match) {
-      try {
-        manifest = JSON.parse(new TextDecoder().decode(data[match]));
-        const n = manifest?.header?.name || manifest?.name;
-        if (n) name = n;
-      } catch { }
-      break;
-    }
+  if (manifestPath) {
+    try {
+      manifest = JSON.parse(new TextDecoder().decode(data["manifest.json"]));
+      const n = manifest?.header?.name || manifest?.name;
+      if (n) name = n;
+    } catch { }
   }
 
   let iconUrl = null;
   const iconKey = paths.find(p => p === "pack_icon.png" || p.endsWith("/pack_icon.png"));
   if (iconKey) iconUrl = URL.createObjectURL(new Blob([data[iconKey]], { type: "image/png" }));
+
+  const behaviorModules = (manifest?.modules ?? []).some(m => ["data", "script", "javascript"].includes(String(m?.type).toLowerCase()));
+  const behaviorFolders = paths.some(p => p.startsWith("scripts/") || p.startsWith("functions/"));
 
   const warnings = [];
   if (!manifest) warnings.push({ type: "error", msg: "No manifest.json found, pack may not work in Minecraft" });
@@ -66,9 +97,10 @@ async function parsePack(file) {
     if (!manifest.header?.uuid) warnings.push({ type: "warning", msg: "manifest.json is missing a UUID" });
     if (!manifest.header?.version) warnings.push({ type: "warning", msg: "manifest.json is missing a version" });
   }
+  if (behaviorModules || behaviorFolders) warnings.push({ type: "warning", msg: "Contains behavior pack data, which won't work on servers, the textures will still work" });
   if (!iconKey) warnings.push({ type: "info", msg: "No pack_icon.png found" });
 
-  const fileCount = paths.filter(p => !p.endsWith("/")).length;
+  const fileCount = paths.length;
   return { id: crypto.randomUUID(), file, name, data, paths, fileCount, size: file.size, iconUrl, manifest, warnings };
 }
 
@@ -347,10 +379,13 @@ export default function RPEditor() {
 
   const addFiles = useCallback(async (files) => {
     setError(null); setResult(null); setLoading(true);
-    try {
-      const parsed = await Promise.all([...files].map(parsePack));
-      setPacks(prev => [...prev, ...parsed]);
-    } catch (e) { setError("Could not read one of the files. Make sure they are valid resource packs."); }
+    const parsed = [], errors = [];
+    for (const f of [...files]) {
+      try { parsed.push(await parsePack(f)); }
+      catch (e) { errors.push(e.message || `Could not read "${f.name}"`); }
+    }
+    if (parsed.length) setPacks(prev => [...prev, ...parsed]);
+    if (errors.length) setError(errors.join(" · "));
     setLoading(false);
   }, []);
 
@@ -376,6 +411,13 @@ export default function RPEditor() {
             if (manifestEdit.version) {
               const parts = manifestEdit.version.split(".").map(Number);
               if (parts.length === 3 && parts.every(n => !isNaN(n))) m.header.version = parts;
+            }
+          }
+          if (Array.isArray(m?.modules)) {
+            for (let i = 0; i < m.modules.length; i++) {
+              if (m.modules[i] && typeof m.modules[i] === "object") {
+                m.modules[i].uuid = hexToUuid(await sha256Hex(new TextEncoder().encode(`${hash}#${i}`)));
+              }
             }
           }
           merged[manifestKey] = new TextEncoder().encode(JSON.stringify(m, null, 2));
