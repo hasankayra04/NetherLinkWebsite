@@ -286,6 +286,245 @@ function NotificationCard() {
   );
 }
 
+const EVENT_META = {
+  set: { borderColor: "rgba(52,211,153,0.4)", dotColor: NL.success, badge: "success", label: "SET" },
+  del: { borderColor: "rgba(248,113,113,0.4)", dotColor: NL.danger, badge: "danger", label: "DEL" },
+  clear: { borderColor: "rgba(251,191,36,0.4)", dotColor: NL.warn, badge: "warn", label: "CLEAR" },
+  snapshot: { borderColor: "rgba(96,165,250,0.4)", dotColor: "#60a5fa", badge: "blue", label: "SNAP" },
+};
+const EVENTS_CAP = 1500;
+
+function StatusDot({ status }) {
+  const cfg = { open: { color: NL.success }, connecting: { color: NL.warn }, error: { color: NL.danger }, closed: { color: NL.muted } }[status] || { color: NL.muted };
+  return <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: cfg.color, flexShrink: 0 }} />;
+}
+
+function FeedEventRow({ ev, onBan, isBanned }) {
+  const [expanded, setExpanded] = useState(false);
+  const meta = EVENT_META[ev.type] || EVENT_META.set;
+  const v = ev.value || {};
+  const publicIp = v.publicIp || v.publicIP || v.public || ev.key || "";
+  const player = v.playerName || "";
+  const remoteIp = v.remoteServerIp || v.remoteServerIP || v.remote || "";
+  const remotePort = v.remoteServerPort || v.remotePort || v.port || "";
+  const time = ev.time ? new Date(ev.time).toLocaleTimeString() : "";
+
+  if (ev.type === "snapshot") return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, background: NL.elevated, border: `1px solid ${NL.border}` }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: meta.dotColor, flexShrink: 0 }} />
+      <Badge color="blue">SNAP</Badge>
+      <span style={{ fontSize: 12, color: NL.secondary }}>{ev.count} entries loaded</span>
+      <span style={{ marginLeft: "auto", fontSize: 11, color: NL.muted, fontFamily: mono }}>{time}</span>
+    </div>
+  );
+  if (ev.type === "clear") return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, background: NL.elevated, border: `1px solid ${NL.border}` }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: meta.dotColor, flexShrink: 0 }} />
+      <Badge color="warn">CLEAR</Badge>
+      <span style={{ fontSize: 12, color: NL.secondary }}>{ev.entries?.length ?? 0} entries cleared</span>
+      <span style={{ marginLeft: "auto", fontSize: 11, color: NL.muted, fontFamily: mono }}>{time}</span>
+    </div>
+  );
+  return (
+    <div style={{ borderRadius: 8, border: `1px solid ${NL.border}`, borderLeft: `2px solid ${meta.borderColor}`, background: NL.elevated, padding: "8px 10px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: meta.dotColor, flexShrink: 0 }} />
+        <Badge color={meta.badge}>{meta.label}</Badge>
+        <span style={{ fontFamily: mono, fontSize: 12, color: NL.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }} title={publicIp}>{publicIp || "—"}</span>
+        {player && <span style={{ fontSize: 11, color: NL.secondary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>{player}</span>}
+        {remoteIp && <span style={{ fontFamily: mono, fontSize: 11, color: NL.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 120 }}>→ {remoteIp}{remotePort ? `:${remotePort}` : ""}</span>}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+          <span style={{ fontFamily: mono, fontSize: 10, color: NL.muted }}>{time}</span>
+          {ev.type === "set" && publicIp && !isBanned && iconBtn(() => onBan(publicIp), "Ban IP", <IC.Ban />)}
+          <button onClick={() => setExpanded(x => !x)} style={{ background: "none", border: "none", cursor: "pointer", color: NL.muted, fontSize: 10, padding: "2px 4px", fontFamily: mono }}>{expanded ? "▲" : "▼"}</button>
+        </div>
+      </div>
+      {expanded && (
+        <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${NL.border}` }}>
+          <pre style={{ fontSize: 11, color: NL.secondary, fontFamily: mono, background: "rgba(0,0,0,0.3)", borderRadius: 6, padding: 10, overflow: "auto", maxHeight: 160, margin: 0 }}>
+            {JSON.stringify(ev.type === "set" || ev.type === "del" ? v : ev, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LiveEventsPanel({ isMobile }) {
+  const [eventsFeed, setEventsFeed] = useState([]);
+  const [sseStatus, setSseStatus] = useState("closed");
+  const [currentMap, setCurrentMap] = useState({});
+  const [rawFilter, setRawFilter] = useState("");
+  const [filter, setFilter] = useState("");
+  const [showOnly, setShowOnly] = useState("all");
+  const [hideTracker, setHideTracker] = useState(true);
+  const [bans, setBans] = useState([]);
+  const esRef = useRef(null);
+  const filterTimer = useRef(null);
+
+  useEffect(() => {
+    if (filterTimer.current) clearTimeout(filterTimer.current);
+    filterTimer.current = setTimeout(() => setFilter(rawFilter.trim()), 220);
+    return () => clearTimeout(filterTimer.current);
+  }, [rawFilter]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = await fetchIdToken();
+        const res = await fetch(`${API_BASE}/api/admin/bans`, { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) setBans((await res.json()).bans || []);
+      } catch (_) { }
+    })();
+  }, []);
+
+  const startStream = useCallback(async () => {
+    if (esRef.current) return;
+    setSseStatus("connecting");
+    try {
+      const token = await fetchIdToken(); if (!token) throw new Error("Not authenticated");
+      const r = await fetch(`${API_BASE}/cache/admin/cache/stream-token?region=eu`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) throw new Error("stream-token failed");
+      const { streamToken } = await r.json();
+      const es = new EventSource(`${API_BASE}/cache/admin/cache/stream?streamToken=${encodeURIComponent(streamToken)}&region=eu`);
+      esRef.current = es;
+      es.onopen = () => setSseStatus("open");
+      es.onerror = () => setSseStatus("error");
+      es.addEventListener("snapshot", e => {
+        try {
+          const d = JSON.parse(e.data || "{}");
+          const entries = Array.isArray(d.entries) ? d.entries : [];
+          const map = {};
+          for (const { key, value } of entries) { if (key && value) map[key] = value; }
+          setCurrentMap(map);
+          setEventsFeed(prev => [...prev, { type: "snapshot", count: entries.length, time: d.time || Date.now() }].slice(-EVENTS_CAP));
+        } catch (_) { }
+      });
+      es.addEventListener("set", e => {
+        try {
+          const d = JSON.parse(e.data || "{}");
+          setEventsFeed(prev => [...prev, { type: "set", key: d.key, value: d.value, time: d.time || Date.now() }].slice(-EVENTS_CAP));
+          if (d.key) setCurrentMap(prev => ({ ...prev, [d.key]: d.value || {} }));
+        } catch (_) { }
+      });
+      es.addEventListener("del", e => {
+        try {
+          const d = JSON.parse(e.data || "{}");
+          setEventsFeed(prev => [...prev, { type: "del", key: d.key, value: d.value, time: d.time || Date.now() }].slice(-EVENTS_CAP));
+          if (d.key) setCurrentMap(prev => { const n = { ...prev }; delete n[d.key]; return n; });
+        } catch (_) { }
+      });
+      es.addEventListener("clear", e => {
+        try {
+          const d = JSON.parse(e.data || "{}");
+          setEventsFeed(prev => [...prev, { type: "clear", entries: d.entries || [], time: d.time || Date.now() }].slice(-EVENTS_CAP));
+          setCurrentMap({});
+        } catch (_) { }
+      });
+    } catch (err) { setSseStatus("closed"); }
+  }, []);
+
+  const stopStream = useCallback(() => {
+    if (esRef.current) { try { esRef.current.close(); } catch (_) { } esRef.current = null; }
+    setSseStatus("closed");
+  }, []);
+
+  useEffect(() => () => stopStream(), [stopStream]);
+
+  function isIpLocallyBanned(ip) { return ip ? bans.some(b => String(b.ip).toLowerCase() === String(ip).toLowerCase()) : false; }
+
+  async function handleBan(ip) {
+    if (!ip || !confirm(`Ban ${ip}?`)) return;
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/admin/bans`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ ip, reason: "Banned from live events" }) });
+      if (res.ok) {
+        setBans(prev => [...prev, { ip }]);
+        setCurrentMap(prev => { const n = { ...prev }; delete n[ip]; return n; });
+      }
+    } catch (_) { }
+  }
+
+  const filtered = useMemo(() => {
+    return [...eventsFeed].reverse().filter(ev => {
+      if (showOnly !== "all" && ev.type !== showOnly) return false;
+      if (hideTracker && ev.key && (ev.key.startsWith("tracker:") || ev.key.startsWith("bots:") || ev.key.startsWith("fcm_"))) return false;
+      if (!filter) return true;
+      const s = filter.toLowerCase();
+      const v = ev.value || {};
+      return [v.publicIp, v.publicIP, v.public, v.remoteServerIp, v.remoteServerIP, v.remote, String(v.remoteServerPort || v.remotePort || v.port || ""), v.playerName, ev.key].some(x => (x || "").toLowerCase().includes(s));
+    });
+  }, [eventsFeed, filter, showOnly, hideTracker]);
+
+  const players = Object.entries(currentMap).filter(([, v]) => v?.playerName);
+  const inputStyle = { padding: "9px 12px", borderRadius: 9, border: `1px solid ${NL.borderMid}`, background: NL.subtle, color: NL.text, fontSize: 13, fontFamily: font, outline: "none", boxSizing: "border-box" };
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr", gap: 16, alignItems: "start" }}>
+      <Card
+        title="Live cache feed"
+        subtitle={`${filtered.length} events`}
+        action={
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <StatusDot status={sseStatus} />
+            <span style={{ fontSize: 11, color: NL.muted }}>{sseStatus}</span>
+            {sseStatus !== "open" && sseStatus !== "connecting"
+              ? <Btn onClick={startStream} size="sm">Start</Btn>
+              : <Btn onClick={stopStream} size="sm" variant="secondary">Stop</Btn>}
+          </div>
+        }
+      >
+        <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+          <input placeholder="Filter by IP / player / remote…" value={rawFilter} onChange={e => setRawFilter(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 160 }} />
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {["all", "set", "del", "clear"].map(v => (
+              <button key={v} onClick={() => setShowOnly(v)} style={{ padding: "6px 8px", borderRadius: 7, fontSize: 11, fontWeight: 600, fontFamily: font, cursor: "pointer", border: `1px solid ${NL.border}`, background: showOnly === v ? NL.accent : "transparent", color: showOnly === v ? "#0d1a18" : NL.muted }}>
+                {v === "all" ? "All" : v.toUpperCase()}
+              </button>
+            ))}
+            <button onClick={() => setHideTracker(h => !h)} title="Hide tracker/bot events" style={{ padding: "6px 8px", borderRadius: 7, fontSize: 11, fontWeight: 600, fontFamily: font, cursor: "pointer", border: `1px solid ${NL.border}`, background: hideTracker ? NL.accent : "transparent", color: hideTracker ? "#0d1a18" : NL.muted }}>
+              No noise
+            </button>
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 5, maxHeight: 520, overflowY: "auto" }}>
+          {filtered.length === 0 ? (
+            <p style={{ fontSize: 13, color: NL.muted, textAlign: "center", padding: "32px 0" }}>
+              {sseStatus === "open" ? "Waiting for events…" : "Press Start to connect to the live feed."}
+            </p>
+          ) : filtered.slice(0, 200).map((ev, i) => (
+            <FeedEventRow key={`${ev.time}-${i}`} ev={ev} onBan={handleBan} isBanned={isIpLocallyBanned(ev.key)} />
+          ))}
+        </div>
+      </Card>
+
+      <Card title="Live players" subtitle={`${players.length} in cache`}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 5, maxHeight: 520, overflowY: "auto" }}>
+          {players.length === 0 ? (
+            <p style={{ fontSize: 13, color: NL.muted, textAlign: "center", padding: "16px 0" }}>No players in cache</p>
+          ) : players.map(([key, val]) => {
+            const banned = isIpLocallyBanned(key);
+            const remote = val?.remoteServerIp || val?.remote || "—";
+            const port = val?.remoteServerPort || val?.remotePort || val?.port || "";
+            return (
+              <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, background: NL.elevated, border: `1px solid ${NL.border}` }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: NL.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{val?.playerName || "—"}</p>
+                  <p style={{ fontFamily: mono, fontSize: 10, color: NL.muted, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{key} → {remote}{port ? `:${port}` : ""}</p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+                  {iconBtn(() => navigator.clipboard?.writeText(key), "Copy IP", <IC.Copy />)}
+                  {banned ? <Badge color="danger">Banned</Badge> : iconBtn(() => handleBan(key), "Ban", <IC.Ban />)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 function QuickActionsCard() {
   async function downloadServers() {
     try {
@@ -799,9 +1038,9 @@ function FeedbackBubble({ r, email }) {
   );
 }
 
-function FeedbackItem({ c, onDelete }) {
+function FeedbackItem({ c, onDelete, initialIssue = null }) {
   const [expanded, setExpanded] = useState(false);
-  const [ghIssue, setGhIssue] = useState(null);
+  const [ghIssue, setGhIssue] = useState(initialIssue);
   const [ghLoading, setGhLoading] = useState(false);
   const [replies, setReplies] = useState([]);
   const [repliesLoading, setRepliesLoading] = useState(false);
@@ -820,12 +1059,30 @@ function FeedbackItem({ c, onDelete }) {
     finally { setGhLoading(false); }
   }
 
+  // For user-linked feedback the conversation IS the DM thread with that user.
+  const isDm = !!c.username;
+
   async function loadReplies() {
     setRepliesLoading(true);
     try {
       const token = await fetchIdToken();
-      const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${c.issue_number}/replies`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) setReplies((await res.json()).replies || []);
+      if (isDm) {
+        const res = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(c.username)}`, { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) {
+          const myUid = auth.currentUser?.uid;
+          const msgs = ((await res.json()).messages || []).map(m => ({
+            id: m.id,
+            direction: m.senderUid === myUid ? "admin_to_user" : "user_to_admin",
+            message: m.content,
+            admin_email: null,
+            created_at: m.createdAt,
+          }));
+          setReplies(msgs);
+        }
+      } else {
+        const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${c.issue_number}/replies`, { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) setReplies((await res.json()).replies || []);
+      }
     } catch (_) { }
     finally { setRepliesLoading(false); }
   }
@@ -840,9 +1097,20 @@ function FeedbackItem({ c, onDelete }) {
     setSending(true); setReplyError(null);
     try {
       const token = await fetchIdToken();
-      const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${c.issue_number}/reply`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ message: reply.trim(), issueTitle: ghIssue?.title }) });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || `${res.status}`);
+      if (isDm) {
+        const prefix = replies.length === 0 ? `[Feedback #${c.issue_number}] ` : "";
+        const res = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(c.username)}`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ content: prefix + reply.trim() }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || data.error || `${res.status}`);
+      } else {
+        const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${c.issue_number}/reply`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ message: reply.trim(), issueTitle: ghIssue?.title }) });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || `${res.status}`);
+      }
       setReply("");
       await loadReplies();
     } catch (e) { setReplyError(e.message); }
@@ -867,7 +1135,12 @@ function FeedbackItem({ c, onDelete }) {
     <div style={{ border: `1px solid ${expanded ? NL.borderMid : NL.border}`, borderRadius: 12, background: NL.elevated, overflow: "hidden", transition: "border-color 0.15s" }}>
       <div onClick={toggle} style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
         <span style={{ fontFamily: mono, fontSize: 11, color: NL.muted, flexShrink: 0 }}>#{c.issue_number}</span>
-        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: NL.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ghIssue?.title || `Issue #${c.issue_number}`}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: NL.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ghIssue?.title || `Issue #${c.issue_number}`}</p>
+          <p style={{ margin: "1px 0 0", fontSize: 11, color: NL.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            from {c.username ? <span style={{ color: NL.accent, fontFamily: mono }}>@{c.username}</span> : <span style={{ fontFamily: mono }}>{c.email ?? "unknown"}</span>}
+          </p>
+        </div>
         {replies.length > 0 && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: NL.subtle, color: NL.secondary, border: `1px solid ${NL.border}`, fontFamily: mono, flexShrink: 0 }}>{replies.length} msg{replies.length !== 1 ? "s" : ""}</span>}
         {ghIssue && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: isBug ? NL.dangerDim : NL.accentDim, color: isBug ? NL.danger : NL.accent, border: `1px solid ${isBug ? NL.dangerBorder : NL.accentBorder}`, fontFamily: mono, flexShrink: 0 }}>{isBug ? "BUG" : "FEATURE"}</span>}
         {ghIssue && <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: "transparent", color: stateColor, border: `1px solid ${stateColor}22`, fontFamily: mono, flexShrink: 0 }}>{ghIssue.state}</span>}
@@ -880,21 +1153,30 @@ function FeedbackItem({ c, onDelete }) {
             : ghIssue ? <div style={{ background: NL.subtle, borderRadius: 8, padding: "12px 14px", fontSize: 12, color: NL.secondary, lineHeight: 1.6, whiteSpace: "pre-wrap", maxHeight: 160, overflow: "auto", fontFamily: mono }}>{ghIssue.body || "(no description)"}</div>
               : null}
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span style={{ fontFamily: mono, fontSize: 12, color: NL.text, background: NL.subtle, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.borderMid}` }}>✉ {c.email}</span>
+            {c.username
+              ? <a href={`/admin?tab=messages&user=${encodeURIComponent(c.username)}`} title="Open DM" style={{ fontFamily: mono, fontSize: 12, color: NL.accent, background: NL.accentDim, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.accentBorder}`, textDecoration: "none" }}>👤 @{c.username} — DM →</a>
+              : c.email
+                ? <span style={{ fontFamily: mono, fontSize: 12, color: NL.text, background: NL.subtle, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.borderMid}` }}>✉ {c.email}</span>
+                : <span style={{ fontSize: 12, color: NL.muted }}>No contact info</span>}
             <a href={`https://github.com/MCCORG/MCCompanion/issues/${c.issue_number}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: NL.accent, textDecoration: "none", padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.accentBorder}`, background: NL.accentDim }}>GitHub ↗</a>
             <div style={{ flex: 1 }} />
             <button onClick={handleDelete} disabled={deleting} style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.dangerBorder}`, background: NL.dangerDim, color: NL.danger, cursor: "pointer", fontFamily: font, opacity: deleting ? 0.5 : 1 }}>{deleting ? "…" : "Remove contact"}</button>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: NL.secondary, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: mono }}>Conversation</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: NL.secondary, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: mono }}>
+                {isDm ? "DM conversation" : "Email conversation"}
+              </label>
+              {iconBtn(loadReplies, "Refresh", <IC.Refresh />)}
+            </div>
             {repliesLoading ? (
               <div style={{ display: "flex", alignItems: "center", gap: 6, color: NL.muted, fontSize: 12 }}><Spinner size={11} /> Loading…</div>
             ) : replies.length === 0 ? (
               <p style={{ margin: 0, fontSize: 12, color: NL.muted }}>No messages yet.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {replies.map(r => <FeedbackBubble key={r.id} r={r} email={c.email} />)}
+                {replies.map(r => <FeedbackBubble key={r.id} r={r} email={c.username ? `@${c.username}` : c.email} />)}
               </div>
             )}
           </div>
@@ -906,7 +1188,7 @@ function FeedbackItem({ c, onDelete }) {
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button onClick={sendReply} disabled={sending || !reply.trim()}
                 style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, padding: "7px 16px", borderRadius: 8, background: reply.trim() && !sending ? NL.accent : NL.elevated, border: `1px solid ${reply.trim() && !sending ? NL.accent : NL.border}`, color: reply.trim() && !sending ? "#000" : NL.muted, cursor: reply.trim() && !sending ? "pointer" : "not-allowed", fontFamily: font, transition: "all 0.15s" }}>
-                {sending ? <><Spinner size={12} /> Sending…</> : "Send ✉"}
+                {sending ? <><Spinner size={12} /> Sending…</> : (c.username ? "Send DM" : "Send email")}
               </button>
             </div>
           </div>
@@ -918,8 +1200,10 @@ function FeedbackItem({ c, onDelete }) {
 
 function FeedbackPanel() {
   const [contacts, setContacts] = useState([]);
+  const [issues, setIssues] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filter, setFilter] = useState("all"); // all | bug | feature | open | closed
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -929,24 +1213,66 @@ function FeedbackPanel() {
       const res = await fetch(`${API_BASE}/api/admin/feedback-contacts`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error(`${res.status}`);
       setContacts((await res.json()).contacts || []);
+
+      // Batch-load the GitHub issues so titles/types show without expanding.
+      const map = {};
+      for (const state of ["open", "closed"]) {
+        try {
+          const gh = await fetch(`https://api.github.com/repos/MCCORG/MCCompanion/issues?labels=app-feedback&state=${state}&per_page=100`, { headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" } });
+          if (gh.ok) for (const issue of await gh.json()) map[issue.number] = issue;
+        } catch (_) { }
+      }
+      setIssues(map);
     } catch (e) { setError("Failed: " + e.message); }
     finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
+  const filtered = contacts.filter(c => {
+    const issue = issues[c.issue_number];
+    if (filter === "all") return true;
+    if (filter === "open") return issue?.state !== "closed";
+    if (filter === "closed") return issue?.state === "closed";
+    const isBug = issue?.labels?.some(l => l.name === "bug");
+    if (filter === "bug") return isBug === true;
+    if (filter === "feature") return issue ? !isBug : false;
+    return true;
+  });
+
+  const FILTERS = [
+    { id: "all", label: "All" },
+    { id: "open", label: "Open" },
+    { id: "closed", label: "Closed" },
+    { id: "bug", label: "🐛 Bugs" },
+    { id: "feature", label: "💡 Features" },
+  ];
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <Card title="Feedback" subtitle={`${contacts.length} issue${contacts.length !== 1 ? "s" : ""} with contact info`} action={iconBtn(load, "Refresh", <IC.Refresh />)}>
+      <Card
+        title="Feedback"
+        subtitle="Bug reports & feature requests from the app and website — reply via DM (or email for older entries)"
+        action={iconBtn(load, "Refresh", <IC.Refresh />)}
+      >
+        <div style={{ display: "flex", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
+          {FILTERS.map(f => (
+            <button key={f.id} onClick={() => setFilter(f.id)}
+              style={{ padding: "5px 12px", borderRadius: 999, fontSize: 11, fontWeight: 600, fontFamily: font, cursor: "pointer", border: `1px solid ${filter === f.id ? NL.accentBorder : NL.border}`, background: filter === f.id ? NL.accentDim : "transparent", color: filter === f.id ? NL.accent : NL.muted }}>
+              {f.label}
+            </button>
+          ))}
+          <span style={{ marginLeft: "auto", fontSize: 11, color: NL.muted, alignSelf: "center" }}>{filtered.length} of {contacts.length}</span>
+        </div>
         {loading ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13, padding: "24px 0", justifyContent: "center" }}><Spinner /> Loading…</div>
         ) : error ? (
           <p style={{ fontSize: 12, color: NL.danger, padding: "16px 0", textAlign: "center" }}>{error}</p>
-        ) : contacts.length === 0 ? (
-          <p style={{ fontSize: 13, color: NL.muted, textAlign: "center", padding: "32px 0" }}>No feedback with contact info yet.</p>
+        ) : filtered.length === 0 ? (
+          <p style={{ fontSize: 13, color: NL.muted, textAlign: "center", padding: "32px 0" }}>No feedback here.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {contacts.map(c => <FeedbackItem key={c.issue_number} c={c} onDelete={n => setContacts(p => p.filter(x => x.issue_number !== n))} />)}
+            {filtered.map(c => <FeedbackItem key={c.issue_number} c={c} initialIssue={issues[c.issue_number] ?? null} onDelete={n => setContacts(p => p.filter(x => x.issue_number !== n))} />)}
           </div>
         )}
       </Card>
@@ -2019,28 +2345,335 @@ function CachePanel() {
   );
 }
 
-const TABS = [
-  { id: "overview", label: "Overview" },
-  { id: "partners", label: "Partners" },
-  { id: "featured-packs", label: "Packs" },
-  { id: "submissions", label: "Submissions" },
-  { id: "moderation", label: "Mod" },
-  { id: "feedback", label: "Feedback" },
-  { id: "skins", label: "Skins" },
-  { id: "cache", label: "Cache" },
+function MessagesPanel({ isMobile }) {
+  const [conversations, setConversations] = useState([]);
+  const [convsLoading, setConvsLoading] = useState(true);
+  const [activeUsername, setActiveUsername] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
+  const [newUser, setNewUser] = useState("");
+  const threadRef = useRef(null);
+
+  const loadConversations = useCallback(async () => {
+    setConvsLoading(true);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/messages/conversations`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) setConversations((await res.json()).conversations || []);
+    } catch (_) { }
+    finally { setConvsLoading(false); }
+  }, []);
+
+  async function loadConversation(u) {
+    setActiveUsername(u);
+    setLoadingHistory(true);
+    setResult(null);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(u)}`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (res.ok) setHistory(data.messages || []);
+      else setHistory([]);
+    } catch { setHistory([]); }
+    setLoadingHistory(false);
+  }
+
+  useEffect(() => { loadConversations(); }, [loadConversations]);
+
+  useEffect(() => {
+    try {
+      const u = new URLSearchParams(window.location.search).get("user");
+      if (u) loadConversation(u);
+    } catch (_) { }
+  }, []);
+
+  useEffect(() => {
+    if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
+  }, [history]);
+
+  async function send() {
+    const u = activeUsername;
+    const m = message.trim();
+    if (!u || !m || sending) return;
+    setSending(true);
+    setResult(null);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(u)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ content: m }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage("");
+        await loadConversation(u);
+        loadConversations();
+      } else {
+        setResult({ ok: false, text: data.error || "Failed to send" });
+      }
+    } catch {
+      setResult({ ok: false, text: "Network error" });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function startNew() {
+    const u = newUser.trim().replace(/^@/, "");
+    if (!u) return;
+    setNewUser("");
+    loadConversation(u);
+  }
+
+  const myUid = auth.currentUser?.uid;
+
+  const convList = (
+    <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ display: "flex", gap: 6, padding: "10px 10px 8px" }}>
+        <input
+          value={newUser}
+          onChange={e => setNewUser(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") startNew(); }}
+          placeholder="New DM: username…"
+          style={{ flex: 1, minWidth: 0, background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 8, padding: "8px 10px", color: NL.text, fontFamily: mono, fontSize: 12, outline: "none" }}
+        />
+        <button onClick={startNew} title="Open conversation"
+          style={{ padding: "0 12px", borderRadius: 8, border: `1px solid ${NL.accentBorder}`, background: NL.accentDim, color: NL.accent, fontSize: 14, cursor: "pointer", flexShrink: 0 }}>→</button>
+      </div>
+      <div style={{ overflowY: "auto", flex: 1 }}>
+        {convsLoading ? (
+          <div style={{ textAlign: "center", padding: 24, color: NL.muted }}><Spinner /></div>
+        ) : conversations.length === 0 ? (
+          <p style={{ color: NL.muted, fontSize: 12, textAlign: "center", padding: 24 }}>No conversations yet</p>
+        ) : conversations.map(c => {
+          const isActive = c.username === activeUsername;
+          return (
+            <button key={c.otherUid} onClick={() => loadConversation(c.username)}
+              style={{
+                display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
+                padding: "10px 12px", border: "none", borderLeft: `2px solid ${isActive ? NL.accent : "transparent"}`,
+                background: isActive ? NL.elevated : "transparent", cursor: "pointer", fontFamily: font,
+              }}>
+              {c.avatarUrl
+                ? <img src={c.avatarUrl} alt="" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                : <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: NL.accent }}>{(c.username || "?")[0].toUpperCase()}</div>}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: NL.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.displayName || c.username}</span>
+                  {c.unreadCount > 0 && <CountPill count={c.unreadCount} />}
+                </div>
+                <p style={{ margin: 0, fontSize: 11, color: NL.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {c.lastMessageIsMine ? "You: " : ""}{c.lastMessage}
+                </p>
+              </div>
+              <span style={{ fontSize: 10, color: NL.muted, flexShrink: 0 }}>
+                {new Date(c.lastMessageAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const thread = (
+    <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+      {!activeUsername ? (
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, color: NL.muted }}>
+          <span style={{ fontSize: 28 }}>✉️</span>
+          <p style={{ fontSize: 13, margin: 0 }}>Select a conversation or start a new DM</p>
+        </div>
+      ) : (
+        <>
+          <div style={{ padding: "12px 16px", borderBottom: `1px solid ${NL.border}`, display: "flex", alignItems: "center", gap: 10 }}>
+            {isMobile && (
+              <button onClick={() => setActiveUsername(null)} style={{ background: "none", border: "none", color: NL.secondary, cursor: "pointer", fontSize: 16, padding: 0 }}>←</button>
+            )}
+            <span style={{ fontSize: 13, fontWeight: 700, color: NL.text }}>@{activeUsername}</span>
+            <div style={{ flex: 1 }} />
+            {iconBtn(() => loadConversation(activeUsername), "Refresh", <IC.Refresh />)}
+            <a href={`/u?name=${encodeURIComponent(activeUsername)}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: NL.secondary, textDecoration: "none", padding: "3px 8px", borderRadius: 6, border: `1px solid ${NL.border}` }}>Profile ↗</a>
+          </div>
+          <div ref={threadRef} style={{ flex: 1, padding: 14, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
+            {loadingHistory ? (
+              <div style={{ textAlign: "center", padding: 24, color: NL.muted }}><Spinner /></div>
+            ) : history.length === 0 ? (
+              <p style={{ color: NL.muted, fontSize: 12, textAlign: "center", padding: 24 }}>No messages yet — say hi 👋</p>
+            ) : history.map(msg => {
+              const isMine = !!myUid && msg.senderUid === myUid;
+              const dt = new Date(msg.createdAt);
+              return (
+                <div key={msg.id} style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}>
+                  <div style={{
+                    maxWidth: "75%", padding: "8px 12px", borderRadius: 12,
+                    background: isMine ? NL.accent : NL.elevated,
+                    color: isMine ? "#0d1500" : NL.text,
+                    fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word",
+                    borderBottomRightRadius: isMine ? 4 : 12,
+                    borderBottomLeftRadius: isMine ? 12 : 4,
+                  }}>
+                    {msg.content}
+                  </div>
+                  <span style={{ fontSize: 10, color: NL.muted, marginTop: 2 }}>
+                    {dt.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} {dt.getHours().toString().padStart(2, "0")}:{dt.getMinutes().toString().padStart(2, "0")}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ padding: "10px 12px", borderTop: `1px solid ${NL.border}`, display: "flex", gap: 8, alignItems: "flex-end" }}>
+            <textarea
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") send(); }}
+              placeholder={`Message @${activeUsername}… (Cmd+Enter)`}
+              rows={2}
+              style={{ flex: 1, background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 10, padding: "9px 12px", color: NL.text, fontFamily: font, fontSize: 13, resize: "none", outline: "none", lineHeight: 1.5 }}
+            />
+            <Btn onClick={send} disabled={sending || !message.trim()}>
+              {sending ? <Spinner size={13} /> : "Send"}
+            </Btn>
+          </div>
+          {result && !result.ok && (
+            <p style={{ margin: "0 12px 10px", fontSize: 12, color: NL.danger }}>{result.text}</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column", height: "70vh" }}>
+        {activeUsername ? thread : convList}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, overflow: "hidden", display: "grid", gridTemplateColumns: "280px 1fr", height: "72vh" }}>
+      <div style={{ borderRight: `1px solid ${NL.border}`, display: "flex", flexDirection: "column", minHeight: 0 }}>{convList}</div>
+      {thread}
+    </div>
+  );
+}
+
+const NAV_GROUPS = [
+  {
+    label: null,
+    items: [{ id: "overview", label: "Overview", icon: "📊" }],
+  },
+  {
+    label: "Content",
+    items: [
+      { id: "submissions", label: "Submissions", icon: "📥", badge: "pendingSubmissions" },
+      { id: "featured-packs", label: "Featured Packs", icon: "📦" },
+      { id: "skins", label: "Skins", icon: "🎨" },
+    ],
+  },
+  {
+    label: "Community",
+    items: [
+      { id: "moderation", label: "Moderation", icon: "🛡", badge: "openReports" },
+      { id: "feedback", label: "Feedback", icon: "💬" },
+      { id: "messages", label: "Messages", icon: "✉️" },
+    ],
+  },
+  {
+    label: "Partners",
+    items: [{ id: "partners", label: "Partners", icon: "🤝" }],
+  },
+  {
+    label: "System",
+    items: [
+      { id: "events", label: "Live Events", icon: "📡" },
+      { id: "cache", label: "Cache", icon: "🗄" },
+    ],
+  },
 ];
+const ALL_NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items);
+
+function CountPill({ count }) {
+  if (!count) return null;
+  return (
+    <span style={{ minWidth: 18, height: 18, borderRadius: 9, padding: "0 5px", background: NL.accent, color: "#000", fontSize: 10, fontWeight: 800, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: mono, flexShrink: 0 }}>
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
+function AdminSidebar({ active, onChange, badges }) {
+  return (
+    <nav style={{ width: 210, flexShrink: 0, position: "sticky", top: 80, alignSelf: "flex-start", display: "flex", flexDirection: "column", gap: 4 }}>
+      {NAV_GROUPS.map((group, gi) => (
+        <div key={gi} style={{ display: "flex", flexDirection: "column", gap: 1, marginBottom: 8 }}>
+          {group.label && (
+            <p style={{ fontSize: 10, fontWeight: 700, color: NL.muted, textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 4px", padding: "0 10px" }}>{group.label}</p>
+          )}
+          {group.items.map(item => {
+            const isActive = active === item.id;
+            const count = item.badge ? badges?.[item.badge] : 0;
+            return (
+              <button key={item.id} onClick={() => onChange(item.id)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 9,
+                  border: isActive ? `1px solid ${NL.accentBorder}` : "1px solid transparent",
+                  background: isActive ? NL.accentDim : "transparent",
+                  color: isActive ? NL.accent : NL.secondary,
+                  fontSize: 13, fontWeight: isActive ? 700 : 500, fontFamily: font, cursor: "pointer",
+                  textAlign: "left", transition: "background 0.12s, color 0.12s", width: "100%",
+                }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = NL.elevated; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}>
+                <span style={{ fontSize: 14, width: 18, textAlign: "center", flexShrink: 0 }}>{item.icon}</span>
+                <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>
+                <CountPill count={count} />
+              </button>
+            );
+          })}
+        </div>
+      ))}
+    </nav>
+  );
+}
 
 export default function AdminPage() {
   const history = useHistory();
   const [checking, setChecking] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTabRaw] = useState(() => {
+    if (typeof window === "undefined") return "overview";
+    const t = new URLSearchParams(window.location.search).get("tab");
+    return ALL_NAV_ITEMS.some(i => i.id === t) ? t : "overview";
+  });
   const [isMobile, setIsMobile] = useState(false);
+  const [badges, setBadges] = useState({});
+
+  const setActiveTab = useCallback((tab) => {
+    setActiveTabRaw(tab);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tab);
+      window.history.replaceState(null, "", url.toString());
+    } catch (_) { }
+  }, []);
 
   useEffect(() => {
-    function check() { setIsMobile(window.innerWidth < 768); }
+    function check() { setIsMobile(window.innerWidth < 900); }
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const loadBadges = useCallback(async () => {
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/admin/badges`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) setBadges(await res.json());
+    } catch (_) { }
   }, []);
 
   useEffect(() => {
@@ -2055,9 +2688,12 @@ export default function AdminPage() {
         if (!roles?.includes("admin")) { history.replace("/"); return; }
       } catch (_) { history.replace("/login"); return; }
       setChecking(false);
+      loadBadges();
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => { if (!checking) loadBadges(); }, [activeTab]);
 
   if (checking) return (
     <Layout>
@@ -2067,33 +2703,95 @@ export default function AdminPage() {
     </Layout>
   );
 
+  const activeItem = ALL_NAV_ITEMS.find(i => i.id === activeTab);
+
+  const content = (
+    <>
+      {activeTab === "overview" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <RelayStatsCard />
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+            <NotificationCard />
+            <QuickActionsCard />
+          </div>
+          <PartnersOverviewCard isMobile={isMobile} />
+        </div>
+      )}
+      {activeTab === "partners" && <PartnersManagementPanel />}
+      {activeTab === "featured-packs" && <FeaturedPacksPanel />}
+      {activeTab === "submissions" && <PackSubmissionsPanel />}
+      {activeTab === "moderation" && <ModerationPanel isMobile={isMobile} />}
+      {activeTab === "feedback" && <FeedbackPanel />}
+      {activeTab === "skins" && <SkinsPanel />}
+      {activeTab === "cache" && <CachePanel />}
+      {activeTab === "events" && <LiveEventsPanel isMobile={isMobile} />}
+      {activeTab === "messages" && <MessagesPanel isMobile={isMobile} />}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Layout>
+        <style>{`.admin-chipnav::-webkit-scrollbar { display: none; }`}</style>
+        <div style={{ minHeight: "100vh", background: NL.bg, fontFamily: font }}>
+          <header style={{ position: "sticky", top: 0, zIndex: 20, borderBottom: `1px solid ${NL.border}`, background: NL.bg }}>
+            <div style={{ padding: "14px 16px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h1 style={{ fontSize: 18, fontWeight: 800, color: NL.text, margin: 0, letterSpacing: "-0.02em" }}>
+                {activeItem?.icon} {activeItem?.label ?? "Admin"}
+              </h1>
+              <a href="/account" style={{ fontSize: 11, color: NL.secondary, textDecoration: "none", padding: "5px 10px", borderRadius: 7, border: `1px solid ${NL.border}`, background: NL.surface, flexShrink: 0 }}>
+                Account →
+              </a>
+            </div>
+            <div className="admin-chipnav" style={{ display: "flex", gap: 6, overflowX: "auto", padding: "12px 16px", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+              {ALL_NAV_ITEMS.map(item => {
+                const isActive = activeTab === item.id;
+                const count = item.badge ? badges?.[item.badge] : 0;
+                return (
+                  <button key={item.id} onClick={() => setActiveTab(item.id)}
+                    ref={el => { if (el && isActive) el.scrollIntoView({ block: "nearest", inline: "nearest" }); }}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 999,
+                      border: `1px solid ${isActive ? NL.accentBorder : NL.border}`,
+                      background: isActive ? NL.accentDim : NL.surface,
+                      color: isActive ? NL.accent : NL.secondary,
+                      fontSize: 12, fontWeight: isActive ? 700 : 500, fontFamily: font,
+                      cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                    }}>
+                    <span style={{ fontSize: 13 }}>{item.icon}</span>
+                    {item.label}
+                    {count > 0 && (
+                      <span style={{ minWidth: 16, height: 16, borderRadius: 8, padding: "0 4px", background: NL.accent, color: "#000", fontSize: 9, fontWeight: 800, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: mono }}>
+                        {count > 99 ? "99+" : count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </header>
+          <div style={{ padding: "16px 16px 60px" }}>{content}</div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div style={{ minHeight: "100vh", background: NL.bg, fontFamily: font }}>
-        <header style={{ borderBottom: `1px solid ${NL.border}`, background: NL.surface }}>
-          <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? "16px 16px 0" : "20px 24px 0", display: "flex", flexDirection: "column", gap: 12 }}>
-            <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: NL.text, margin: 0 }}>Admin</h1>
-            <TabBar active={activeTab} onChange={setActiveTab} tabs={TABS} mobile={isMobile} />
-          </div>
-        </header>
-
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: isMobile ? "20px 16px" : "24px 24px", paddingBottom: 60 }}>
-          {activeTab === "overview" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <RelayStatsCard />
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
-                <NotificationCard />
-                <QuickActionsCard />
-              </div>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "28px 24px 60px", display: "flex", gap: 28, alignItems: "flex-start" }}>
+          <AdminSidebar active={activeTab} onChange={setActiveTab} badges={badges} />
+          <main style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: NL.text, margin: 0, letterSpacing: "-0.02em" }}>
+                {activeItem?.icon} {activeItem?.label ?? "Admin"}
+              </h1>
+              <a href="/account" style={{ fontSize: 12, color: NL.secondary, textDecoration: "none", padding: "6px 12px", borderRadius: 8, border: `1px solid ${NL.border}`, background: NL.surface }}>
+                My account →
+              </a>
             </div>
-          )}
-          {activeTab === "partners" && <PartnersManagementPanel />}
-          {activeTab === "featured-packs" && <FeaturedPacksPanel />}
-          {activeTab === "submissions" && <PackSubmissionsPanel />}
-          {activeTab === "moderation" && <ModerationPanel isMobile={isMobile} />}
-          {activeTab === "feedback" && <FeedbackPanel />}
-          {activeTab === "skins" && <SkinsPanel />}
-          {activeTab === "cache" && <CachePanel />}
+            {content}
+          </main>
         </div>
       </div>
     </Layout>

@@ -243,7 +243,7 @@ export default function LoginPage() {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (res.ok) {
-                history.replace("/dashboard");
+                history.replace("/account");
                 return;
             }
             await import("firebase/auth").then(({ signOut }) => signOut(auth));

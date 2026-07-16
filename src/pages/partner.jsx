@@ -249,12 +249,12 @@ function ActivePlanBanner({ plan, onCancel, cancelling, multipleServers }) {
           </div>
           <p style={{ fontSize: 12, color: NL.secondary, margin: "2px 0 0" }}>
             Your servers are live in the app.{" "}
-            <a href="/dashboard" style={{ color: NL.accent, textDecoration: "none", fontWeight: 600 }}>Open dashboard →</a>
+            <a href="/account?tab=partner" style={{ color: NL.accent, textDecoration: "none", fontWeight: 600 }}>Open dashboard →</a>
           </p>
         </div>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
-        <a href="/dashboard" style={{
+        <a href="/account?tab=partner" style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "8px 16px", borderRadius: 8, textDecoration: "none",
           background: NL.accentDim, border: `1px solid ${NL.accentBorder}`,
@@ -363,7 +363,7 @@ export default function PartnerProgramPage() {
 
   async function handleCancel() {
     if (servers.length > 1) {
-      window.location.href = "/dashboard";
+      window.location.href = "/account?tab=partner";
       return;
     }
     const serverId = servers[0]?.id;

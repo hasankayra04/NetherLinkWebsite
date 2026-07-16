@@ -44,7 +44,7 @@ export default function RegisterPage() {
       if (u) {
         const token = await u.getIdToken();
         const res = await fetch(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
-        if (res.ok) { history.replace("/dashboard"); return; }
+        if (res.ok) { history.replace("/account"); return; }
       }
       setChecking(false);
     });
@@ -88,7 +88,7 @@ export default function RegisterPage() {
         if (json.error === "username_taken") return setError("This username is already taken.");
         throw new Error(json.message || `${res.status}`);
       }
-      history.replace("/dashboard");
+      history.replace("/account");
     } catch (err) {
       await firebaseUser.delete().catch(() => {});
       setError(err.message || "Something went wrong. Please try again.");

@@ -10,6 +10,7 @@ import { API_BASE } from "../lib/api";
 import { T } from "../lib/tokens";
 import SkinRenderer from "../components/SkinRenderer";
 import Spinner from "../components/Spinner";
+import PartnerPanel from "../components/PartnerPanel";
 import { timeAgo } from "../lib/date-utils";
 
 marked.use({ breaks: true });
@@ -164,7 +165,11 @@ function MySubmissionsSection({ submissions, loadingSubs, loadSubmissions }) {
   const [editThumbUploading, setEditThumbUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [replacingId, setReplacingId] = useState(null);
+  const [replaceMsg, setReplaceMsg] = useState(null);
   const editThumbRef = useRef(null);
+  const replaceFileRef = useRef(null);
+  const replaceTargetRef = useRef(null);
 
   function startEdit(s) {
     setEditingId(s.id);
@@ -202,7 +207,7 @@ function MySubmissionsSection({ submissions, loadingSubs, loadSubmissions }) {
     finally { setEditThumbUploading(false); }
   }
 
-  async function saveEdit(id) {
+  async function saveEdit(id, { resubmit = false } = {}) {
     setSaving(true);
     try {
       const token = await fetchIdToken();
@@ -218,11 +223,41 @@ function MySubmissionsSection({ submissions, loadingSubs, loadSubmissions }) {
           longDescription: editForm.longDescription.trim() || undefined,
           creatorWebsite: editForm.creatorWebsite.trim() || undefined,
           creatorDiscord: editForm.creatorDiscord.trim() || undefined,
+          ...(resubmit ? { resubmit: true } : {}),
         }),
       });
       if (res.ok) { setEditingId(null); await loadSubmissions(); }
     } catch (_) { }
     setSaving(false);
+  }
+
+  function pickReplacementFile(id) {
+    replaceTargetRef.current = id;
+    replaceFileRef.current?.click();
+  }
+
+  async function uploadReplacementFile(file) {
+    const id = replaceTargetRef.current;
+    if (!file || !id) return;
+    setReplacingId(id); setReplaceMsg(null);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/featured-packs/my-submissions/${id}/file`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/octet-stream" },
+        body: file,
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.message || d.error || res.status);
+      setReplaceMsg({ ok: true, id, msg: "Pack file updated — back in review queue." });
+      await loadSubmissions();
+    } catch (e) {
+      setReplaceMsg({ ok: false, id, msg: "Upload failed: " + e.message });
+    } finally {
+      setReplacingId(null);
+      replaceTargetRef.current = null;
+      if (replaceFileRef.current) replaceFileRef.current.value = "";
+    }
   }
 
   async function deleteSubmission(id) {
@@ -240,6 +275,8 @@ function MySubmissionsSection({ submissions, loadingSubs, loadSubmissions }) {
 
   return (
     <Card title="My Submissions" subtitle={submissions.length ? `${submissions.length} submission${submissions.length !== 1 ? "s" : ""}` : undefined}>
+      <input ref={replaceFileRef} type="file" accept=".mcpack,.zip" style={{ display: "none" }}
+        onChange={e => { const f = e.target.files[0]; if (f) uploadReplacementFile(f); }} />
       {loadingSubs ? (
         <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13, padding: "12px 0", justifyContent: "center" }}><Spinner /> Loading…</div>
       ) : (
@@ -265,11 +302,15 @@ function MySubmissionsSection({ submissions, loadingSubs, loadSubmissions }) {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
                   <span style={{ display: "inline-block", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 6, background: STATUS_BG[s.status] ?? NL.elevated, border: `1px solid ${STATUS_BORDER[s.status] ?? NL.border}`, color: STATUS_COLOR[s.status] ?? NL.muted, textTransform: "capitalize" }}>{s.status ?? "pending"}</span>
-                  {s.status === "pending" && (
-                    <div style={{ display: "flex", gap: 6 }}>
+                  {(s.status === "pending" || s.status === "rejected") && (
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
                       <button onClick={() => editingId === s.id ? cancelEdit() : startEdit(s)}
                         style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: `1px solid ${NL.borderMid}`, background: "transparent", color: NL.secondary, cursor: "pointer", fontFamily: font }}>
                         {editingId === s.id ? "Cancel" : "Edit"}
+                      </button>
+                      <button onClick={() => pickReplacementFile(s.id)} disabled={replacingId === s.id}
+                        style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: `1px solid ${NL.borderMid}`, background: "transparent", color: NL.secondary, cursor: "pointer", fontFamily: font, opacity: replacingId === s.id ? 0.5 : 1 }}>
+                        {replacingId === s.id ? "Uploading…" : "Replace file"}
                       </button>
                       <button onClick={() => deleteSubmission(s.id)} disabled={deletingId === s.id}
                         style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: `1px solid ${NL.dangerBorder}`, background: NL.dangerDim, color: NL.danger, cursor: "pointer", fontFamily: font, opacity: deletingId === s.id ? 0.5 : 1 }}>
@@ -277,9 +318,22 @@ function MySubmissionsSection({ submissions, loadingSubs, loadSubmissions }) {
                       </button>
                     </div>
                   )}
+                  {s.status === "approved" && (
+                    <button onClick={() => { if (confirm("Uploading a new file puts this pack back in review. The current version stays live until it's re-approved. Continue?")) pickReplacementFile(s.id); }} disabled={replacingId === s.id}
+                      style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: `1px solid ${NL.accentBorder}`, background: NL.accentDim, color: NL.accent, cursor: "pointer", fontFamily: font, opacity: replacingId === s.id ? 0.5 : 1 }}>
+                      {replacingId === s.id ? "Uploading…" : "Upload update"}
+                    </button>
+                  )}
                 </div>
               </div>
 
+              {replaceMsg && replaceMsg.id === s.id && (
+                <div style={{ padding: "8px 14px", borderTop: `1px solid ${NL.border}` }}>
+                  <p style={{ margin: 0, fontSize: 11, color: replaceMsg.ok ? NL.success : NL.danger }}>
+                    {replaceMsg.ok ? "✓ " : "⚠ "}{replaceMsg.msg}
+                  </p>
+                </div>
+              )}
               {s.reviewNote && (
                 <div style={{ padding: "8px 14px 10px", borderTop: `1px solid ${NL.border}`, background: s.status === "rejected" ? "rgba(248,113,113,0.05)" : "rgba(103,228,4,0.04)" }}>
                   <p style={{ margin: 0, fontSize: 11, color: NL.secondary, lineHeight: 1.5 }}>
@@ -354,7 +408,7 @@ function MySubmissionsSection({ submissions, loadingSubs, loadSubmissions }) {
                     <Label>Long description (Markdown)</Label>
                     <textarea style={{ ...inputStyle, minHeight: 100, resize: "vertical" }} value={editForm.longDescription} onChange={e => setEditForm(f => ({ ...f, longDescription: e.target.value }))} />
                   </div>
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
                     <button type="button" onClick={cancelEdit}
                       style={{ fontSize: 12, padding: "8px 16px", borderRadius: 8, border: `1px solid ${NL.borderMid}`, background: "transparent", color: NL.secondary, cursor: "pointer", fontFamily: font }}>
                       Cancel
@@ -363,6 +417,12 @@ function MySubmissionsSection({ submissions, loadingSubs, loadSubmissions }) {
                       style={{ fontSize: 12, padding: "8px 16px", borderRadius: 8, border: "none", background: NL.accent, color: "#000", fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", fontFamily: font, opacity: saving ? 0.6 : 1 }}>
                       {saving ? "Saving…" : "Save changes"}
                     </button>
+                    {s.status === "rejected" && (
+                      <button type="button" onClick={() => saveEdit(s.id, { resubmit: true })} disabled={saving || !editForm.name.trim()}
+                        style={{ fontSize: 12, padding: "8px 16px", borderRadius: 8, border: "none", background: "#f59e0b", color: "#000", fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", fontFamily: font, opacity: saving ? 0.6 : 1 }}>
+                        {saving ? "Saving…" : "Save & resubmit"}
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -858,14 +918,22 @@ export default function AccountPage() {
     outline: "none", width: "100%", boxSizing: "border-box", transition: "border-color 0.15s",
   };
 
+  const isPartner = roles.includes("partner") || roles.includes("admin");
+  const isAdmin = roles.includes("admin");
+
   const TABS = [
     { id: "profile", label: "Profile" },
     { id: "account", label: "Account" },
     { id: "skins", label: "Cloud Skins" },
     { id: "packs", label: "Resource Packs" },
+    ...(isPartner ? [{ id: "partner", label: "Partner" }] : []),
     { id: "notifications", label: "Notifications" },
   ];
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window === "undefined") return "profile";
+    const t = new URLSearchParams(window.location.search).get("tab");
+    return ["profile", "account", "skins", "packs", "partner", "notifications"].includes(t) ? t : "profile";
+  });
 
   if (checking) return (
     <Layout>
@@ -1028,12 +1096,19 @@ export default function AccountPage() {
             </div>
 
             <div>
-              <div style={{ display: "flex", background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 18 }}>
+              {isAdmin && (
+                <a href="/admin" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "11px 16px", marginBottom: 14, borderRadius: 12, background: NL.dangerDim, border: `1px solid ${NL.dangerBorder}`, textDecoration: "none" }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: NL.danger }}>🛡 Admin Panel</span>
+                  <span style={{ fontSize: 12, color: NL.danger }}>Open →</span>
+                </a>
+              )}
+              <style>{`.account-tabs::-webkit-scrollbar { display: none; }`}</style>
+              <div className="account-tabs" style={{ display: "flex", background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 12, marginBottom: 18, overflowX: isMobile ? "auto" : "hidden", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
                 {TABS.filter(t => (t.id !== "skins" && t.id !== "packs") || profile).map(tab => {
                   const active = activeTab === tab.id;
                   return (
                     <button type="button" key={tab.id} onClick={() => setActiveTab(tab.id)}
-                      style={{ flex: 1, padding: "11px 8px", background: active ? NL.accent : "transparent", border: "none", borderRight: `1px solid ${NL.border}`, color: active ? "#000" : NL.muted, fontSize: isMobile ? 11 : 12, fontWeight: active ? 700 : 500, cursor: "pointer", fontFamily: font, transition: "background 0.15s, color 0.15s", whiteSpace: "nowrap" }}>
+                      style={{ flex: isMobile ? "0 0 auto" : 1, padding: isMobile ? "11px 14px" : "11px 8px", background: active ? NL.accent : "transparent", border: "none", borderRight: `1px solid ${NL.border}`, color: active ? "#000" : NL.muted, fontSize: 12, fontWeight: active ? 700 : 500, cursor: "pointer", fontFamily: font, transition: "background 0.15s, color 0.15s", whiteSpace: "nowrap" }}>
                       {tab.label}
                     </button>
                   );
@@ -1198,6 +1273,7 @@ export default function AccountPage() {
 
                 {activeTab === "skins" && profile && <MySkinsSection username={profile.username} initialSkins={dashboardSkins} />}
                 {activeTab === "packs" && profile && <SubmitPackSection />}
+                {activeTab === "partner" && isPartner && <PartnerPanel />}
                 {activeTab === "notifications" && <NotificationsTab getToken={fetchIdToken} />}
               </div>
             </div>

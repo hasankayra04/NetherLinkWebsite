@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import Layout from "@theme/Layout";
 import { motion } from "framer-motion";
-import { FaBug, FaLightbulb, FaCheckCircle, FaExclamationCircle, FaGithub, FaChevronDown } from "react-icons/fa";
+import { FaBug, FaLightbulb, FaCheckCircle, FaExclamationCircle, FaGithub, FaChevronDown, FaUser } from "react-icons/fa";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../firebaseClient";
+import { fetchIdToken } from "../firebaseAuthHelpers";
 
 const NL = {
   bg: "#0d1117",
@@ -164,17 +167,23 @@ export default function FeedbackPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [platform, setPlatform] = useState("");
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState("idle"); 
+  const [status, setStatus] = useState("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [issueUrl, setIssueUrl] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const [authState, setAuthState] = useState("checking");
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => {
+    if (!auth) { setAuthState("out"); return; }
+    const unsub = onAuthStateChanged(auth, (u) => setAuthState(u ? "in" : "out"));
+    return () => unsub();
   }, []);
 
   async function handleSubmit(e) {
@@ -185,15 +194,20 @@ export default function FeedbackPage() {
     setErrorMsg("");
 
     try {
+      const token = await fetchIdToken();
+      if (!token) {
+        setErrorMsg("Please log in to send feedback.");
+        setStatus("error");
+        return;
+      }
       const res = await fetch("https://api.mccompanion.net/api/feedback", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           type,
           title: title.trim(),
           description: description.trim(),
           platform: platform || undefined,
-          email: email.trim() || undefined,
         }),
       });
 
@@ -218,7 +232,6 @@ export default function FeedbackPage() {
     setTitle("");
     setDescription("");
     setPlatform("");
-    setEmail("");
     setStatus("idle");
     setErrorMsg("");
     setIssueUrl("");
@@ -293,7 +306,53 @@ export default function FeedbackPage() {
             </p>
           </motion.div>
 
-          {status === "success" ? (
+          {authState !== "in" ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              style={{
+                background: NL.surface,
+                border: `1px solid ${NL.border}`,
+                borderRadius: 18,
+                padding: isMobile ? "36px 24px" : "48px 40px",
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 16,
+              }}
+            >
+              {authState === "checking" ? (
+                <p style={{ fontSize: 14, color: NL.secondary, margin: 0 }}>Checking your account…</p>
+              ) : (
+                <>
+                  <div style={{
+                    width: 56, height: 56, borderRadius: "50%",
+                    background: NL.accentDim, border: `1px solid ${NL.accentBorder}`,
+                    display: "flex", alignItems: "center", justifyContent: "center", color: NL.accent,
+                  }}>
+                    <FaUser size={20} />
+                  </div>
+                  <div>
+                    <h2 style={{ fontSize: 20, fontWeight: 700, color: NL.text, margin: "0 0 8px", letterSpacing: "-0.01em" }}>
+                      Log in to send feedback
+                    </h2>
+                    <p style={{ fontSize: 14, color: NL.secondary, margin: 0, lineHeight: 1.6 }}>
+                      Feedback is linked to your MCCompanion account so we can follow up with you directly in the app.
+                    </p>
+                  </div>
+                  <a href="/login" style={{
+                    display: "inline-flex", alignItems: "center", gap: 6, padding: "10px 22px",
+                    borderRadius: 10, background: NL.accent, color: "#000",
+                    fontSize: 13, fontWeight: 700, textDecoration: "none",
+                  }}>
+                    Log in →
+                  </a>
+                </>
+              )}
+            </motion.div>
+          ) : status === "success" ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -432,22 +491,13 @@ export default function FeedbackPage() {
                 required
               />
 
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
-                <SelectField
-                  label="Platform"
-                  value={platform}
-                  onChange={setPlatform}
-                  options={PLATFORMS}
-                  placeholder="Select platform..."
-                />
-                <InputField
-                  label="Email (optional)"
-                  placeholder="so we can follow up"
-                  value={email}
-                  onChange={setEmail}
-                  hint="Never shared publicly."
-                />
-              </div>
+              <SelectField
+                label="Platform"
+                value={platform}
+                onChange={setPlatform}
+                options={PLATFORMS}
+                placeholder="Select platform..."
+              />
 
               {status === "error" && (
                 <motion.div

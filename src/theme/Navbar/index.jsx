@@ -520,7 +520,6 @@ export default function Navbar() {
                   }}>
                     {[
                       { label: "Profile", path: "/account", icon: <FaUser size={11} /> },
-                      (role === "partner" || role === "admin") && { label: "Partner", path: "/partner-portal", icon: <FaHandshake size={11} /> },
                       role === "admin" && { label: "Admin", path: "/admin", icon: <FaTachometerAlt size={11} /> },
                     ].filter(Boolean).map(item => (
                       <button key={item.path} onClick={() => { navigate(item.path); setUserDrop(false); }}
@@ -680,7 +679,6 @@ export default function Navbar() {
               <>
                 {[
                   { label: "Profile", path: "/account", icon: <FaUser size={13} /> },
-                  (role === "partner" || role === "admin") && { label: "Partner", path: "/partner-portal", icon: <FaHandshake size={13} /> },
                   role === "admin" && { label: "Admin", path: "/admin", icon: <FaTachometerAlt size={13} /> },
                 ].filter(Boolean).map(item => (
                   <button key={item.path} onClick={() => navigate(item.path)} style={drawerBtn()}
