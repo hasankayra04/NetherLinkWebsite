@@ -2432,7 +2432,7 @@ function MessagesPanel({ isMobile }) {
   const myUid = auth.currentUser?.uid;
 
   const convList = (
-    <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, minHeight: 0 }}>
       <div style={{ display: "flex", gap: 6, padding: "10px 10px 8px" }}>
         <input
           value={newUser}
@@ -2481,7 +2481,7 @@ function MessagesPanel({ isMobile }) {
   );
 
   const thread = (
-    <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+    <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, minHeight: 0 }}>
       {!activeUsername ? (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, color: NL.muted }}>
           <span style={{ fontSize: 28 }}>✉️</span>
@@ -2498,7 +2498,7 @@ function MessagesPanel({ isMobile }) {
             {iconBtn(() => loadConversation(activeUsername), "Refresh", <IC.Refresh />)}
             <a href={`/u?name=${encodeURIComponent(activeUsername)}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: NL.secondary, textDecoration: "none", padding: "3px 8px", borderRadius: 6, border: `1px solid ${NL.border}` }}>Profile ↗</a>
           </div>
-          <div ref={threadRef} style={{ flex: 1, padding: 14, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
+          <div ref={threadRef} style={{ flex: 1, minHeight: 0, padding: 14, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
             {loadingHistory ? (
               <div style={{ textAlign: "center", padding: 24, color: NL.muted }}><Spinner /></div>
             ) : history.length === 0 ? (
@@ -2548,7 +2548,7 @@ function MessagesPanel({ isMobile }) {
 
   if (isMobile) {
     return (
-      <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column", height: "70vh" }}>
+      <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column", height: "calc(100dvh - 240px)", minHeight: 360, minWidth: 0 }}>
         {activeUsername ? thread : convList}
       </div>
     );
@@ -2556,7 +2556,7 @@ function MessagesPanel({ isMobile }) {
 
   return (
     <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, overflow: "hidden", display: "grid", gridTemplateColumns: "280px 1fr", height: "72vh" }}>
-      <div style={{ borderRight: `1px solid ${NL.border}`, display: "flex", flexDirection: "column", minHeight: 0 }}>{convList}</div>
+      <div style={{ borderRight: `1px solid ${NL.border}`, display: "flex", flexDirection: "column", minHeight: 0, minWidth: 0 }}>{convList}</div>
       {thread}
     </div>
   );

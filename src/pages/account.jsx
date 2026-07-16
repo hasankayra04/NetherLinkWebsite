@@ -1095,7 +1095,7 @@ export default function AccountPage() {
               </div>
             </div>
 
-            <div>
+            <div style={{ minWidth: 0 }}>
               {isAdmin && (
                 <a href="/admin" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "11px 16px", marginBottom: 14, borderRadius: 12, background: NL.dangerDim, border: `1px solid ${NL.dangerBorder}`, textDecoration: "none" }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: NL.danger }}>🛡 Admin Panel</span>
@@ -1103,12 +1103,19 @@ export default function AccountPage() {
                 </a>
               )}
               <style>{`.account-tabs::-webkit-scrollbar { display: none; }`}</style>
-              <div className="account-tabs" style={{ display: "flex", background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 12, marginBottom: 18, overflowX: isMobile ? "auto" : "hidden", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+              <div className="account-tabs" style={{ display: "flex", gap: 6, marginBottom: 18, overflowX: "auto", scrollbarWidth: "none", WebkitOverflowScrolling: "touch", paddingBottom: 2 }}>
                 {TABS.filter(t => (t.id !== "skins" && t.id !== "packs") || profile).map(tab => {
                   const active = activeTab === tab.id;
                   return (
                     <button type="button" key={tab.id} onClick={() => setActiveTab(tab.id)}
-                      style={{ flex: isMobile ? "0 0 auto" : 1, padding: isMobile ? "11px 14px" : "11px 8px", background: active ? NL.accent : "transparent", border: "none", borderRight: `1px solid ${NL.border}`, color: active ? "#000" : NL.muted, fontSize: 12, fontWeight: active ? 700 : 500, cursor: "pointer", fontFamily: font, transition: "background 0.15s, color 0.15s", whiteSpace: "nowrap" }}>
+                      style={{
+                        display: "inline-flex", alignItems: "center", padding: "8px 14px", borderRadius: 999,
+                        border: `1px solid ${active ? NL.accentBorder : NL.border}`,
+                        background: active ? NL.accentDim : NL.surface,
+                        color: active ? NL.accent : NL.secondary,
+                        fontSize: 12, fontWeight: active ? 700 : 500, cursor: "pointer", fontFamily: font,
+                        whiteSpace: "nowrap", flexShrink: 0, transition: "background 0.15s, color 0.15s",
+                      }}>
                       {tab.label}
                     </button>
                   );
