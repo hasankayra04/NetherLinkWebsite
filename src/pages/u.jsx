@@ -84,6 +84,7 @@ export default function UserPage() {
   const [skins, setSkins] = useState([]);
   const [copied, setCopied] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -99,6 +100,7 @@ export default function UserPage() {
       .then(r => { if (r.status === 404) throw new Error("not_found"); return r.json(); })
       .then(d => {
         setUser(d.user);
+        setIsAdmin(d.isAdmin === true);
         if (d.stats) setStats(d.stats);
         if (d.activity) setActivity(d.activity);
         if (d.skins) setSkins(d.skins);
@@ -151,6 +153,11 @@ export default function UserPage() {
                     <div style={{ textAlign: "center" }}>
                       <p style={{ fontSize: 18, fontWeight: 800, color: NL.text, margin: 0, fontFamily: mono, letterSpacing: "-0.02em" }}>{user.username}</p>
                       {user.displayName && <p style={{ fontSize: 13, color: NL.secondary, margin: "3px 0 0" }}>{user.displayName}</p>}
+                      {isAdmin && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8, padding: "3px 10px", borderRadius: 6, background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, color: NL.accent, fontSize: 11, fontWeight: 700 }}>
+                          🛡 MCCompanion Admin
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
