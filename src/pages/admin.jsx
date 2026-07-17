@@ -1059,7 +1059,6 @@ function FeedbackItem({ c, onDelete, initialIssue = null }) {
     finally { setGhLoading(false); }
   }
 
-  // For user-linked feedback the conversation IS the DM thread with that user.
   const isDm = !!c.username;
 
   async function loadReplies() {
@@ -1067,14 +1066,14 @@ function FeedbackItem({ c, onDelete, initialIssue = null }) {
     try {
       const token = await fetchIdToken();
       if (isDm) {
-        const res = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(c.username)}`, { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch(`${API_BASE}/api/admin/support/messages/${encodeURIComponent(c.username)}`, { headers: { Authorization: `Bearer ${token}` } });
         if (res.ok) {
-          const myUid = auth.currentUser?.uid;
-          const msgs = ((await res.json()).messages || []).map(m => ({
+          const data = await res.json();
+          const msgs = (data.messages || []).map(m => ({
             id: m.id,
-            direction: m.senderUid === myUid ? "admin_to_user" : "user_to_admin",
+            direction: m.senderUid === data.userUid ? "user_to_admin" : "admin_to_user",
             message: m.content,
-            admin_email: null,
+            admin_email: m.sentByUsername || null,
             created_at: m.createdAt,
           }));
           setReplies(msgs);
@@ -1099,7 +1098,7 @@ function FeedbackItem({ c, onDelete, initialIssue = null }) {
       const token = await fetchIdToken();
       if (isDm) {
         const prefix = replies.length === 0 ? `[Feedback #${c.issue_number}] ` : "";
-        const res = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(c.username)}`, {
+        const res = await fetch(`${API_BASE}/api/admin/support/messages/${encodeURIComponent(c.username)}`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
           body: JSON.stringify({ content: prefix + reply.trim() }),
@@ -2346,6 +2345,8 @@ function CachePanel() {
 }
 
 function MessagesPanel({ isMobile }) {
+  const [inbox, setInbox] = useState("support");
+  const [supportUid, setSupportUid] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [convsLoading, setConvsLoading] = useState(true);
   const [activeUsername, setActiveUsername] = useState(null);
@@ -2361,11 +2362,12 @@ function MessagesPanel({ isMobile }) {
     setConvsLoading(true);
     try {
       const token = await fetchIdToken();
-      const res = await fetch(`${API_BASE}/api/messages/conversations`, { headers: { Authorization: `Bearer ${token}` } });
+      const path = inbox === "support" ? "/api/admin/support/conversations" : "/api/messages/conversations";
+      const res = await fetch(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setConversations((await res.json()).conversations || []);
     } catch (_) { }
     finally { setConvsLoading(false); }
-  }, []);
+  }, [inbox]);
 
   async function loadConversation(u) {
     setActiveUsername(u);
@@ -2373,15 +2375,20 @@ function MessagesPanel({ isMobile }) {
     setResult(null);
     try {
       const token = await fetchIdToken();
-      const res = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(u)}`, { headers: { Authorization: `Bearer ${token}` } });
+      const path = inbox === "support"
+        ? `/api/admin/support/messages/${encodeURIComponent(u)}`
+        : `/api/messages/${encodeURIComponent(u)}`;
+      const res = await fetch(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
-      if (res.ok) setHistory(data.messages || []);
-      else setHistory([]);
+      if (res.ok) {
+        setHistory(data.messages || []);
+        if (data.supportUid) setSupportUid(data.supportUid);
+      } else setHistory([]);
     } catch { setHistory([]); }
     setLoadingHistory(false);
   }
 
-  useEffect(() => { loadConversations(); }, [loadConversations]);
+  useEffect(() => { loadConversations(); setActiveUsername(null); setHistory([]); }, [loadConversations]);
 
   useEffect(() => {
     try {
@@ -2402,7 +2409,10 @@ function MessagesPanel({ isMobile }) {
     setResult(null);
     try {
       const token = await fetchIdToken();
-      const res = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(u)}`, {
+      const sendPath = inbox === "support"
+        ? `/api/admin/support/messages/${encodeURIComponent(u)}`
+        : `/api/messages/${encodeURIComponent(u)}`;
+      const res = await fetch(`${API_BASE}${sendPath}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ content: m }),
@@ -2429,10 +2439,18 @@ function MessagesPanel({ isMobile }) {
     loadConversation(u);
   }
 
-  const myUid = auth.currentUser?.uid;
+  const myUid = inbox === "support" ? supportUid : auth.currentUser?.uid;
 
   const convList = (
     <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, minHeight: 0 }}>
+      <div style={{ display: "flex", gap: 4, padding: "10px 10px 0" }}>
+        {[["support", "🛟 Support"], ["me", "👤 My DMs"]].map(([id, label]) => (
+          <button key={id} onClick={() => setInbox(id)}
+            style={{ flex: 1, padding: "7px 8px", borderRadius: 8, fontSize: 11, fontWeight: 700, fontFamily: font, cursor: "pointer", border: `1px solid ${inbox === id ? NL.accentBorder : NL.border}`, background: inbox === id ? NL.accentDim : "transparent", color: inbox === id ? NL.accent : NL.muted, whiteSpace: "nowrap" }}>
+            {label}
+          </button>
+        ))}
+      </div>
       <div style={{ display: "flex", gap: 6, padding: "10px 10px 8px" }}>
         <input
           value={newUser}
@@ -2508,6 +2526,9 @@ function MessagesPanel({ isMobile }) {
               const dt = new Date(msg.createdAt);
               return (
                 <div key={msg.id} style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}>
+                  {isMine && msg.sentByUsername && (
+                    <span style={{ fontSize: 9, color: NL.muted, marginBottom: 1 }}>{msg.sentByUsername}</span>
+                  )}
                   <div style={{
                     maxWidth: "75%", padding: "8px 12px", borderRadius: 12,
                     background: isMine ? NL.accent : NL.elevated,
@@ -2580,7 +2601,7 @@ const NAV_GROUPS = [
     items: [
       { id: "moderation", label: "Moderation", icon: "🛡", badge: "openReports" },
       { id: "feedback", label: "Feedback", icon: "💬" },
-      { id: "messages", label: "Messages", icon: "✉️" },
+      { id: "messages", label: "Messages", icon: "✉️", badge: "supportUnread" },
     ],
   },
   {
