@@ -1,4 +1,4 @@
-/* MCCompanion Design System — single source of truth.
+/* MCCompanion Design System: single source of truth.
    Import T in every page and component. Never define colors locally. */
 
 export const T = {

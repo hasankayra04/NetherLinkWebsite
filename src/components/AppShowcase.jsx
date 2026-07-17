@@ -16,14 +16,14 @@ const STEPS = [
         id: 0,
         image: "/img/landing.png",
         title: "Your hub",
-        desc: "Featured servers, quick access to every feature — everything organised on one screen.",
+        desc: "Featured servers and quick access to every feature, all on one screen.",
         accent: "#67e404",
     },
     {
         id: 1,
         image: "/img/connector.png",
         title: "Console Connect",
-        desc: "Xbox, PlayStation, Nintendo Switch — pick a server, tap Start. On your console in seconds.",
+        desc: "Xbox, PlayStation or Switch: pick a server, tap Start. It shows up on your console in seconds.",
         accent: "#60a5fa",
     },
     {
@@ -44,14 +44,14 @@ const STEPS = [
         id: 4,
         image: "/img/friends.png",
         title: "Friends & Social",
-        desc: "See who's online, send friend requests, and chat — all inside the app.",
+        desc: "See who's online, send friend requests and chat, all inside the app.",
         accent: "#fb923c",
     },
     {
         id: 5,
         image: "/img/lookup.png",
         title: "Player Lookup",
-        desc: "Search any Minecraft player — see their skin, UUID, name history, and more.",
+        desc: "Search any Minecraft player and see their skin, UUID, name history and more.",
         accent: "#34d399",
     },
     {

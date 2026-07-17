@@ -249,7 +249,7 @@ function MySubmissionsSection({ submissions, loadingSubs, loadSubmissions }) {
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.message || d.error || res.status);
-      setReplaceMsg({ ok: true, id, msg: "Pack file updated — back in review queue." });
+      setReplaceMsg({ ok: true, id, msg: "Pack file updated. It's back in the review queue." });
       await loadSubmissions();
     } catch (e) {
       setReplaceMsg({ ok: false, id, msg: "Upload failed: " + e.message });
@@ -614,7 +614,7 @@ function SubmitPackSection() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || res.status);
-      setResult({ ok: true, msg: "Pack submitted successfully. An admin will review it within 48 hours." });
+      setResult({ ok: true, msg: "Got it! Your pack is in the review queue. We'll send you a notification once we've checked it." });
       setForm(EMPTY); setTags([]); setTagInput(""); setPackFile(null); setThumbnail(null); setThumbnailPreview(null); setThumbnailUrl(""); setOwnershipConfirmed(false);
       if (packFileRef.current) packFileRef.current.value = "";
       await loadSubmissions();
@@ -758,7 +758,7 @@ function SubmitPackSection() {
             <button type="submit" disabled={!canSubmit} style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 22px", borderRadius: 9, border: "none", background: canSubmit ? NL.accent : NL.elevated, color: canSubmit ? "#000" : NL.muted, fontSize: 13, fontWeight: 700, fontFamily: font, cursor: canSubmit ? "pointer" : "not-allowed", transition: "opacity 0.15s" }}>
               {submitting ? <><Spinner size={13} /> Submitting…</> : "Submit for review"}
             </button>
-            <span style={{ fontSize: 12, color: NL.muted }}>Reviewed within 48 hours · You'll be notified when approved or rejected</span>
+            <span style={{ fontSize: 12, color: NL.muted }}>We usually review within a day or two, you'll get a notification either way</span>
           </div>
         </form>
       </Card>

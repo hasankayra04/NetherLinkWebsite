@@ -26,15 +26,21 @@ export default function CommentsSection({ targetType, targetId, currentUsername:
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState(null);
   const [resolvedUsername, setResolvedUsername] = useState(usernameProp ?? null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [reportingId, setReportingId] = useState(null);
+  const [reportedIds, setReportedIds] = useState(new Set());
   const bottomRef = useRef(null);
 
   useEffect(() => {
-    if (usernameProp || !getToken) return;
+    if (!getToken) return;
     getToken().then(token => {
       if (!token) return;
       fetch(`${API_BASE}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } })
         .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d?.user?.username) setResolvedUsername(d.user.username); })
+        .then(d => {
+          if (d?.user?.username && !usernameProp) setResolvedUsername(d.user.username);
+          if (d?.isAdmin === true) setIsAdmin(true);
+        })
         .catch(() => { });
     }).catch(() => { });
   }, []);
@@ -72,15 +78,39 @@ export default function CommentsSection({ targetType, targetId, currentUsername:
     finally { setPosting(false); }
   }
 
-  async function remove(id) {
+  async function remove(id, asAdmin = false) {
+    if (asAdmin && !confirm("Delete this comment as admin?")) return;
     setDeletingId(id);
     try {
       const token = await getToken();
       if (!token) return;
-      await fetch(`${API_BASE}/api/comments/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      const path = asAdmin ? `${API_BASE}/api/comments/admin/${id}` : `${API_BASE}/api/comments/${id}`;
+      await fetch(path, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       setComments(p => p.filter(c => c.id !== id));
     } catch { }
     setDeletingId(null);
+  }
+
+  async function report(c, reason) {
+    setReportingId(null);
+    try {
+      const token = await getToken();
+      if (!token) { setError("Log in to report"); return; }
+      const res = await fetch(`${API_BASE}/api/reports`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportedUsername: c.username,
+          reason,
+          additionalInfo: `Comment on ${targetType} ${targetId}: "${c.content.slice(0, 200)}"`,
+        }),
+      });
+      if (res.ok) setReportedIds(prev => new Set(prev).add(c.id));
+      else {
+        const d = await res.json().catch(() => ({}));
+        setError(d.message || "Report failed");
+      }
+    } catch { setError("Report failed"); }
   }
 
   return (
@@ -108,15 +138,41 @@ export default function CommentsSection({ targetType, targetId, currentUsername:
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
                   <a href={`/u?name=${c.username}`} style={{ fontSize: 11, fontWeight: 700, color: "#67e404", textDecoration: "none", fontFamily: mono }}>{c.username}</a>
                   <span style={{ fontSize: 10, color: NL.muted }}>{timeAgo(c.createdAt)}</span>
-                  {c.username === currentUsername && (
-                    <button onClick={() => remove(c.id)} disabled={deletingId === c.id}
-                      style={{ marginLeft: "auto", fontSize: 10, color: NL.muted, background: "none", border: "none", cursor: "pointer", padding: "0 2px", fontFamily: font, opacity: deletingId === c.id ? 0.4 : 1 }}
-                      onMouseEnter={e => e.currentTarget.style.color = NL.danger}
-                      onMouseLeave={e => e.currentTarget.style.color = NL.muted}>
-                      Delete
-                    </button>
-                  )}
+                  <span style={{ marginLeft: "auto", display: "inline-flex", gap: 8 }}>
+                    {c.username !== currentUsername && (
+                      reportedIds.has(c.id) ? (
+                        <span style={{ fontSize: 10, color: NL.muted }}>Reported ✓</span>
+                      ) : (
+                        <button onClick={() => setReportingId(reportingId === c.id ? null : c.id)}
+                          style={{ fontSize: 10, color: NL.muted, background: "none", border: "none", cursor: "pointer", padding: "0 2px", fontFamily: font }}
+                          onMouseEnter={e => e.currentTarget.style.color = "#fbbf24"}
+                          onMouseLeave={e => e.currentTarget.style.color = NL.muted}>
+                          Report
+                        </button>
+                      )
+                    )}
+                    {(c.username === currentUsername || isAdmin) && (
+                      <button onClick={() => remove(c.id, c.username !== currentUsername)} disabled={deletingId === c.id}
+                        style={{ fontSize: 10, color: c.username !== currentUsername ? NL.danger : NL.muted, background: "none", border: "none", cursor: "pointer", padding: "0 2px", fontFamily: font, opacity: deletingId === c.id ? 0.4 : 1 }}
+                        onMouseEnter={e => e.currentTarget.style.color = NL.danger}
+                        onMouseLeave={e => e.currentTarget.style.color = c.username !== currentUsername ? NL.danger : NL.muted}>
+                        {c.username !== currentUsername ? "Delete (admin)" : "Delete"}
+                      </button>
+                    )}
+                  </span>
                 </div>
+                {reportingId === c.id && (
+                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap", margin: "2px 0 6px" }}>
+                    {["spam", "harassment", "inappropriate", "other"].map(r => (
+                      <button key={r} onClick={() => report(c, r)}
+                        style={{ fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 999, border: `1px solid ${NL.borderMid}`, background: NL.subtle, color: NL.secondary, cursor: "pointer", fontFamily: font, textTransform: "capitalize" }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = "#fbbf24"; e.currentTarget.style.color = "#fbbf24"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = NL.borderMid; e.currentTarget.style.color = NL.secondary; }}>
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <p style={{ margin: 0, fontSize: 13, color: NL.text, lineHeight: 1.5, wordBreak: "break-word" }}>{c.content}</p>
               </div>
             </div>

@@ -455,7 +455,7 @@ export default function PartnerPanel() {
                 width: `${slotPct}%`, transition: "width 0.4s",
               }} />
             </div>
-            {slotFull && <p style={{ fontSize: 11, color: NL.danger, margin: "6px 0 0" }}>Slot limit reached — contact MCCompanion for more.</p>}
+            {slotFull && <p style={{ fontSize: 11, color: NL.danger, margin: "6px 0 0" }}>Slot limit reached. Contact us if you need more.</p>}
           </div>
         </div>
       )}
@@ -465,7 +465,7 @@ export default function PartnerPanel() {
           <div style={{ height: 2, background: `linear-gradient(90deg, ${NL.accent}55 0%, transparent 100%)` }} />
           <div style={{ padding: "20px 20px" }}>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: NL.text, margin: "0 0 16px" }}>
-              {mode === "add" ? "Add a new server" : `Edit — ${editTarget?.name}`}
+              {mode === "add" ? "Add a new server" : `Edit: ${editTarget?.name}`}
             </h2>
             <ServerForm
               initial={mode === "edit"
@@ -531,7 +531,7 @@ export default function PartnerPanel() {
           <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
             {[
               <>Your servers appear in the <strong style={{ color: NL.text }}>Partner Servers</strong> section of the MCCompanion app.</>,
-              <><strong style={{ color: NL.text }}>Featured</strong> status is managed by the MCCompanion team — contact us to get featured.</>,
+              <><strong style={{ color: NL.text }}>Featured</strong> status is managed by the MCCompanion team. Contact us to get featured.</>,
               <>Use a square icon image (min 128×128px) for the best look in the app.</>,
             ].map((item, i) => (
               <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, color: NL.secondary }}>

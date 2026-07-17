@@ -302,7 +302,7 @@ export default function FeedbackPage() {
               Share your feedback
             </h1>
             <p style={{ fontSize: 15, color: NL.secondary, margin: 0, lineHeight: 1.6 }}>
-              Found a bug or have an idea? Let us know, every report helps make MCCompanion better.
+              Something broken? Missing a feature? Tell us. We read everything, and honestly most fixes in the changelog started as a report on this page.
             </p>
           </motion.div>
 
@@ -339,7 +339,7 @@ export default function FeedbackPage() {
                       Log in to send feedback
                     </h2>
                     <p style={{ fontSize: 14, color: NL.secondary, margin: 0, lineHeight: 1.6 }}>
-                      Feedback is linked to your MCCompanion account so we can follow up with you directly in the app.
+                      Quick login first, that way we can message you in the app if we have a question, or when your bug is fixed.
                     </p>
                   </div>
                   <a href="/login" style={{

@@ -340,7 +340,7 @@ export default function PacksPage() {
           <div style={{ marginBottom: 28 }}>
             <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: NL.accent }}>Community</p>
             <h1 style={{ fontSize: "clamp(24px,4vw,36px)", fontWeight: 900, color: NL.text, margin: "0 0 6px", letterSpacing: "-0.03em" }}>Resource Packs</h1>
-            <p style={{ margin: 0, color: NL.secondary, fontSize: 14 }}>Curated packs for Minecraft Bedrock — downloaded directly in the app.</p>
+            <p style={{ margin: 0, color: NL.secondary, fontSize: 14 }}>Hand-picked packs for Minecraft Bedrock. Download them straight from the app.</p>
           </div>
 
           <div style={{ position: "relative", marginBottom: 12 }}>

@@ -4,8 +4,8 @@ import {themes as prismThemes} from 'prism-react-renderer';
 /** @type {import('@docusaurus/types').Config} */
 
 const config = {
-  title: 'MCCompanion — The Complete Minecraft Companion App',
-  tagline: 'Console relay, player lookup, skin editor, Minecraft wiki, friends & chat — all in one free app.',
+  title: 'MCCompanion: The Complete Minecraft Companion App',
+  tagline: 'Console relay, player lookup, skin editor, Minecraft wiki, friends & chat. All in one free app.',
   favicon: 'img/icon.png',
 
   plugins: ["./src/plugins/tailwind-config.js"],
@@ -111,8 +111,8 @@ const config = {
         { property: "og:type", content: "website" },
         { property: "og:url", content: "https://mccompanion.net" },
         { property: "og:site_name", content: "MCCompanion" },
-        { property: "og:title", content: "MCCompanion — The Complete Minecraft Companion App" },
-        { property: "og:description", content: "Console relay, player lookup, skin editor, Minecraft wiki and friends & chat — all in one free app. Available on Windows, macOS, Android and iOS." },
+        { property: "og:title", content: "MCCompanion: The Complete Minecraft Companion App" },
+        { property: "og:description", content: "Console relay, player lookup, skin editor, Minecraft wiki and friends & chat. All in one free app, on Windows, macOS, Android and iOS." },
         { property: "og:locale", content: "en_US" }
       ],
     }),

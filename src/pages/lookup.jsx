@@ -145,7 +145,7 @@ function SkinViewer3D({ skinUrl }) {
         width:  VIEWER_W,
         height: VIEWER_H,
         skin:   skinUrl,
-        background: null,   // transparent — lets the panel bg show through
+        background: null,
       });
 
       viewer.animation             = new mod.WalkingAnimation();

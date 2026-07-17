@@ -101,7 +101,7 @@ export default function DiscordBotSection() {
           style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "12px 20px", borderRadius: 12, background: T.discord, textDecoration: "none", color: "#fff", fontSize: 14, fontWeight: 700, marginTop: 4, transition: "opacity 0.15s" }}
           onMouseEnter={e => e.currentTarget.style.opacity = "0.88"}
           onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-          <FaDiscord size={15} /> Add to your server — it's free
+          <FaDiscord size={15} /> Add to your server, it's free
         </a>
       </div>
 

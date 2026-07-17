@@ -83,38 +83,23 @@ const WEB_TOOLS = [
   { e: "⚡", label: "API Docs", href: "/api-docs" },
 ];
 
-function RightSidebar({ activity }) {
+function RightSidebar({ activity, recentUsers = [] }) {
   const uniqueActivity = [];
   const seenAct = new Set();
   for (const e of activity) {
+    if (e.type === "joined") continue;
     const key = `${e.username}:${e.type}`;
     if (!seenAct.has(key)) { seenAct.add(key); uniqueActivity.push(e); }
-    if (uniqueActivity.length >= 15) break;
+    if (uniqueActivity.length >= 12) break;
   }
 
   return (
     <aside style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-      <div style={{ background: T.surface, border: "1px solid " + T.border, borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ padding: "12px 14px", borderBottom: "1px solid " + T.border }}>
-          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#67e404" }}>Web tools</p>
-        </div>
-        <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: 2 }}>
-          {WEB_TOOLS.map(w => (
-            <a key={w.label} href={w.href}
-              style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 7, textDecoration: "none", color: T.text, fontSize: 12, fontWeight: 600, transition: "background 0.12s" }}
-              onMouseEnter={e => e.currentTarget.style.background = T.raised}
-              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-              <span style={{ fontSize: 13 }}>{w.e}</span>{w.label}
-            </a>
-          ))}
-        </div>
-      </div>
-
       {uniqueActivity.length >= 3 && (
         <div style={{ background: T.surface, border: "1px solid " + T.border, borderRadius: 12, overflow: "hidden" }}>
           <div style={{ padding: "12px 14px", borderBottom: "1px solid " + T.border, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#34d399" }}>Recent activity</p>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#34d399" }}>Fresh uploads</p>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, color: T.muted }}>
               <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#34d399", display: "inline-block", animation: "pulse 2s infinite" }} />
               live
@@ -141,12 +126,52 @@ function RightSidebar({ activity }) {
         </div>
       )}
 
+      {recentUsers.length >= 4 && (
+        <div style={{ background: T.surface, border: "1px solid " + T.border, borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ padding: "12px 14px", borderBottom: "1px solid " + T.border }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#60a5fa" }}>New members</p>
+          </div>
+          <div style={{ padding: "10px 12px", display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {recentUsers.slice(0, 8).map(u => (
+              <a key={u.username} href={`/u?name=${u.username}`} title={`@${u.username}`}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, textDecoration: "none", width: 48 }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+                onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+                {u.avatarUrl
+                  ? <img src={u.avatarUrl} alt={u.username} style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", border: "1px solid " + T.borderMid }} onError={e => e.currentTarget.style.display = "none"} />
+                  : <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(96,165,250,0.12)", border: "1px solid rgba(96,165,250,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#60a5fa" }}>{(u.username || "?")[0].toUpperCase()}</div>}
+                <span style={{ fontSize: 9, fontWeight: 600, color: T.sub, maxWidth: 48, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.displayName || u.username}</span>
+              </a>
+            ))}
+          </div>
+          <a href="/register" style={{ display: "block", padding: "9px 14px", borderTop: "1px solid " + T.border, fontSize: 11, fontWeight: 700, color: "#60a5fa", textDecoration: "none", textAlign: "center" }}>
+            Join the community →
+          </a>
+        </div>
+      )}
+
+      <div style={{ background: T.surface, border: "1px solid " + T.border, borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ padding: "12px 14px", borderBottom: "1px solid " + T.border }}>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#67e404" }}>Web tools</p>
+        </div>
+        <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: 2 }}>
+          {WEB_TOOLS.map(w => (
+            <a key={w.label} href={w.href}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 7, textDecoration: "none", color: T.text, fontSize: 12, fontWeight: 600, transition: "background 0.12s" }}
+              onMouseEnter={e => e.currentTarget.style.background = T.raised}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+              <span style={{ fontSize: 13 }}>{w.e}</span>{w.label}
+            </a>
+          ))}
+        </div>
+      </div>
+
       <a href="/partner"
         style={{ display: "block", background: T.surface, border: "1px solid " + T.border, borderRadius: 12, padding: "14px", textDecoration: "none", transition: "border-color 0.15s" }}
         onMouseEnter={e => e.currentTarget.style.borderColor = "#f59e0b50"}
         onMouseLeave={e => e.currentTarget.style.borderColor = T.border}>
-        <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#f59e0b" }}>Feature your server</p>
-        <p style={{ margin: 0, fontSize: 12, color: T.sub, lineHeight: 1.5 }}>Get featured on the homepage and inside the app. Reach thousands of players.</p>
+        <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#f59e0b" }}>Run a server?</p>
+        <p style={{ margin: 0, fontSize: 12, color: T.sub, lineHeight: 1.5 }}>Get it in front of the console players who open this app every day. That's also what keeps MCCompanion free.</p>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 8, fontSize: 12, fontWeight: 700, color: "#f59e0b" }}>Learn more <FaArrowRight size={9} /></span>
       </a>
     </aside>
@@ -170,11 +195,11 @@ function DownloadCard({ stats }) {
             <span style={{ fontSize: 10, fontWeight: 700, color: T.green, letterSpacing: "0.06em" }}>100% FREE</span>
           </div>
           <h2 style={{ margin: "0 0 6px", fontSize: "clamp(20px,2.5vw,28px)", fontWeight: 900, color: "#fff", lineHeight: 1.2, letterSpacing: "-0.02em" }}>
-            Your Minecraft companion.<br />
-            <span style={{ color: T.green }}>On every platform.</span>
+            Join any Minecraft server<br />
+            <span style={{ color: T.green }}>on your console.</span>
           </h2>
           <p style={{ margin: "0 auto", fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.5, maxWidth: 460 }}>
-            Console connector · Skin workshop · Player lookup · Resource packs · 16 languages
+            Plus a skin workshop, player lookup, resource packs and server tracking. No account needed, works in 16 languages.
           </p>
           {stats && (
             <div style={{ display: "inline-flex", gap: 24, marginTop: 12 }}>
@@ -225,35 +250,44 @@ function Card({ children, style }) {
 
 function CardHeader({ label, labelColor, title, action }) {
   return (
-    <div style={{ padding: "12px 16px", borderBottom: "1px solid " + T.border, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-      <div>
+    <div style={{ padding: "12px 16px", borderBottom: "1px solid " + T.border, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+      <div style={{ flexShrink: 0 }}>
         {label && <p style={{ margin: "0 0 1px", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: labelColor || T.muted }}>{label}</p>}
-        {title && <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: T.text }}>{title}</p>}
+        {title && <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: T.text, whiteSpace: "nowrap" }}>{title}</p>}
       </div>
-      {action}
+      <div style={{ maxWidth: "100%", overflowX: "auto", scrollbarWidth: "none" }}>{action}</div>
     </div>
   );
 }
 
-function TrendingCard({ skins, packs, packCreators }) {
-  const [filter, setFilter] = useState("all");
+const NEW_BADGE_MS = 48 * 3600 * 1000;
 
-  const skinItems = skins.slice(0, 8).map(s => ({ type: "skin", ...s }));
-  const packItems = [...(packs || [])].sort((a, b) => (b.downloadCount ?? 0) - (a.downloadCount ?? 0)).slice(0, 6).map(p => ({ type: "pack", ...p }));
+function TrendingCard({ hotSkins, newSkins, topSkins, packs, packCreators }) {
+  const [filter, setFilter] = useState("hot");
 
-  const all = [];
-  let si = 0, pi = 0;
-  while (si < skinItems.length || pi < packItems.length) {
-    if (si < skinItems.length) all.push(skinItems[si++]);
-    if (si < skinItems.length) all.push(skinItems[si++]);
-    if (pi < packItems.length) all.push(packItems[pi++]);
+  const toSkin = s => ({ type: "skin", ...s });
+  const packItems = [...(packs || [])].sort((a, b) => (b.downloadCount ?? 0) - (a.downloadCount ?? 0)).slice(0, 8).map(p => ({ type: "pack", ...p }));
+
+  const hotFeed = [];
+  {
+    const skinsQ = (hotSkins || []).slice(0, 9).map(toSkin);
+    const packsQ = packItems.slice(0, 3);
+    let si = 0, pi = 0;
+    while (si < skinsQ.length || pi < packsQ.length) {
+      for (let k = 0; k < 3 && si < skinsQ.length; k++) hotFeed.push(skinsQ[si++]);
+      if (pi < packsQ.length) hotFeed.push(packsQ[pi++]);
+    }
   }
 
-  const items = filter === "skins" ? skinItems : filter === "packs" ? packItems : all;
+  const items =
+    filter === "hot" ? hotFeed
+    : filter === "new" ? (newSkins || []).slice(0, 12).map(toSkin)
+    : filter === "top" ? (topSkins || []).slice(0, 12).map(toSkin)
+    : packItems;
 
   const creators = [];
   const seen = new Set();
-  for (const s of skins) {
+  for (const s of (hotSkins || [])) {
     if (s.username && !seen.has(s.username)) { seen.add(s.username); creators.push(s); }
     if (creators.length >= 6) break;
   }
@@ -262,19 +296,19 @@ function TrendingCard({ skins, packs, packCreators }) {
     if (creators.length >= 8) break;
   }
 
-  if (!skinItems.length && !packItems.length) return null;
+  if (!hotFeed.length && !packItems.length) return null;
 
   return (
     <Card>
       <CardHeader
         label="Community"
         labelColor="#67e404"
-        title="Trending content"
+        title="What's happening"
         action={
           <div style={{ display: "flex", gap: 3, background: T.bg, border: "1px solid " + T.border, borderRadius: 7, padding: 2 }}>
-            {[["all", "All"], ["skins", "🎨 Skins"], ["packs", "📦 Packs"]].map(([v, l]) => (
+            {[["hot", "🔥 Hot"], ["new", "✨ New"], ["top", "❤️ Top"], ["packs", "📦 Packs"]].map(([v, l]) => (
               <button key={v} onClick={() => setFilter(v)}
-                style={{ padding: "3px 9px", borderRadius: 5, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, background: filter === v ? "#67e404" : "transparent", color: filter === v ? "#fff" : T.sub, transition: "all 0.15s" }}>
+                style={{ padding: "3px 9px", borderRadius: 5, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, background: filter === v ? "#67e404" : "transparent", color: filter === v ? "#000" : T.sub, transition: "all 0.15s", whiteSpace: "nowrap" }}>
                 {l}
               </button>
             ))}
@@ -290,14 +324,20 @@ function TrendingCard({ skins, packs, packCreators }) {
               onMouseEnter={e => { e.currentTarget.style.borderColor = "#67e40450"; e.currentTarget.style.transform = "translateY(-2px)"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; }}>
               <div style={{ background: "linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%)", display: "flex", justifyContent: "center", alignItems: "flex-end", padding: "16px 12px 0", minHeight: 120, position: "relative" }}>
-                <span style={{ position: "absolute", top: 6, left: 8, fontSize: 9, fontWeight: 800, color: "#67e404", background: "rgba(103,228,4,0.15)", border: "1px solid rgba(103,228,4,0.3)", padding: "1px 6px", borderRadius: 20, letterSpacing: "0.05em" }}>🎨 SKIN</span>
+                {(Date.now() - new Date(item.created_at) < NEW_BADGE_MS)
+                  ? <span style={{ position: "absolute", top: 6, left: 8, fontSize: 9, fontWeight: 800, color: "#000", background: "#67e404", padding: "1px 7px", borderRadius: 20, letterSpacing: "0.05em" }}>NEW</span>
+                  : <span style={{ position: "absolute", top: 6, left: 8, fontSize: 9, fontWeight: 800, color: "#67e404", background: "rgba(103,228,4,0.15)", border: "1px solid rgba(103,228,4,0.3)", padding: "1px 6px", borderRadius: 20, letterSpacing: "0.05em" }}>🎨 SKIN</span>}
+                {item.created_at && <span style={{ position: "absolute", top: 6, right: 8, fontSize: 9, color: "rgba(255,255,255,0.45)", fontWeight: 600 }}>{timeAgo(item.created_at)}</span>}
                 <SkinBody url={item.public_url} scale={4} />
               </div>
               <div style={{ padding: "8px 10px" }}>
                 <p style={{ margin: "0 0 2px", fontSize: 12, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</p>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   {item.username && <span style={{ fontSize: 10, color: T.sub, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.display_name || item.username}</span>}
-                  {item.like_count > 0 && <span style={{ fontSize: 10, color: "#f87171", display: "inline-flex", alignItems: "center", gap: 2, flexShrink: 0 }}><FaHeart size={7} />{item.like_count}</span>}
+                  <span style={{ fontSize: 10, flexShrink: 0, display: "inline-flex", gap: 6 }}>
+                    {item.like_count > 0 && <span style={{ color: "#f87171", display: "inline-flex", alignItems: "center", gap: 2 }}><FaHeart size={7} />{item.like_count}</span>}
+                    {item.comment_count > 0 && <span style={{ color: T.muted }}>💬 {item.comment_count}</span>}
+                  </span>
                 </div>
               </div>
             </a>
@@ -402,7 +442,10 @@ function ServersCard() {
 
 export default function Home() {
   const [stats, setStats] = useState(null);
-  const [skins, setSkins] = useState([]);
+  const [hotSkins, setHotSkins] = useState([]);
+  const [newSkins, setNewSkins] = useState([]);
+  const [topSkins, setTopSkins] = useState([]);
+  const [recentUsers, setRecentUsers] = useState([]);
   const [packCreators, setPackCreators] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [featuredPacks, setFeaturedPacks] = useState([]);
@@ -412,7 +455,10 @@ export default function Home() {
       .then(r => r.json())
       .then(d => {
         setStats({ servers: d.stats?.totalServers, joins: d.stats?.totalCount });
-        setSkins(d.skins || []);
+        setHotSkins(d.hotSkins || d.skins || []);
+        setNewSkins(d.newSkins || d.skins || []);
+        setTopSkins(d.topSkins || d.skins || []);
+        setRecentUsers(d.recentUsers || []);
         setPackCreators(d.packCreators || []);
         setRecentActivity(d.recentActivity || []);
         setFeaturedPacks(d.featuredPacks || []);
@@ -422,7 +468,7 @@ export default function Home() {
 
   return (
     <Layout
-      title="MCCompanion — Minecraft community hub"
+      title="MCCompanion: Minecraft community hub"
       description="Free Minecraft companion app. Console relay, skin workshop, player lookup, server tracker, Discord bot and more."
     >
       <style>{`
@@ -435,16 +481,16 @@ export default function Home() {
       <div style={{ background: T.bg, minHeight: "100vh", fontFamily: "'Inter',system-ui,sans-serif", borderTop: "1px solid " + T.border }}>
         <div className="cl">
 
-          <main style={{ minWidth: 0 }}>
+          <div role="main" style={{ minWidth: 0 }}>
 
             <DownloadCard stats={stats} />
+            <TrendingCard hotSkins={hotSkins} newSkins={newSkins} topSkins={topSkins} packs={featuredPacks} packCreators={packCreators} />
             <TutorialVideoCard />
-            <TrendingCard skins={skins} packs={featuredPacks} packCreators={packCreators} />
             <ServersCard />
-          </main>
+          </div>
 
           <div className="cl-right">
-            <RightSidebar activity={recentActivity} />
+            <RightSidebar activity={recentActivity} recentUsers={recentUsers} />
           </div>
 
         </div>

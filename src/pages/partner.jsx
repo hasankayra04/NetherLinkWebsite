@@ -413,11 +413,11 @@ export default function PartnerProgramPage() {
             </h1>
 
             <p style={{ color: NL.secondary, fontSize: 15, maxWidth: 520, margin: "0 auto 14px", lineHeight: 1.75 }}>
-              Console relay and resource pack support are completely free for every player.
-              Server owners fund the infrastructure, and get real visibility in return.
+              MCCompanion is completely free for players. The bills get paid by server
+              owners who want their server in front of those players.
             </p>
             <p style={{ color: NL.muted, fontSize: 13, margin: 0 }}>
-              Other apps charge players just to connect. We don't. The people with the budget are the server owners, and they get real value back.
+              That's the whole deal: your server gets a featured spot, players keep their free tools, and nobody pays just to connect.
             </p>
           </motion.div>
 
@@ -428,9 +428,9 @@ export default function PartnerProgramPage() {
             style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 64, justifyContent: "center" }}
           >
             {[
-              { icon: <FaHeart size={16} />, title: "You support the app", body: "A small monthly fee from server owners covers infrastructure and development, keeping the app free for all players forever." },
-              { icon: <FaUsers size={16} />, title: "Players play for free", body: "Console relay, resource pack support, player lookup, skin editor and more. All free. Other apps charge just to connect." },
-              { icon: <FaServer size={16} />, title: "Your server gets found", body: "Featured placement across the app and website. Thousands of console players looking for a server see yours first." },
+              { icon: <FaHeart size={16} />, title: "You support the app", body: "Your monthly fee is literally what pays for the relay servers. No investors, no ads, just server owners covering the bills." },
+              { icon: <FaUsers size={16} />, title: "Players play for free", body: "Console relay, resource packs, player lookup, skin editor: none of it costs players anything. Other apps charge just to connect." },
+              { icon: <FaServer size={16} />, title: "Your server gets found", body: "Your server shows up in the app's partner list and on the homepage, right where console players go looking for somewhere to play." },
             ].map((item, i) => (
               <div key={i} style={{
                 flex: 1, minWidth: 220, maxWidth: 280,
@@ -446,6 +446,41 @@ export default function PartnerProgramPage() {
                 <div style={{ fontSize: 13, color: NL.secondary, lineHeight: 1.65 }}>{item.body}</div>
               </div>
             ))}
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.14 }}
+            style={{ marginBottom: 64 }}
+          >
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <h2 style={{ fontSize: "clamp(20px, 3vw, 26px)", fontWeight: 700, color: NL.text, letterSpacing: "-0.02em", margin: "0 0 8px" }}>
+                How it works
+              </h2>
+              <p style={{ color: NL.secondary, fontSize: 14, margin: 0 }}>
+                From checkout to your first visitors in about 5 minutes.
+              </p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
+              {[
+                { n: "1", title: "Pick a plan", body: "Checkout runs through Stripe. Monthly billing, cancel whenever you want." },
+                { n: "2", title: "Add your server", body: "Name, address, icon and a short description. All managed from your partner dashboard." },
+                { n: "3", title: "You're live", body: "Your server shows up in the app's partner list and on this website. No review wait." },
+                { n: "4", title: "Watch the visits", body: "Your dashboard counts every player that joins your server through the app." },
+              ].map(s => (
+                <div key={s.n} style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, padding: "18px 16px", position: "relative" }}>
+                  <div style={{
+                    width: 26, height: 26, borderRadius: "50%", marginBottom: 12,
+                    background: NL.accentDim, border: `1px solid ${NL.accentBorder}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 12, fontWeight: 800, color: NL.accent, fontFamily: mono,
+                  }}>{s.n}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: NL.text, marginBottom: 6 }}>{s.title}</div>
+                  <div style={{ fontSize: 12.5, color: NL.secondary, lineHeight: 1.6 }}>{s.body}</div>
+                </div>
+              ))}
+            </div>
           </motion.div>
 
           {authReady && !planLoading && plan && (

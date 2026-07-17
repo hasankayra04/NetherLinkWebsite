@@ -1154,7 +1154,7 @@ function FeedbackItem({ c, onDelete, initialIssue = null }) {
               : null}
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             {c.username
-              ? <a href={`/admin?tab=messages&user=${encodeURIComponent(c.username)}`} title="Open DM" style={{ fontFamily: mono, fontSize: 12, color: NL.accent, background: NL.accentDim, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.accentBorder}`, textDecoration: "none" }}>👤 @{c.username} — DM →</a>
+              ? <a href={`/admin?tab=messages&user=${encodeURIComponent(c.username)}`} title="Open DM" style={{ fontFamily: mono, fontSize: 12, color: NL.accent, background: NL.accentDim, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.accentBorder}`, textDecoration: "none" }}>👤 @{c.username} · DM →</a>
               : c.email
                 ? <span style={{ fontFamily: mono, fontSize: 12, color: NL.text, background: NL.subtle, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.borderMid}` }}>✉ {c.email}</span>
                 : <span style={{ fontSize: 12, color: NL.muted }}>No contact info</span>}
@@ -1252,7 +1252,7 @@ function FeedbackPanel() {
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <Card
         title="Feedback"
-        subtitle="Bug reports & feature requests from the app and website — reply via DM (or email for older entries)"
+        subtitle="Bug reports & feature requests from the app and website. Reply via DM (or email for older entries)"
         action={iconBtn(load, "Refresh", <IC.Refresh />)}
       >
         <div style={{ display: "flex", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
@@ -1493,7 +1493,7 @@ function FeaturedPacksPanel() {
             <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>CATEGORY</label>
             <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
               style={{ width: "100%", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 8, padding: "8px 12px", color: form.category ? NL.text : NL.muted, fontSize: 13, fontFamily: font, outline: "none", boxSizing: "border-box", cursor: "pointer" }}>
-              <option value="">— Select category —</option>
+              <option value="">Select category…</option>
               {CATEGORIES.map(c => (
                 <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
               ))}
@@ -1576,7 +1576,7 @@ function FeaturedPacksPanel() {
                 <div style={{ display: "flex", gap: 6, marginTop: 6, alignItems: "center" }}>
                   <select value={packEditCategory[pack.id].value} onChange={e => setPackEditCategory(m => ({ ...m, [pack.id]: { value: e.target.value } }))}
                     style={{ fontSize: 11, padding: "4px 8px", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 6, color: NL.text, fontFamily: mono, outline: "none", cursor: "pointer" }}>
-                    <option value="">— None —</option>
+                    <option value="">None</option>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
                   </select>
                   <button onClick={() => savePackCategory(pack)} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, cursor: "pointer", fontFamily: font, background: NL.warnDim, border: `1px solid rgba(251,191,36,0.22)`, color: NL.warn }}>Save</button>
@@ -1636,7 +1636,7 @@ function FeaturedPacksPanel() {
                 <label style={{ fontSize: 11, color: NL.muted, fontWeight: 600 }}>CATEGORY</label>
                 <select value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
                   style={{ width: "100%", background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 8, padding: "8px 12px", color: editForm.category ? NL.text : NL.muted, fontSize: 13, fontFamily: font, outline: "none", boxSizing: "border-box", cursor: "pointer" }}>
-                  <option value="">— No category —</option>
+                  <option value="">No category</option>
                   {["realism","faithful","pvp","cartoon","dark","medieval","nature","themed","other"].map(c => (
                     <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
                   ))}
@@ -1928,7 +1928,7 @@ function SkinsPanel() {
         </div>
       </Card>
 
-      <Card title={searched ? `Skins${activeUsername ? ` — ${activeUsername}` : " (recent 50)"} (${skins.length})` : "Search skins by user"}
+      <Card title={searched ? `Skins${activeUsername ? `: ${activeUsername}` : " (recent 50)"} (${skins.length})` : "Search skins by user"}
         action={searched ? iconBtn(() => load(activeUsername), "Refresh", <IC.Refresh />) : null}>
         <form onSubmit={handleSearch} style={{ display: "flex", gap: 8, marginBottom: searched ? 12 : 0 }}>
           <input
@@ -2502,7 +2502,7 @@ function MessagesPanel({ isMobile }) {
             {loadingHistory ? (
               <div style={{ textAlign: "center", padding: 24, color: NL.muted }}><Spinner /></div>
             ) : history.length === 0 ? (
-              <p style={{ color: NL.muted, fontSize: 12, textAlign: "center", padding: 24 }}>No messages yet — say hi 👋</p>
+              <p style={{ color: NL.muted, fontSize: 12, textAlign: "center", padding: 24 }}>No messages yet. Say hi 👋</p>
             ) : history.map(msg => {
               const isMine = !!myUid && msg.senderUid === myUid;
               const dt = new Date(msg.createdAt);

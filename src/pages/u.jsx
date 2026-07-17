@@ -256,8 +256,8 @@ export default function UserPage() {
                 )}
 
                 <div style={{ background: NL.accentDim, border: `1px solid ${NL.accentBorder}`, borderRadius: 14, padding: "22px 24px" }}>
-                  <p style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 800, color: NL.text }}>Play Minecraft with {displayName}?</p>
-                  <p style={{ margin: "0 0 18px", fontSize: 13, color: NL.secondary, lineHeight: 1.6 }}>Add them as a friend on MCCompanion and see what server they're on in real time.</p>
+                  <p style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 800, color: NL.text }}>Want to play with {displayName}?</p>
+                  <p style={{ margin: "0 0 18px", fontSize: 13, color: NL.secondary, lineHeight: 1.6 }}>Add them as a friend in the app and you'll see which server they're on the moment they hop online.</p>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <a href="https://apps.apple.com/app/mccompanion/id6742801057" target="_blank" rel="noopener noreferrer"
                       style={{ display: "inline-flex", alignItems: "center", gap: 8, background: NL.elevated, color: NL.text, border: `1px solid ${NL.border}`, borderRadius: 9, padding: "10px 18px", fontWeight: 600, textDecoration: "none", fontSize: 13 }}>
