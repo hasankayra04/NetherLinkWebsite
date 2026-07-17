@@ -1038,182 +1038,31 @@ function FeedbackBubble({ r, email }) {
   );
 }
 
-function FeedbackItem({ c, onDelete, initialIssue = null }) {
-  const [expanded, setExpanded] = useState(false);
-  const [ghIssue, setGhIssue] = useState(initialIssue);
-  const [ghLoading, setGhLoading] = useState(false);
-  const [replies, setReplies] = useState([]);
-  const [repliesLoading, setRepliesLoading] = useState(false);
+function SupportPanel({ isMobile }) {
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [issues, setIssues] = useState({});
+  const [selected, setSelected] = useState(null);
+  const [thread, setThread] = useState([]);
+  const [threadLoading, setThreadLoading] = useState(false);
+  const [supportUid, setSupportUid] = useState(null);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [replyError, setReplyError] = useState(null);
-
-  async function loadIssue() {
-    if (ghIssue || ghLoading) return;
-    setGhLoading(true);
-    try {
-      const ghRes = await fetch(`https://api.github.com/repos/MCCORG/MCCompanion/issues/${c.issue_number}`, { headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" } });
-      if (ghRes.ok) setGhIssue(await ghRes.json());
-    } catch (_) { }
-    finally { setGhLoading(false); }
-  }
-
-  const isDm = !!c.username;
-
-  async function loadReplies() {
-    setRepliesLoading(true);
-    try {
-      const token = await fetchIdToken();
-      if (isDm) {
-        const res = await fetch(`${API_BASE}/api/admin/support/messages/${encodeURIComponent(c.username)}`, { headers: { Authorization: `Bearer ${token}` } });
-        if (res.ok) {
-          const data = await res.json();
-          const msgs = (data.messages || []).map(m => ({
-            id: m.id,
-            direction: m.senderUid === data.userUid ? "user_to_admin" : "admin_to_user",
-            message: m.content,
-            admin_email: m.sentByUsername || null,
-            created_at: m.createdAt,
-          }));
-          setReplies(msgs);
-        }
-      } else {
-        const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${c.issue_number}/replies`, { headers: { Authorization: `Bearer ${token}` } });
-        if (res.ok) setReplies((await res.json()).replies || []);
-      }
-    } catch (_) { }
-    finally { setRepliesLoading(false); }
-  }
-
-  function toggle() {
-    setExpanded(v => !v);
-    if (!expanded) { loadIssue(); loadReplies(); }
-  }
-
-  async function sendReply() {
-    if (!reply.trim() || sending) return;
-    setSending(true); setReplyError(null);
-    try {
-      const token = await fetchIdToken();
-      if (isDm) {
-        const prefix = replies.length === 0 ? `[Feedback #${c.issue_number}] ` : "";
-        const res = await fetch(`${API_BASE}/api/admin/support/messages/${encodeURIComponent(c.username)}`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ content: prefix + reply.trim() }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.message || data.error || `${res.status}`);
-      } else {
-        const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${c.issue_number}/reply`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ message: reply.trim(), issueTitle: ghIssue?.title }) });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.message || `${res.status}`);
-      }
-      setReply("");
-      await loadReplies();
-    } catch (e) { setReplyError(e.message); }
-    finally { setSending(false); }
-  }
-
-  async function handleDelete() {
-    if (!confirm(`Remove contact for issue #${c.issue_number}?`)) return;
-    setDeleting(true);
-    try {
-      const token = await fetchIdToken();
-      const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${c.issue_number}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error(`${res.status}`);
-      onDelete(c.issue_number);
-    } catch (e) { alert("Failed: " + e.message); setDeleting(false); }
-  }
-
-  const isBug = ghIssue?.labels?.some(l => l.name === "bug");
-  const stateColor = ghIssue?.state === "closed" ? NL.muted : NL.success;
-
-  return (
-    <div style={{ border: `1px solid ${expanded ? NL.borderMid : NL.border}`, borderRadius: 12, background: NL.elevated, overflow: "hidden", transition: "border-color 0.15s" }}>
-      <div onClick={toggle} style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
-        <span style={{ fontFamily: mono, fontSize: 11, color: NL.muted, flexShrink: 0 }}>#{c.issue_number}</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: NL.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ghIssue?.title || `Issue #${c.issue_number}`}</p>
-          <p style={{ margin: "1px 0 0", fontSize: 11, color: NL.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            from {c.username ? <span style={{ color: NL.accent, fontFamily: mono }}>@{c.username}</span> : <span style={{ fontFamily: mono }}>{c.email ?? "unknown"}</span>}
-          </p>
-        </div>
-        {replies.length > 0 && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: NL.subtle, color: NL.secondary, border: `1px solid ${NL.border}`, fontFamily: mono, flexShrink: 0 }}>{replies.length} msg{replies.length !== 1 ? "s" : ""}</span>}
-        {ghIssue && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: isBug ? NL.dangerDim : NL.accentDim, color: isBug ? NL.danger : NL.accent, border: `1px solid ${isBug ? NL.dangerBorder : NL.accentBorder}`, fontFamily: mono, flexShrink: 0 }}>{isBug ? "BUG" : "FEATURE"}</span>}
-        {ghIssue && <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: "transparent", color: stateColor, border: `1px solid ${stateColor}22`, fontFamily: mono, flexShrink: 0 }}>{ghIssue.state}</span>}
-        <span style={{ fontSize: 11, color: NL.muted, flexShrink: 0 }}>{new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>
-        <span style={{ color: NL.muted, fontSize: 12, flexShrink: 0 }}>{expanded ? "▲" : "▼"}</span>
-      </div>
-      {expanded && (
-        <div style={{ borderTop: `1px solid ${NL.border}`, padding: "16px", display: "flex", flexDirection: "column", gap: 14 }}>
-          {ghLoading ? <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13 }}><Spinner size={13} /> Loading issue…</div>
-            : ghIssue ? <div style={{ background: NL.subtle, borderRadius: 8, padding: "12px 14px", fontSize: 12, color: NL.secondary, lineHeight: 1.6, whiteSpace: "pre-wrap", maxHeight: 160, overflow: "auto", fontFamily: mono }}>{ghIssue.body || "(no description)"}</div>
-              : null}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            {c.username
-              ? <a href={`/admin?tab=messages&user=${encodeURIComponent(c.username)}`} title="Open DM" style={{ fontFamily: mono, fontSize: 12, color: NL.accent, background: NL.accentDim, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.accentBorder}`, textDecoration: "none" }}>👤 @{c.username} · DM →</a>
-              : c.email
-                ? <span style={{ fontFamily: mono, fontSize: 12, color: NL.text, background: NL.subtle, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.borderMid}` }}>✉ {c.email}</span>
-                : <span style={{ fontSize: 12, color: NL.muted }}>No contact info</span>}
-            <a href={`https://github.com/MCCORG/MCCompanion/issues/${c.issue_number}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: NL.accent, textDecoration: "none", padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.accentBorder}`, background: NL.accentDim }}>GitHub ↗</a>
-            <div style={{ flex: 1 }} />
-            <button onClick={handleDelete} disabled={deleting} style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 6, border: `1px solid ${NL.dangerBorder}`, background: NL.dangerDim, color: NL.danger, cursor: "pointer", fontFamily: font, opacity: deleting ? 0.5 : 1 }}>{deleting ? "…" : "Remove contact"}</button>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: NL.secondary, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: mono }}>
-                {isDm ? "DM conversation" : "Email conversation"}
-              </label>
-              {iconBtn(loadReplies, "Refresh", <IC.Refresh />)}
-            </div>
-            {repliesLoading ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, color: NL.muted, fontSize: 12 }}><Spinner size={11} /> Loading…</div>
-            ) : replies.length === 0 ? (
-              <p style={{ margin: 0, fontSize: 12, color: NL.muted }}>No messages yet.</p>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {replies.map(r => <FeedbackBubble key={r.id} r={r} email={c.username ? `@${c.username}` : c.email} />)}
-              </div>
-            )}
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <textarea value={reply} onChange={e => setReply(e.target.value)} placeholder="Write your reply…" rows={3}
-              style={{ width: "100%", padding: "10px 12px", background: NL.surface, border: `1px solid ${NL.borderMid}`, borderRadius: 8, color: NL.text, fontSize: 13, fontFamily: font, resize: "vertical", outline: "none", boxSizing: "border-box", lineHeight: 1.6 }} />
-            {replyError && <p style={{ margin: 0, fontSize: 12, color: NL.danger }}>{replyError}</p>}
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button onClick={sendReply} disabled={sending || !reply.trim()}
-                style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, padding: "7px 16px", borderRadius: 8, background: reply.trim() && !sending ? NL.accent : NL.elevated, border: `1px solid ${reply.trim() && !sending ? NL.accent : NL.border}`, color: reply.trim() && !sending ? "#000" : NL.muted, cursor: reply.trim() && !sending ? "pointer" : "not-allowed", fontFamily: font, transition: "all 0.15s" }}>
-                {sending ? <><Spinner size={12} /> Sending…</> : (c.username ? "Send DM" : "Send email")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function FeedbackPanel() {
-  const [contacts, setContacts] = useState([]);
-  const [issues, setIssues] = useState({});
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState("all"); // all | bug | feature | open | closed
+  const threadRef = useRef(null);
 
   const load = useCallback(async () => {
-    setLoading(true); setError(null);
+    setLoading(true);
     try {
       const token = await fetchIdToken();
       fetch(`${API_BASE}/api/admin/feedback-contacts/sync-inbox`, { method: "POST", headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
-      const res = await fetch(`${API_BASE}/api/admin/feedback-contacts`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error(`${res.status}`);
-      setContacts((await res.json()).contacts || []);
+      const [convRes, contactRes] = await Promise.all([
+        fetch(`${API_BASE}/api/admin/support/conversations`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/api/admin/feedback-contacts`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const convs = convRes.ok ? ((await convRes.json()).conversations || []) : [];
+      const contacts = contactRes.ok ? ((await contactRes.json()).contacts || []) : [];
 
-      // Batch-load the GitHub issues so titles/types show without expanding.
       const map = {};
       for (const state of ["open", "closed"]) {
         try {
@@ -1222,59 +1071,262 @@ function FeedbackPanel() {
         } catch (_) { }
       }
       setIssues(map);
-    } catch (e) { setError("Failed: " + e.message); }
+
+      const byUser = {};
+      for (const c of convs) {
+        byUser[c.username] = { kind: "user", username: c.username, displayName: c.displayName, avatarUrl: c.avatarUrl, conv: c, tickets: [] };
+      }
+      for (const fc of contacts) {
+        if (fc.username) {
+          byUser[fc.username] ??= { kind: "user", username: fc.username, displayName: null, avatarUrl: null, conv: null, tickets: [] };
+          byUser[fc.username].tickets.push(fc);
+        }
+      }
+      const emailEntries = contacts.filter(fc => !fc.username).map(fc => ({ kind: "email", email: fc.email, ticket: fc, tickets: [fc] }));
+
+      const activity = e => e.conv?.lastMessageAt
+        ? new Date(e.conv.lastMessageAt).getTime()
+        : Math.max(0, ...e.tickets.map(t => new Date(t.created_at).getTime()));
+      const merged = [...Object.values(byUser), ...emailEntries].sort((a, b) => activity(b) - activity(a));
+      setEntries(merged);
+    } catch (_) { }
     finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = contacts.filter(c => {
-    const issue = issues[c.issue_number];
-    if (filter === "all") return true;
-    if (filter === "open") return issue?.state !== "closed";
-    if (filter === "closed") return issue?.state === "closed";
+  useEffect(() => {
+    if (loading || selected) return;
+    try {
+      const url = new URL(window.location.href);
+      const u = url.searchParams.get("user");
+      if (u) {
+        url.searchParams.delete("user");
+        window.history.replaceState(null, "", url.toString());
+        const match = entries.find(e => e.kind === "user" && e.username === u);
+        if (match) openEntry(match);
+      }
+    } catch (_) { }
+  }, [loading]);
+
+  async function openEntry(entry) {
+    setSelected(entry);
+    setThread([]);
+    setError(null);
+    setOpenTickets(entry.tickets.length === 1 ? { [entry.tickets[0].issue_number]: true } : {});
+    if (entry.kind !== "user") { loadEmailThread(entry); return; }
+    setThreadLoading(true);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/admin/support/messages/${encodeURIComponent(entry.username)}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const data = await res.json();
+        setThread(data.messages || []);
+        setSupportUid(data.supportUid || null);
+      }
+    } catch (_) { }
+    setThreadLoading(false);
+  }
+
+  async function loadEmailThread(entry) {
+    setThreadLoading(true);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${entry.ticket.issue_number}/replies`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) setThread(((await res.json()).replies || []));
+    } catch (_) { }
+    setThreadLoading(false);
+  }
+
+  useEffect(() => {
+    if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
+  }, [thread]);
+
+  async function send() {
+    const text = reply.trim();
+    if (!text || sending || !selected) return;
+    setSending(true); setError(null);
+    try {
+      const token = await fetchIdToken();
+      if (selected.kind === "user") {
+        const res = await fetch(`${API_BASE}/api/admin/support/messages/${encodeURIComponent(selected.username)}`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ content: text }),
+        });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(d.message || d.error || res.status);
+        setReply("");
+        await openEntry(selected);
+      } else {
+        const res = await fetch(`${API_BASE}/api/admin/feedback-contacts/${selected.ticket.issue_number}/reply`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text, issueTitle: issues[selected.ticket.issue_number]?.title }),
+        });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(d.message || res.status);
+        setReply("");
+        await loadEmailThread(selected);
+      }
+      load();
+    } catch (e) { setError(String(e.message || e)); }
+    finally { setSending(false); }
+  }
+
+  const [openTickets, setOpenTickets] = useState({});
+
+  function ticketCard(t) {
+    const issue = issues[t.issue_number];
     const isBug = issue?.labels?.some(l => l.name === "bug");
-    if (filter === "bug") return isBug === true;
-    if (filter === "feature") return issue ? !isBug : false;
-    return true;
-  });
-
-  const FILTERS = [
-    { id: "all", label: "All" },
-    { id: "open", label: "Open" },
-    { id: "closed", label: "Closed" },
-    { id: "bug", label: "🐛 Bugs" },
-    { id: "feature", label: "💡 Features" },
-  ];
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <Card
-        title="Feedback"
-        subtitle="Bug reports & feature requests from the app and website. Reply via DM (or email for older entries)"
-        action={iconBtn(load, "Refresh", <IC.Refresh />)}
-      >
-        <div style={{ display: "flex", gap: 4, marginBottom: 12, flexWrap: "wrap" }}>
-          {FILTERS.map(f => (
-            <button key={f.id} onClick={() => setFilter(f.id)}
-              style={{ padding: "5px 12px", borderRadius: 999, fontSize: 11, fontWeight: 600, fontFamily: font, cursor: "pointer", border: `1px solid ${filter === f.id ? NL.accentBorder : NL.border}`, background: filter === f.id ? NL.accentDim : "transparent", color: filter === f.id ? NL.accent : NL.muted }}>
-              {f.label}
-            </button>
-          ))}
-          <span style={{ marginLeft: "auto", fontSize: 11, color: NL.muted, alignSelf: "center" }}>{filtered.length} of {contacts.length}</span>
+    const closed = issue?.state === "closed";
+    const color = closed ? NL.muted : (isBug ? NL.danger : NL.accent);
+    const expanded = openTickets[t.issue_number] ?? false;
+    return (
+      <div key={t.issue_number} style={{ borderRadius: 10, border: `1px solid ${closed ? NL.border : (isBug ? NL.dangerBorder : NL.accentBorder)}`, background: NL.elevated, overflow: "hidden" }}>
+        <div onClick={() => setOpenTickets(p => ({ ...p, [t.issue_number]: !expanded }))}
+          style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", userSelect: "none" }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color, flexShrink: 0 }}>{isBug ? "🐛" : "💡"} #{t.issue_number}</span>
+          <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: NL.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {issue?.title?.replace(/^\[(Bug|Feature)\]\s*/, "") || `Issue #${t.issue_number}`}
+          </span>
+          {closed && <span style={{ fontSize: 10, fontWeight: 700, color: NL.muted, flexShrink: 0 }}>CLOSED</span>}
+          <a href={`https://github.com/MCCORG/MCCompanion/issues/${t.issue_number}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}
+            style={{ fontSize: 10, color: NL.secondary, textDecoration: "none", padding: "2px 7px", borderRadius: 5, border: `1px solid ${NL.border}`, flexShrink: 0 }}>GitHub ↗</a>
+          <span style={{ fontSize: 10, color: NL.muted, flexShrink: 0 }}>{expanded ? "▲" : "▼"}</span>
         </div>
-        {loading ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, color: NL.muted, fontSize: 13, padding: "24px 0", justifyContent: "center" }}><Spinner /> Loading…</div>
-        ) : error ? (
-          <p style={{ fontSize: 12, color: NL.danger, padding: "16px 0", textAlign: "center" }}>{error}</p>
-        ) : filtered.length === 0 ? (
-          <p style={{ fontSize: 13, color: NL.muted, textAlign: "center", padding: "32px 0" }}>No feedback here.</p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {filtered.map(c => <FeedbackItem key={c.issue_number} c={c} initialIssue={issues[c.issue_number] ?? null} onDelete={n => setContacts(p => p.filter(x => x.issue_number !== n))} />)}
+        {expanded && (
+          <div style={{ borderTop: `1px solid ${NL.border}`, padding: "10px 12px", fontSize: 12, color: NL.secondary, lineHeight: 1.65, whiteSpace: "pre-wrap", maxHeight: 220, overflowY: "auto", fontFamily: mono, background: "rgba(0,0,0,0.25)" }}>
+            {issue?.body || "No description."}
           </div>
         )}
-      </Card>
+      </div>
+    );
+  }
+
+  const list = (
+    <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, minHeight: 0 }}>
+      <div style={{ overflowY: "auto", flex: 1 }}>
+        {loading ? (
+          <div style={{ textAlign: "center", padding: 24, color: NL.muted }}><Spinner /></div>
+        ) : entries.length === 0 ? (
+          <p style={{ color: NL.muted, fontSize: 12, textAlign: "center", padding: 24 }}>No support items yet</p>
+        ) : entries.map((e, i) => {
+          const isActive = selected && ((e.kind === "user" && selected.username === e.username) || (e.kind === "email" && selected.kind === "email" && selected.ticket?.issue_number === e.ticket.issue_number));
+          const name = e.kind === "user" ? (e.displayName || e.username) : e.email;
+          const sub = e.conv
+            ? `${e.conv.lastMessageIsMine ? "Support: " : ""}${e.conv.lastMessage}`
+            : (e.tickets.length ? (issues[e.tickets[e.tickets.length - 1].issue_number]?.title || `Issue #${e.tickets[e.tickets.length - 1].issue_number}`) : "");
+          return (
+            <button key={e.kind === "user" ? `u:${e.username}` : `e:${e.ticket.issue_number}`} onClick={() => openEntry(e)}
+              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", padding: "10px 12px", border: "none", borderLeft: `2px solid ${isActive ? NL.accent : "transparent"}`, background: isActive ? NL.elevated : "transparent", cursor: "pointer", fontFamily: font }}>
+              {e.kind === "user" && e.avatarUrl
+                ? <img src={e.avatarUrl} alt="" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                : <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: e.kind === "user" ? NL.accentDim : NL.warnDim, border: `1px solid ${e.kind === "user" ? NL.accentBorder : "rgba(251,191,36,0.22)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>{e.kind === "user" ? (name || "?")[0].toUpperCase() : "✉️"}</div>}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: NL.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+                  {e.tickets.length > 0 && <span style={{ fontSize: 9, fontWeight: 700, color: NL.secondary, background: NL.subtle, border: `1px solid ${NL.border}`, borderRadius: 4, padding: "1px 5px", flexShrink: 0 }}>{e.tickets.length} ticket{e.tickets.length !== 1 ? "s" : ""}</span>}
+                  {e.conv?.unreadCount > 0 && <CountPill count={e.conv.unreadCount} />}
+                </div>
+                <p style={{ margin: 0, fontSize: 11, color: NL.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const detail = (
+    <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, minHeight: 0 }}>
+      {!selected ? (
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, color: NL.muted }}>
+          <span style={{ fontSize: 28 }}>🛟</span>
+          <p style={{ fontSize: 13, margin: 0 }}>Select a user to see their tickets and chat</p>
+        </div>
+      ) : (
+        <>
+          <div style={{ padding: "12px 16px", borderBottom: `1px solid ${NL.border}`, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {isMobile && (
+                <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", color: NL.secondary, cursor: "pointer", fontSize: 16, padding: 0 }}>←</button>
+              )}
+              <span style={{ fontSize: 13, fontWeight: 700, color: NL.text }}>
+                {selected.kind === "user" ? `@${selected.username}` : selected.email}
+              </span>
+              <div style={{ flex: 1 }} />
+              {iconBtn(() => openEntry(selected), "Refresh", <IC.Refresh />)}
+              {selected.kind === "user" && (
+                <a href={`/u?name=${encodeURIComponent(selected.username)}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: NL.secondary, textDecoration: "none", padding: "3px 8px", borderRadius: 6, border: `1px solid ${NL.border}` }}>Profile ↗</a>
+              )}
+            </div>
+            {selected.tickets.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 300, overflowY: "auto" }}>
+                {selected.tickets.map(ticketCard)}
+              </div>
+            )}
+          </div>
+
+          <div ref={threadRef} style={{ flex: 1, minHeight: 0, padding: 14, display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>
+            {threadLoading ? (
+              <div style={{ textAlign: "center", padding: 24, color: NL.muted }}><Spinner /></div>
+            ) : thread.length === 0 ? (
+              <p style={{ color: NL.muted, fontSize: 12, textAlign: "center", padding: 24 }}>No messages yet. Say hi 👋</p>
+            ) : selected.kind === "user" ? thread.map(msg => {
+              const isMine = supportUid && msg.senderUid === supportUid;
+              const dt = new Date(msg.createdAt);
+              return (
+                <div key={msg.id} style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}>
+                  {isMine && msg.sentByUsername && (
+                    <span style={{ fontSize: 9, color: NL.muted, marginBottom: 1 }}>{msg.sentByUsername}</span>
+                  )}
+                  <div style={{ maxWidth: "75%", padding: "8px 12px", borderRadius: 12, background: isMine ? NL.accent : NL.elevated, color: isMine ? "#0d1500" : NL.text, fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word", borderBottomRightRadius: isMine ? 4 : 12, borderBottomLeftRadius: isMine ? 12 : 4 }}>
+                    {msg.content}
+                  </div>
+                  <span style={{ fontSize: 10, color: NL.muted, marginTop: 2 }}>
+                    {dt.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} {dt.getHours().toString().padStart(2, "0")}:{dt.getMinutes().toString().padStart(2, "0")}
+                  </span>
+                </div>
+              );
+            }) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {thread.map(r => <FeedbackBubble key={r.id} r={r} email={selected.email} />)}
+              </div>
+            )}
+          </div>
+
+          <div style={{ padding: "10px 12px", borderTop: `1px solid ${NL.border}`, display: "flex", gap: 8, alignItems: "flex-end" }}>
+            <textarea
+              value={reply}
+              onChange={e => setReply(e.target.value)}
+              onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") send(); }}
+              placeholder={selected.kind === "user" ? `Reply as MCCompanion Support… (Cmd+Enter)` : `Reply by email… (Cmd+Enter)`}
+              rows={2}
+              style={{ flex: 1, background: NL.elevated, border: `1px solid ${NL.border}`, borderRadius: 10, padding: "9px 12px", color: NL.text, fontFamily: font, fontSize: 13, resize: "none", outline: "none", lineHeight: 1.5 }}
+            />
+            <Btn onClick={send} disabled={sending || !reply.trim()}>
+              {sending ? <Spinner size={13} /> : "Send"}
+            </Btn>
+          </div>
+          {error && <p style={{ margin: "0 12px 10px", fontSize: 12, color: NL.danger }}>{error}</p>}
+        </>
+      )}
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column", height: "calc(100dvh - 240px)", minHeight: 360, minWidth: 0 }}>
+        {selected ? detail : list}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ background: NL.surface, border: `1px solid ${NL.border}`, borderRadius: 14, overflow: "hidden", display: "grid", gridTemplateColumns: "300px 1fr", height: "72vh" }}>
+      <div style={{ borderRight: `1px solid ${NL.border}`, display: "flex", flexDirection: "column", minHeight: 0, minWidth: 0 }}>{list}</div>
+      {detail}
     </div>
   );
 }
@@ -2345,8 +2397,6 @@ function CachePanel() {
 }
 
 function MessagesPanel({ isMobile }) {
-  const [inbox, setInbox] = useState("support");
-  const [supportUid, setSupportUid] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [convsLoading, setConvsLoading] = useState(true);
   const [activeUsername, setActiveUsername] = useState(null);
@@ -2362,12 +2412,11 @@ function MessagesPanel({ isMobile }) {
     setConvsLoading(true);
     try {
       const token = await fetchIdToken();
-      const path = inbox === "support" ? "/api/admin/support/conversations" : "/api/messages/conversations";
-      const res = await fetch(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API_BASE}/api/messages/conversations`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setConversations((await res.json()).conversations || []);
     } catch (_) { }
     finally { setConvsLoading(false); }
-  }, [inbox]);
+  }, []);
 
   async function loadConversation(u) {
     setActiveUsername(u);
@@ -2375,20 +2424,15 @@ function MessagesPanel({ isMobile }) {
     setResult(null);
     try {
       const token = await fetchIdToken();
-      const path = inbox === "support"
-        ? `/api/admin/support/messages/${encodeURIComponent(u)}`
-        : `/api/messages/${encodeURIComponent(u)}`;
-      const res = await fetch(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(u)}`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
-      if (res.ok) {
-        setHistory(data.messages || []);
-        if (data.supportUid) setSupportUid(data.supportUid);
-      } else setHistory([]);
+      if (res.ok) setHistory(data.messages || []);
+      else setHistory([]);
     } catch { setHistory([]); }
     setLoadingHistory(false);
   }
 
-  useEffect(() => { loadConversations(); setActiveUsername(null); setHistory([]); }, [loadConversations]);
+  useEffect(() => { loadConversations(); }, [loadConversations]);
 
   useEffect(() => {
     try {
@@ -2409,10 +2453,7 @@ function MessagesPanel({ isMobile }) {
     setResult(null);
     try {
       const token = await fetchIdToken();
-      const sendPath = inbox === "support"
-        ? `/api/admin/support/messages/${encodeURIComponent(u)}`
-        : `/api/messages/${encodeURIComponent(u)}`;
-      const res = await fetch(`${API_BASE}${sendPath}`, {
+      const res = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(u)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ content: m }),
@@ -2439,18 +2480,10 @@ function MessagesPanel({ isMobile }) {
     loadConversation(u);
   }
 
-  const myUid = inbox === "support" ? supportUid : auth.currentUser?.uid;
+  const myUid = auth.currentUser?.uid;
 
   const convList = (
     <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, minHeight: 0 }}>
-      <div style={{ display: "flex", gap: 4, padding: "10px 10px 0" }}>
-        {[["support", "🛟 Support"], ["me", "👤 My DMs"]].map(([id, label]) => (
-          <button key={id} onClick={() => setInbox(id)}
-            style={{ flex: 1, padding: "7px 8px", borderRadius: 8, fontSize: 11, fontWeight: 700, fontFamily: font, cursor: "pointer", border: `1px solid ${inbox === id ? NL.accentBorder : NL.border}`, background: inbox === id ? NL.accentDim : "transparent", color: inbox === id ? NL.accent : NL.muted, whiteSpace: "nowrap" }}>
-            {label}
-          </button>
-        ))}
-      </div>
       <div style={{ display: "flex", gap: 6, padding: "10px 10px 8px" }}>
         <input
           value={newUser}
@@ -2526,9 +2559,6 @@ function MessagesPanel({ isMobile }) {
               const dt = new Date(msg.createdAt);
               return (
                 <div key={msg.id} style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}>
-                  {isMine && msg.sentByUsername && (
-                    <span style={{ fontSize: 9, color: NL.muted, marginBottom: 1 }}>{msg.sentByUsername}</span>
-                  )}
                   <div style={{
                     maxWidth: "75%", padding: "8px 12px", borderRadius: 12,
                     background: isMine ? NL.accent : NL.elevated,
@@ -2600,8 +2630,8 @@ const NAV_GROUPS = [
     label: "Community",
     items: [
       { id: "moderation", label: "Moderation", icon: "🛡", badge: "openReports" },
-      { id: "feedback", label: "Feedback", icon: "💬" },
-      { id: "messages", label: "Messages", icon: "✉️", badge: "supportUnread" },
+      { id: "support", label: "Support", icon: "🛟", badge: "supportUnread" },
+      { id: "messages", label: "Messages", icon: "✉️" },
     ],
   },
   {
@@ -2678,6 +2708,7 @@ export default function AdminPage() {
     try {
       const url = new URL(window.location.href);
       url.searchParams.set("tab", tab);
+      url.searchParams.delete("user");
       window.history.replaceState(null, "", url.toString());
     } catch (_) { }
   }, []);
@@ -2742,7 +2773,7 @@ export default function AdminPage() {
       {activeTab === "featured-packs" && <FeaturedPacksPanel />}
       {activeTab === "submissions" && <PackSubmissionsPanel />}
       {activeTab === "moderation" && <ModerationPanel isMobile={isMobile} />}
-      {activeTab === "feedback" && <FeedbackPanel />}
+      {activeTab === "support" && <SupportPanel isMobile={isMobile} />}
       {activeTab === "skins" && <SkinsPanel />}
       {activeTab === "cache" && <CachePanel />}
       {activeTab === "events" && <LiveEventsPanel isMobile={isMobile} />}
