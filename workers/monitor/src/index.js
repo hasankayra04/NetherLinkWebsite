@@ -1,8 +1,12 @@
 const PANEL = 'https://panel.mccompanion.net';
-const MAX_HISTORY = 288;
+
+const MAX_HISTORY = 720;
 
 const HTTP_ENDPOINTS = [
-  { name: 'EU API', group: 'api', url: 'https://api.mccompanion.net/api/featured-servers' },
+  { name: 'API (public)',  group: 'api',            url: 'https://api.mccompanion.net/api/featured-servers' },
+  { name: 'API direct EU', group: 'api',            url: 'https://eubackend.mccompanion.net/api/featured-servers' },
+  { name: 'API direct US', group: 'api',            url: 'https://usbackend.mccompanion.net/api/featured-servers' },
+  { name: 'Pelican Panel', group: 'infrastructure', url: PANEL },
 ];
 
 const PELICAN_SERVERS = [
@@ -20,13 +24,26 @@ const PELICAN_SERVERS = [
   { id: '8b060c22', name: 'MCC Status Bot',    group: 'bots'           },
 ];
 
+const ALL_NAMES = [...HTTP_ENDPOINTS, ...PELICAN_SERVERS].map(s => s.name);
+const DUPLICATE_NAMES = [...new Set(ALL_NAMES.filter((n, i) => ALL_NAMES.indexOf(n) !== i))];
+
+const SEVERITY = { up: 0, degraded: 1, unknown: 2, down: 3 };
+const isBad = (status) => (SEVERITY[status] ?? 2) > 0;
+const escalated = (prev, curr) =>
+  prev !== 'unknown' && (SEVERITY[curr] ?? 2) > (SEVERITY[prev] ?? 0);
+
 async function checkHttp(endpoint) {
   const RETRIES = 2;
   for (let attempt = 0; attempt <= RETRIES; attempt++) {
     const start = Date.now();
     try {
       const res = await fetch(endpoint.url, { signal: AbortSignal.timeout(8000) });
-      return { name: endpoint.name, group: endpoint.group, status: res.status < 500 ? 'up' : 'degraded', latency_ms: Date.now() - start };
+      return {
+        name: endpoint.name,
+        group: endpoint.group,
+        status: res.status < 500 ? 'up' : 'degraded',
+        latency_ms: Date.now() - start,
+      };
     } catch {
       if (attempt < RETRIES) await new Promise(r => setTimeout(r, 2000));
     }
@@ -34,48 +51,66 @@ async function checkHttp(endpoint) {
   return { name: endpoint.name, group: endpoint.group, status: 'down', latency_ms: null };
 }
 
-async function fetchAllPelicanServers(apiKey) {
+async function fetchPelicanResources(id, clientKey) {
   try {
-    const res = await fetch(`${PANEL}/api/application/servers?per_page=100`, {
-      headers: { Authorization: `Bearer ${apiKey}`, Accept: 'application/json' },
+    const res = await fetch(`${PANEL}/api/client/servers/${id}/resources`, {
+      headers: { Authorization: `Bearer ${clientKey}`, Accept: 'application/json' },
       signal: AbortSignal.timeout(10000),
     });
-    if (!res.ok) return {};
+    if (!res.ok) return null;
     const data = await res.json();
-    const map = {};
-    for (const s of data.data ?? []) {
-      const id = s.attributes?.identifier;
-      const status = s.attributes?.status;
-      if (id) map[id] = status;
-    }
-    return map;
+    return data?.attributes ?? null;
   } catch {
-    return {};
+    return null;
   }
 }
 
-function checkPelican(server, statusMap) {
-  if (!(server.id in statusMap)) {
-    return { name: server.name, group: server.group, status: 'unknown', latency_ms: null };
+function checkPelican(server, attrs) {
+  if (!attrs) {
+    return {
+      name: server.name, group: server.group, status: 'unknown', latency_ms: null,
+      state: 'unknown', memory_mb: null, cpu_percent: null, disk_mb: null, uptime_s: null,
+    };
   }
-  const raw = statusMap[server.id];
-  const status = raw === null ? 'up'
-    : raw === 'suspended' ? 'down'
-    : (raw === 'starting' || raw === 'stopping' || raw === 'installing') ? 'degraded'
-    : 'up';
-  return { name: server.name, group: server.group, status, latency_ms: null, state: raw ?? 'running' };
+
+  const state = attrs.current_state;
+  const status = attrs.is_suspended ? 'down'
+    : state === 'running' ? 'up'
+    : state === 'offline' ? 'down'
+    : (state === 'starting' || state === 'stopping') ? 'degraded'
+    : 'unknown';
+
+  const r = attrs.resources ?? {};
+  return {
+    name: server.name,
+    group: server.group,
+    status,
+    latency_ms: null,
+    state: state ?? 'unknown',
+    memory_mb: r.memory_bytes != null ? Math.round(r.memory_bytes / 1048576) : null,
+    cpu_percent: r.cpu_absolute != null ? Math.round(r.cpu_absolute * 10) / 10 : null,
+    disk_mb: r.disk_bytes != null ? Math.round(r.disk_bytes / 1048576) : null,
+    uptime_s: r.uptime != null ? Math.round(r.uptime / 1000) : null,
+  };
 }
 
 async function fetchGist(gistId, token) {
-  const res = await fetch(`https://api.github.com/gists/${gistId}`, {
-    headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'MCCompanion-Monitor', Accept: 'application/vnd.github+json' },
-  });
-  if (!res.ok) return { services: [], history: [] };
-  const gist = await res.json();
   try {
-    return JSON.parse(gist.files?.['status.json']?.content ?? '{}');
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'User-Agent': 'MCCompanion-Monitor',
+        Accept: 'application/vnd.github+json',
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+    const gist = await res.json();
+    const raw = gist.files?.['status.json']?.content;
+    if (raw == null) return { services: [], history: [] };
+    return JSON.parse(raw);
   } catch {
-    return { services: [], history: [] };
+    return null;
   }
 }
 
@@ -89,7 +124,9 @@ async function updateGist(gistId, token, content) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ files: { 'status.json': { content: JSON.stringify(content, null, 2) } } }),
+    signal: AbortSignal.timeout(10000),
   });
+  if (!res.ok) console.error(`[monitor] gist update failed: HTTP ${res.status}`);
   return res.status;
 }
 
@@ -97,60 +134,83 @@ const ALERT_ROLE = '1515309276342648852';
 
 const STATUS_EMOJI = { up: '🟢', down: '🔴', degraded: '🟡', unknown: '⚫' };
 
-async function sendDiscordAlert(webhookUrl, downServices) {
-  const lines = downServices.map(s => `${STATUS_EMOJI[s.status] ?? '⚫'} **${s.name}** — ${s.status}`).join('\n');
-  const body = {
-    content: `<@&${ALERT_ROLE}> Service disruption detected!\n${lines}`,
-    username: 'MCCompanion Monitor',
-  };
+function describe(s) {
+  const usage = (s.memory_mb != null || s.cpu_percent != null)
+    ? `  (${s.cpu_percent ?? '?'}% CPU, ${s.memory_mb ?? '?'} MB)`
+    : '';
+  return `${STATUS_EMOJI[s.status] ?? '⚫'} **${s.name}**, ${s.status}${usage}`;
+}
+
+async function sendDiscordAlert(webhookUrl, newlyBad, recovered) {
+  const blocks = [];
+  if (newlyBad.length > 0) {
+    blocks.push(`<@&${ALERT_ROLE}> Service disruption detected!\n${newlyBad.map(describe).join('\n')}`);
+  }
+  if (recovered.length > 0) {
+    blocks.push(`Back up again:\n${recovered.map(describe).join('\n')}`);
+  }
+  if (blocks.length === 0) return;
+
   await fetch(webhookUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ content: blocks.join('\n\n'), username: 'MCCompanion Monitor' }),
+    signal: AbortSignal.timeout(10000),
   });
 }
 
 async function runMonitor(env) {
   const now = new Date().toISOString();
 
-  const [existing, httpResults, pelicanMap] = await Promise.all([
-    fetchGist(env.GIST_ID, env.GIST_TOKEN),
-    Promise.all(HTTP_ENDPOINTS.map(checkHttp)),
-    fetchAllPelicanServers(env.PELICAN_API_KEY),
-  ]);
-
-  const pelicanResults = PELICAN_SERVERS.map(s => checkPelican(s, pelicanMap));
-  const services = [...pelicanResults, ...httpResults];
-
-  // Alert only when a service newly goes down (was up before)
-  if (env.DISCORD_WEBHOOK) {
-    const prevMap = Object.fromEntries((existing.services ?? []).map(s => [s.name, s.status]));
-    const newlyDown = services.filter(s =>
-      (s.status === 'down' || s.status === 'degraded') && prevMap[s.name] === 'up'
-    );
-    if (newlyDown.length > 0) {
-      await sendDiscordAlert(env.DISCORD_WEBHOOK, newlyDown);
-    }
+  if (DUPLICATE_NAMES.length > 0) {
+    console.error(`[monitor] duplicate service names, alerts will shadow each other: ${DUPLICATE_NAMES.join(', ')}`);
   }
 
+  const [existing, httpResults, pelicanAttrs] = await Promise.all([
+    fetchGist(env.GIST_ID, env.GIST_TOKEN),
+    Promise.all(HTTP_ENDPOINTS.map(checkHttp)),
+    Promise.all(PELICAN_SERVERS.map(s => fetchPelicanResources(s.id, env.PELICAN_CLIENT_KEY))),
+  ]);
+  if (existing === null) {
+    console.error('[monitor] could not read gist, skipping this cycle to protect history');
+    return;
+  }
+
+  const pelicanResults = PELICAN_SERVERS.map((s, i) => checkPelican(s, pelicanAttrs[i]));
+  const services = [...pelicanResults, ...httpResults];
+
+  const prevMap = Object.fromEntries((existing.services ?? []).map(s => [s.name, s.status]));
+  const newlyBad = services.filter(s => prevMap[s.name] && escalated(prevMap[s.name], s.status));
+  const recovered = services.filter(s => !isBad(s.status) && prevMap[s.name] && isBad(prevMap[s.name]));
+
+  if (env.DISCORD_WEBHOOK && (newlyBad.length > 0 || recovered.length > 0)) {
+    try {
+      await sendDiscordAlert(env.DISCORD_WEBHOOK, newlyBad, recovered);
+    } catch (err) {
+      console.error('[monitor] discord alert failed:', err);
+    }
+  }
   const historyEntry = {
     timestamp: now,
     checks: services.map(s => ({ name: s.name, group: s.group, status: s.status })),
   };
   const history = [...(existing.history || []), historyEntry].slice(-MAX_HISTORY);
-  const output = { updated_at: now, services, history };
 
-  const status = await updateGist(env.GIST_ID, env.GIST_TOKEN, output);
+  const status = await updateGist(env.GIST_ID, env.GIST_TOKEN, { updated_at: now, services, history });
   console.log(`[${now}] Gist updated (HTTP ${status}):`, services.map(s => `${s.name}=${s.status}`).join(', '));
 }
 
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(runMonitor(env));
+    ctx.waitUntil(runMonitor(env).catch(err => console.error('[monitor] run failed:', err)));
   },
 
   async fetch(request, env, ctx) {
-    ctx.waitUntil(runMonitor(env));
+    const secret = env.TRIGGER_SECRET;
+    if (!secret || request.headers.get('X-Trigger-Secret') !== secret) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+    ctx.waitUntil(runMonitor(env).catch(err => console.error('[monitor] run failed:', err)));
     return new Response('Monitor triggered', { status: 200 });
   },
 };

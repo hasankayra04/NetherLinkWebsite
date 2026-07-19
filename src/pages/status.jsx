@@ -33,6 +33,10 @@ function overallStatus(services) {
   return "unknown";
 }
 
+function formatMemory(mb) {
+  return mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`;
+}
+
 function Dot({ status, size = 8 }) {
   return (
     <span style={{
@@ -83,6 +87,13 @@ function ServiceRow({ service, history, last }) {
         <span style={{ fontSize: 13, fontWeight: 500, color: T.text, flex: 1 }}>{service.name}</span>
         {service.latency_ms != null && (
           <span style={{ fontSize: 11, color: T.muted, fontFamily: "monospace" }}>{service.latency_ms}ms</span>
+        )}
+        {service.status === "up" && (service.cpu_percent != null || service.memory_mb != null) && (
+          <span style={{ fontSize: 11, color: T.muted, fontFamily: "monospace", whiteSpace: "nowrap" }}>
+            {service.cpu_percent != null && `${service.cpu_percent}% CPU`}
+            {service.cpu_percent != null && service.memory_mb != null && " · "}
+            {service.memory_mb != null && formatMemory(service.memory_mb)}
+          </span>
         )}
         <span style={{ fontSize: 12, fontWeight: 600, color: STATUS_COLOR[service.status] ?? T.muted }}>
           {STATUS_LABEL[service.status] ?? "Unknown"}

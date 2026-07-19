@@ -39,7 +39,6 @@ async function lookupPlayer(identifier) {
   return res.json();
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function Spinner({ size = 20, color = "currentColor" }) {
   return (

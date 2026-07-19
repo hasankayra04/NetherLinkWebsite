@@ -292,7 +292,7 @@ export default function AppShowcase() {
 
             <div style={{ width: "100%", maxWidth: 960, position: "relative", zIndex: 1 }}>
                 {isMobile ? (
-                    // ── Mobile: phone centered (scaled), steps below ──────────────
+                    // Mobile: phone centered and scaled, steps below.
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 32 }}>
                         <div style={{
                             width: PHONE_W,
