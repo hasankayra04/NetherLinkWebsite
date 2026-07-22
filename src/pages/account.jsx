@@ -444,6 +444,215 @@ const NOTIF_PREFS_META = [
   { key: "message_received", label: "New message",              desc: "When you receive a direct message" },
 ];
 
+const CONNECT_RELAYS = {
+  EU: { name: "EU Server", ip: "161.97.182.113" },
+  US: { name: "US Server", ip: "217.77.15.138" },
+};
+const CONNECT_DEFAULT_PORT = { bedrock: 19132, java: 25565 };
+const CONNECT_MODE_STRING = { dns: "NINTENDO", friends: "FRIENDS", java: "JAVA" };
+
+function ConnectSection({ profile }) {
+  const gamertags = (profile?.bedrockAccounts || []).map(a => a.xboxGamertag).filter(Boolean);
+  const hasGamertag = gamertags.length > 0;
+
+  const [mode, setMode] = useState("dns");
+  const [region, setRegion] = useState("EU");
+  const [address, setAddress] = useState("");
+  const [port, setPort] = useState(String(CONNECT_DEFAULT_PORT.bedrock));
+  const [portTouched, setPortTouched] = useState(false);
+  const [gamertag, setGamertag] = useState(gamertags[0] || "");
+  const [bots, setBots] = useState(null);
+
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    if (mode !== "friends" || bots !== null) return;
+    let live = true;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/bots`);
+        if (!res.ok) { if (live) setBots([]); return; }
+        const { bots } = await res.json();
+        if (live) setBots(bots || []);
+      } catch (_) { if (live) setBots([]); }
+    })();
+    return () => { live = false; };
+  }, [mode, bots]);
+
+  const platform = mode === "java" ? "java" : "bedrock";
+
+  function switchMode(next) {
+    setMode(next);
+    setError(null);
+    if (!portTouched) setPort(String(next === "java" ? CONNECT_DEFAULT_PORT.java : CONNECT_DEFAULT_PORT.bedrock));
+  }
+
+  function pickBot() {
+    if (!bots || bots.length === 0) return null;
+    return bots.find(b => b.friendCount == null || b.friendCount < b.maxFriends) || bots[0];
+  }
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    setError(null);
+    setResult(null);
+
+    const trimmed = address.trim();
+    if (!trimmed) { setError("Enter your server address first."); return; }
+
+    const portNum = parseInt(port, 10);
+    if (!Number.isInteger(portNum) || portNum < 1 || portNum > 65535) {
+      setError("That port does not look right. Use a number between 1 and 65535."); return;
+    }
+    if (mode === "friends" && !gamertag) {
+      setError("Friends mode needs a linked Bedrock account. Link one in the app first."); return;
+    }
+    const bot = mode === "friends" ? pickBot() : null;
+    if (mode === "friends" && !bot) {
+      setError("No friend bot is available right now. Try DNS mode instead."); return;
+    }
+
+    const body = { remoteIP: trimmed, remotePort: portNum, mode: CONNECT_MODE_STRING[mode] };
+    if (gamertag) body.bedrockGamertag = gamertag;
+
+    setSending(true);
+    try {
+      const token = await fetchIdToken();
+      const res = await fetch(`${API_BASE}/api/route`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      let payload = null;
+      try { payload = await res.json(); } catch (_) {}
+
+      if (res.status === 200) setResult({ mode, region, gamertag, bot: bot?.gamertag || null });
+      else if (res.status === 403) setError(payload?.message || "Your connection is blocked. If you think this is a mistake, reach out on Discord.");
+      else if (res.status === 429) setError("You are doing that a bit too fast. Wait a moment and try again.");
+      else setError(payload?.message || `Something went wrong (status ${res.status}). Try again.`);
+    } catch (_) {
+      setError("Could not reach the server. Check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  if (result) {
+    const relay = CONNECT_RELAYS[result.region];
+    const isFriends = result.mode === "friends";
+    const code = (t) => (
+      <code style={{ fontFamily: mono, background: NL.subtle, border: `1px solid ${NL.border}`, borderRadius: 6, padding: "2px 7px", fontSize: 13, color: NL.accent }}>{t}</code>
+    );
+    return (
+      <Card title="Session ready" subtitle={`Saved to the ${relay.name} for 15 minutes`}>
+        {isFriends ? (
+          <ol style={{ margin: 0, paddingLeft: 20, color: NL.text, fontSize: 14, lineHeight: 1.9 }}>
+            <li>On Xbox Live, add {code(result.bot)} as a friend.</li>
+            <li>Open Minecraft and go to the Friends tab.</li>
+            <li>Join the server that appears under LAN worlds.</li>
+          </ol>
+        ) : (
+          <ol style={{ margin: 0, paddingLeft: 20, color: NL.text, fontSize: 14, lineHeight: 1.9 }}>
+            <li>On your console or device, set the DNS to {code(relay.ip)}</li>
+            <li>Open Minecraft and pick any server from the featured list.</li>
+            <li>You will be sent straight to your own server.</li>
+          </ol>
+        )}
+        <p style={{ color: NL.muted, fontSize: 12, lineHeight: 1.6, margin: "14px 0 0" }}>
+          {result.gamertag
+            ? "Matched by your gamertag, so this works even on a different network."
+            : "Play on the same internet connection you opened this page from."}
+        </p>
+        <button type="button" onClick={() => setResult(null)} style={{ marginTop: 16, padding: "10px 16px", borderRadius: 10, border: `1px solid ${NL.borderMid}`, background: "transparent", color: NL.secondary, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          Set up another server
+        </button>
+      </Card>
+    );
+  }
+
+  const cLabel = { display: "block", fontSize: 12, fontWeight: 700, letterSpacing: 0.3, textTransform: "uppercase", color: NL.muted, marginBottom: 8 };
+  const cInput = { width: "100%", padding: "12px 14px", borderRadius: 11, background: NL.bg, border: `1px solid ${NL.borderMid}`, color: NL.text, fontSize: 15, outline: "none", boxSizing: "border-box", fontFamily: font };
+  const seg = (on, activeColor, activeBorder, activeBg, disabled) => ({
+    flex: 1, padding: "12px 0", borderRadius: 11, cursor: disabled ? "not-allowed" : "pointer",
+    fontSize: 14, fontWeight: 700, fontFamily: font,
+    background: on ? activeBg : "transparent",
+    color: disabled ? NL.muted : on ? activeColor : NL.secondary,
+    border: `1px solid ${on ? activeBorder : NL.border}`, opacity: disabled ? 0.55 : 1,
+  });
+
+  return (
+    <Card title="Connect from the web" subtitle="Point MCCompanion at your server without the app">
+      <form onSubmit={onSubmit}>
+        <label style={cLabel}>Connection mode</label>
+        <div style={{ display: "flex", gap: 10, marginBottom: 6 }}>
+          {[{ id: "dns", label: "DNS" }, { id: "friends", label: "Friends" }, { id: "java", label: "Java" }].map(opt => {
+            const on = mode === opt.id;
+            const disabled = opt.id === "friends" && !hasGamertag;
+            const isJava = opt.id === "java";
+            return (
+              <button type="button" key={opt.id} disabled={disabled}
+                onClick={() => switchMode(opt.id)}
+                title={disabled ? "Link a Bedrock account to use Friends mode" : undefined}
+                style={seg(on, isJava ? T.java : T.bedrock, isJava ? "rgba(245,158,11,0.30)" : "rgba(96,165,250,0.30)", isJava ? "rgba(245,158,11,0.10)" : "rgba(96,165,250,0.10)", disabled)}>
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+        <p style={{ color: NL.muted, fontSize: 12, margin: "0 2px 18px" }}>
+          {mode === "dns" && "Set your console DNS to a relay, then join a featured server."}
+          {mode === "friends" && "A bot adds you as a friend, and your server shows in the Friends tab."}
+          {mode === "java" && "Bridge to a Java Edition server through the relay."}
+        </p>
+
+        <label style={cLabel}>Server address</label>
+        <input value={address} onChange={e => setAddress(e.target.value)} placeholder="play.myserver.net"
+          autoCapitalize="none" autoCorrect="off" spellCheck={false} style={cInput} />
+
+        <label style={{ ...cLabel, marginTop: 16 }}>Port</label>
+        <input value={port} onChange={e => { setPort(e.target.value.replace(/[^0-9]/g, "")); setPortTouched(true); }}
+          inputMode="numeric" placeholder={String(CONNECT_DEFAULT_PORT[platform])} style={cInput} />
+
+        {gamertags.length > 1 && (
+          <>
+            <label style={{ ...cLabel, marginTop: 16 }}>Bedrock gamertag</label>
+            <select value={gamertag} onChange={e => setGamertag(e.target.value)} style={cInput}>
+              {gamertags.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+          </>
+        )}
+
+        <label style={{ ...cLabel, marginTop: 16 }}>Relay region</label>
+        <div style={{ display: "flex", gap: 10 }}>
+          {Object.entries(CONNECT_RELAYS).map(([key, r]) => (
+            <button type="button" key={key} onClick={() => setRegion(key)}
+              style={seg(region === key, NL.accent, NL.accentBorder, NL.accentDim, false)}>
+              {r.name}
+            </button>
+          ))}
+        </div>
+
+        {error && (
+          <div style={{ marginTop: 18, padding: "12px 14px", borderRadius: 11, background: NL.dangerDim, border: `1px solid ${NL.dangerBorder}`, color: NL.danger, fontSize: 13, lineHeight: 1.5 }}>{error}</div>
+        )}
+
+        <button type="submit" disabled={sending}
+          style={{ marginTop: 22, width: "100%", padding: "14px 0", borderRadius: 12, border: `1px solid ${NL.accentBorder}`, background: NL.accentDim, color: NL.accent, fontSize: 15, fontWeight: 800, cursor: sending ? "default" : "pointer", opacity: sending ? 0.7 : 1, fontFamily: font }}>
+          {sending ? "Setting up" : "Start session"}
+        </button>
+
+        <p style={{ color: NL.muted, fontSize: 12, textAlign: "center", margin: "12px 0 0" }}>
+          {gamertag
+            ? <>Matching by gamertag <strong style={{ color: NL.secondary }}>{gamertag}</strong> and your current IP.</>
+            : "No Bedrock account linked, so we match by your current IP only."}
+        </p>
+      </form>
+    </Card>
+  );
+}
+
 function NotificationsTab({ getToken }) {
   const [prefs, setPrefs] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -924,6 +1133,7 @@ export default function AccountPage() {
   const TABS = [
     { id: "profile", label: "Profile" },
     { id: "account", label: "Account" },
+    { id: "connect", label: "Connect" },
     { id: "skins", label: "Cloud Skins" },
     { id: "packs", label: "Resource Packs" },
     ...(isPartner ? [{ id: "partner", label: "Partner" }] : []),
@@ -932,7 +1142,7 @@ export default function AccountPage() {
   const [activeTab, setActiveTab] = useState(() => {
     if (typeof window === "undefined") return "profile";
     const t = new URLSearchParams(window.location.search).get("tab");
-    return ["profile", "account", "skins", "packs", "partner", "notifications"].includes(t) ? t : "profile";
+    return ["profile", "account", "connect", "skins", "packs", "partner", "notifications"].includes(t) ? t : "profile";
   });
 
   if (checking) return (
@@ -1278,6 +1488,7 @@ export default function AccountPage() {
                   </div>
                 )}
 
+                {activeTab === "connect" && <ConnectSection profile={profile} />}
                 {activeTab === "skins" && profile && <MySkinsSection username={profile.username} initialSkins={dashboardSkins} />}
                 {activeTab === "packs" && profile && <SubmitPackSection />}
                 {activeTab === "partner" && isPartner && <PartnerPanel />}
