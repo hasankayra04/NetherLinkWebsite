@@ -453,7 +453,6 @@ const CONNECT_MODE_STRING = { dns: "NINTENDO", friends: "FRIENDS", java: "JAVA" 
 
 function ConnectSection({ profile }) {
   const gamertags = (profile?.bedrockAccounts || []).map(a => a.xboxGamertag).filter(Boolean);
-  const hasGamertag = gamertags.length > 0;
 
   const [mode, setMode] = useState("dns");
   const [region, setRegion] = useState("EU");
@@ -505,9 +504,6 @@ function ConnectSection({ profile }) {
     const portNum = parseInt(port, 10);
     if (!Number.isInteger(portNum) || portNum < 1 || portNum > 65535) {
       setError("That port does not look right. Use a number between 1 and 65535."); return;
-    }
-    if (mode === "friends" && !gamertag) {
-      setError("Friends mode needs a linked Bedrock account. Link one in the app first."); return;
     }
     const bot = mode === "friends" ? pickBot() : null;
     if (mode === "friends" && !bot) {
@@ -589,13 +585,11 @@ function ConnectSection({ profile }) {
         <div style={{ display: "flex", gap: 10, marginBottom: 6 }}>
           {[{ id: "dns", label: "DNS" }, { id: "friends", label: "Friends" }, { id: "java", label: "Java" }].map(opt => {
             const on = mode === opt.id;
-            const disabled = opt.id === "friends" && !hasGamertag;
             const isJava = opt.id === "java";
             return (
-              <button type="button" key={opt.id} disabled={disabled}
+              <button type="button" key={opt.id}
                 onClick={() => switchMode(opt.id)}
-                title={disabled ? "Link a Bedrock account to use Friends mode" : undefined}
-                style={seg(on, isJava ? T.java : T.bedrock, isJava ? "rgba(245,158,11,0.30)" : "rgba(96,165,250,0.30)", isJava ? "rgba(245,158,11,0.10)" : "rgba(96,165,250,0.10)", disabled)}>
+                style={seg(on, isJava ? T.java : T.bedrock, isJava ? "rgba(245,158,11,0.30)" : "rgba(96,165,250,0.30)", isJava ? "rgba(245,158,11,0.10)" : "rgba(96,165,250,0.10)", false)}>
                 {opt.label}
               </button>
             );
