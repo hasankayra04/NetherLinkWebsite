@@ -2613,6 +2613,144 @@ function MessagesPanel({ isMobile }) {
   );
 }
 
+function RouterPanel() {
+  const rInput = { padding: "9px 12px", borderRadius: 9, border: `1px solid ${NL.borderMid}`, background: NL.subtle, color: NL.text, fontSize: 13, fontFamily: font, outline: "none", width: "100%", boxSizing: "border-box" };
+  const rLabel = { display: "block", fontSize: 11, fontWeight: 700, letterSpacing: 0.3, textTransform: "uppercase", color: NL.muted, marginBottom: 6 };
+
+  const [ip, setIp] = useState("");
+  const [gamertag, setGamertag] = useState("");
+  const [remoteIP, setRemoteIP] = useState("");
+  const [remotePort, setRemotePort] = useState("19132");
+  const [mode, setMode] = useState("NINTENDO");
+  const [ttl, setTtl] = useState("15");
+
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const [lookup, setLookup] = useState(null);
+
+  async function call(method, path, body) {
+    const token = await fetchIdToken();
+    const res = await fetch(`${API_BASE}/api/admin/route${path}`, {
+      method,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    let data = null;
+    try { data = await res.json(); } catch (_) {}
+    return { status: res.status, data };
+  }
+
+  async function doLookup() {
+    setMsg(null); setLookup(null);
+    if (!ip.trim() && !gamertag.trim()) { setMsg({ kind: "err", text: "Enter an IP or gamertag to look up." }); return; }
+    setBusy(true);
+    try {
+      const q = new URLSearchParams();
+      if (ip.trim()) q.set("ip", ip.trim());
+      if (gamertag.trim()) q.set("gamertag", gamertag.trim());
+      const { status, data } = await call("GET", `?${q.toString()}`);
+      if (status === 200) setLookup(data);
+      else setMsg({ kind: "err", text: data?.message || `Lookup failed (${status}).` });
+    } catch (_) { setMsg({ kind: "err", text: "Could not reach the server." }); }
+    finally { setBusy(false); }
+  }
+
+  async function doWrite() {
+    setMsg(null);
+    setBusy(true);
+    try {
+      const { status, data } = await call("POST", "", {
+        ip: ip.trim(), gamertag: gamertag.trim(),
+        remoteIP: remoteIP.trim(), remotePort: Number(remotePort), mode,
+        ttlMinutes: Number(ttl),
+      });
+      if (status === 200) setMsg({ kind: "ok", text: `Route written to ${data.wrote.join(" + ")} for ${data.ttlMinutes} min.` });
+      else setMsg({ kind: "err", text: data?.message || `Write failed (${status}).` });
+    } catch (_) { setMsg({ kind: "err", text: "Could not reach the server." }); }
+    finally { setBusy(false); }
+  }
+
+  async function doClear() {
+    setMsg(null);
+    if (!ip.trim() && !gamertag.trim()) { setMsg({ kind: "err", text: "Enter an IP or gamertag to clear." }); return; }
+    setBusy(true);
+    try {
+      const { status, data } = await call("DELETE", "", { ip: ip.trim(), gamertag: gamertag.trim() });
+      if (status === 200) { setMsg({ kind: "ok", text: `Cleared ${data.cleared.join(" + ") || "nothing"}.` }); setLookup(null); }
+      else setMsg({ kind: "err", text: data?.message || `Clear failed (${status}).` });
+    } catch (_) { setMsg({ kind: "err", text: "Could not reach the server." }); }
+    finally { setBusy(false); }
+  }
+
+  const btn = (bg, border, color) => ({ padding: "10px 16px", borderRadius: 10, border: `1px solid ${border}`, background: bg, color, fontSize: 13, fontWeight: 700, fontFamily: font, cursor: busy ? "default" : "pointer", opacity: busy ? 0.6 : 1 });
+
+  return (
+    <Card title="Manual router" subtitle="Assign a route for a user who cannot use the app or website. Targets an IP and/or gamertag directly.">
+      <p style={{ fontSize: 12, color: NL.muted, margin: "0 0 16px", lineHeight: 1.6 }}>
+        The target keys are the user's public IP and, optionally, their Bedrock gamertag. Every write is logged with your account.
+      </p>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+        <div>
+          <label style={rLabel}>Target IP</label>
+          <input value={ip} onChange={e => setIp(e.target.value)} placeholder="203.0.113.7" style={rInput} autoCapitalize="none" spellCheck={false} />
+        </div>
+        <div>
+          <label style={rLabel}>Gamertag <span style={{ color: NL.muted, fontWeight: 400 }}>(optional)</span></label>
+          <input value={gamertag} onChange={e => setGamertag(e.target.value)} placeholder="XboxName" style={rInput} autoCapitalize="none" spellCheck={false} />
+        </div>
+        <div>
+          <label style={rLabel}>Remote IP</label>
+          <input value={remoteIP} onChange={e => setRemoteIP(e.target.value)} placeholder="play.server.net" style={rInput} autoCapitalize="none" spellCheck={false} />
+        </div>
+        <div>
+          <label style={rLabel}>Remote port</label>
+          <input value={remotePort} onChange={e => setRemotePort(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" placeholder="19132" style={rInput} />
+        </div>
+        <div>
+          <label style={rLabel}>Mode</label>
+          <select value={mode} onChange={e => setMode(e.target.value)} style={rInput}>
+            {["NINTENDO", "FRIENDS", "JAVA", "LAN"].map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={rLabel}>TTL (minutes)</label>
+          <input value={ttl} onChange={e => setTtl(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" placeholder="15" style={rInput} />
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <button type="button" disabled={busy} onClick={doWrite} style={btn(NL.accentDim, NL.accentBorder, NL.accent)}>Write route</button>
+        <button type="button" disabled={busy} onClick={doLookup} style={btn("transparent", NL.borderMid, NL.secondary)}>Look up</button>
+        <button type="button" disabled={busy} onClick={doClear} style={btn(NL.dangerDim, NL.dangerBorder, NL.danger)}>Clear</button>
+      </div>
+
+      {msg && (
+        <div style={{ marginTop: 14, padding: "10px 12px", borderRadius: 9, fontSize: 13,
+          background: msg.kind === "ok" ? NL.accentDim : NL.dangerDim,
+          border: `1px solid ${msg.kind === "ok" ? NL.accentBorder : NL.dangerBorder}`,
+          color: msg.kind === "ok" ? NL.accent : NL.danger }}>
+          {msg.text}
+        </div>
+      )}
+
+      {lookup && (
+        <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: 10, background: NL.subtle, border: `1px solid ${NL.border}` }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: NL.muted, margin: "0 0 8px" }}>Current entries</p>
+          {["byIp", "byGamertag"].map(k => (
+            <div key={k} style={{ marginBottom: 8 }}>
+              <span style={{ fontSize: 11, color: NL.muted }}>{k === "byIp" ? "By IP" : "By gamertag"}: </span>
+              {lookup[k]
+                ? <code style={{ fontFamily: mono, fontSize: 12, color: NL.text }}>{lookup[k].remoteServerIp}:{lookup[k].remoteServerPort} ({lookup[k].mode}){lookup[k].assignedByAdmin ? ` · by ${lookup[k].assignedByAdmin}` : ""}</code>
+                : <span style={{ fontSize: 12, color: NL.muted }}>none</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 const NAV_GROUPS = [
   {
     label: null,
@@ -2641,6 +2779,7 @@ const NAV_GROUPS = [
   {
     label: "System",
     items: [
+      { id: "router", label: "Router", icon: "🧭" },
       { id: "events", label: "Live Events", icon: "📡" },
       { id: "cache", label: "Cache", icon: "🗄" },
     ],
@@ -2776,6 +2915,7 @@ export default function AdminPage() {
       {activeTab === "support" && <SupportPanel isMobile={isMobile} />}
       {activeTab === "skins" && <SkinsPanel />}
       {activeTab === "cache" && <CachePanel />}
+      {activeTab === "router" && <RouterPanel />}
       {activeTab === "events" && <LiveEventsPanel isMobile={isMobile} />}
       {activeTab === "messages" && <MessagesPanel isMobile={isMobile} />}
     </>
