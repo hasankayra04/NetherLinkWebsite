@@ -1028,7 +1028,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
     function pickFriendBot() {
       if (!Array.isArray(state.connectBots) || state.connectBots.length === 0) return null;
-      return state.connectBots.find((bot) => bot.friendCount == null || bot.friendCount < bot.maxFriends) || state.connectBots[0];
+      return state.connectBots.find((bot) => bot.friendCount === null || bot.friendCount === undefined || bot.friendCount < bot.maxFriends) || state.connectBots[0];
     }
 
     async function submitConnect(event) {
