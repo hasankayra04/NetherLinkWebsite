@@ -312,7 +312,7 @@
         await signInWithEmailAndPassword(auth, email, password);
       } catch (error) {
         const message = error?.code === 'auth/invalid-credential' || error?.code === 'auth/wrong-password'
-          ? 'Email or password is incorrect.'
+          ? 'Invalid credentials.'
           : error?.message || 'Sign-in failed.';
         setAuthMessage('error', message);
       }
@@ -364,12 +364,12 @@
         portInput.setCustomValidity('');
         return;
       }
-      const numeric = Number.parseInt(portInput.value, 10);
-      if (Number.isNaN(numeric)) {
+      const parsedPort = Number.parseInt(portInput.value, 10);
+      if (Number.isNaN(parsedPort)) {
         portInput.setCustomValidity(PORT_ERROR_MESSAGE);
         return;
       }
-      portInput.setCustomValidity(numeric >= 1 && numeric <= 65535 ? '' : PORT_ERROR_MESSAGE);
+      portInput.setCustomValidity(parsedPort >= 1 && parsedPort <= 65535 ? '' : PORT_ERROR_MESSAGE);
     });
 
     connectForm.addEventListener('submit', async (event) => {
