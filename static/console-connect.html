@@ -280,14 +280,22 @@
 
     async function loadProfileData() {
       if (state.profileLoaded) return;
-      state.profileLoaded = true;
       try {
         const res = await authedFetch(`${API_BASE}/api/account/dashboard`);
-        if (!res.ok) return;
+        if (!res.ok) throw new Error(`Dashboard request failed (${res.status}).`);
         const data = await res.json();
         state.gamertags = (data?.profile?.bedrockAccounts || []).map((a) => a.xboxGamertag).filter(Boolean);
-        gamertagSelect.innerHTML = state.gamertags.map((tag) => `<option value="${tag}">${tag}</option>`).join('');
+        gamertagSelect.replaceChildren(...state.gamertags.map((tag) => {
+          const opt = document.createElement('option');
+          opt.value = tag;
+          opt.textContent = tag;
+          return opt;
+        }));
+        state.profileLoaded = true;
       } catch (error) {
+        state.profileLoaded = false;
+        state.gamertags = [];
+        gamertagSelect.replaceChildren();
         console.warn('Could not load dashboard profile data for gamertags.', error);
       }
       renderMode();
