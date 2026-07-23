@@ -300,7 +300,8 @@
     function pickFriendBot() {
       if (!Array.isArray(state.bots) || state.bots.length === 0) return null;
       return state.bots.find((b) =>
-        b.friendCount == null ||
+        b.friendCount === null ||
+        b.friendCount === undefined ||
         (typeof b.friendCount === 'number' && b.friendCount < b.maxFriends)
       ) || state.bots[0];
     }
@@ -418,7 +419,7 @@
         });
 
         let payload = null;
-        try { payload = await response.json(); } catch (_) { /* Some API errors can return empty bodies. */ }
+        try { payload = await response.json(); } catch (err) { /* Some API errors can return empty bodies. */ }
 
         if (response.ok) {
           state.result = { mode: state.mode, region: state.region, gamertag, bot: bot?.gamertag || null };
