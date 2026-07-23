@@ -158,7 +158,9 @@
 
     const firebaseApp = initializeApp(FIREBASE_CONFIG);
     const auth = getAuth(firebaseApp);
-    setPersistence(auth, browserLocalPersistence).catch(() => {});
+    setPersistence(auth, browserLocalPersistence).catch((err) => {
+      console.warn('Failed to set Firebase persistence:', err);
+    });
 
     const state = {
       mode: 'dns',
