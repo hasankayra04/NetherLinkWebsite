@@ -39,6 +39,7 @@
     .active { border-color: rgba(103, 228, 4, 0.45); background: var(--accent-soft); color: var(--accent); font-weight: 800; }
     .notice { margin-top: 14px; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--surface-2); padding: 12px; font-size: 14px; line-height: 1.5; }
     .notice.error { border-color: rgba(248, 113, 113, 0.5); background: var(--danger-soft); color: var(--danger); }
+    .notice.success { border-color: rgba(103, 228, 4, 0.5); background: var(--accent-soft); color: var(--accent); }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
     .hidden { display: none; }
     .muted { color: var(--muted); }
@@ -187,9 +188,11 @@
     const gamertagSelect = document.getElementById('connect-gamertag');
     const submitButton = document.getElementById('submit-button');
 
-    function setAuthError(message) {
+    function setAuthMessage(type, message) {
       authError.textContent = message || '';
       authError.classList.toggle('hidden', !message);
+      authError.classList.toggle('error', type === 'error');
+      authError.classList.toggle('success', type === 'success');
     }
 
     function setConnectError(message) {
@@ -260,7 +263,7 @@
         ...options,
         headers: {
           ...(options.headers || {}),
-          Authorization: `******
+          Authorization: 'Bearer ' + token
         }
       });
     }
@@ -292,12 +295,12 @@
 
     function pickFriendBot() {
       if (!Array.isArray(state.bots) || state.bots.length === 0) return null;
-      return state.bots.find((b) => b.friendCount == null || b.friendCount < b.maxFriends) || state.bots[0];
+      return state.bots.find((b) => b.friendCount === null || b.friendCount === undefined || b.friendCount < b.maxFriends) || state.bots[0];
     }
 
     authForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      setAuthError('');
+      setAuthMessage('error', '');
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       try {
@@ -306,22 +309,22 @@
         const message = error?.code === 'auth/invalid-credential' || error?.code === 'auth/wrong-password'
           ? 'Email or password is incorrect.'
           : error?.message || 'Sign-in failed.';
-        setAuthError(message);
+        setAuthMessage('error', message);
       }
     });
 
     resetButton.addEventListener('click', async () => {
-      setAuthError('');
+      setAuthMessage('error', '');
       const email = document.getElementById('email').value.trim();
       if (!email) {
-        setAuthError('Enter your email first.');
+        setAuthMessage('error', 'Enter your email first.');
         return;
       }
       try {
         await sendPasswordResetEmail(auth, email);
-        setAuthError('Password reset email sent.');
+        setAuthMessage('success', 'Password reset email sent.');
       } catch (error) {
-        setAuthError(error?.message || 'Could not send reset email.');
+        setAuthMessage('error', error?.message || 'Could not send reset email.');
       }
     });
 
@@ -416,7 +419,7 @@
     });
 
     onAuthStateChanged(auth, async (user) => {
-      setAuthError('');
+      setAuthMessage('error', '');
       setConnectError('');
       state.result = null;
       renderResult(null);
