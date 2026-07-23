@@ -278,7 +278,9 @@
         const data = await res.json();
         state.gamertags = (data?.profile?.bedrockAccounts || []).map((a) => a.xboxGamertag).filter(Boolean);
         gamertagSelect.innerHTML = state.gamertags.map((tag) => `<option value="${tag}">${tag}</option>`).join('');
-      } catch (_) {}
+      } catch (error) {
+        console.warn('Could not load dashboard profile data for gamertags.', error);
+      }
       renderMode();
     }
 
@@ -289,7 +291,8 @@
         if (!response.ok) throw new Error();
         const data = await response.json();
         state.bots = Array.isArray(data.bots) ? data.bots : [];
-      } catch (_) {
+      } catch (error) {
+        console.warn('Could not load friend bots. Friends mode may be unavailable.', error);
         state.bots = [];
       }
     }
@@ -297,8 +300,7 @@
     function pickFriendBot() {
       if (!Array.isArray(state.bots) || state.bots.length === 0) return null;
       return state.bots.find((b) =>
-        b.friendCount === null ||
-        b.friendCount === undefined ||
+        b.friendCount == null ||
         (typeof b.friendCount === 'number' && b.friendCount < b.maxFriends)
       ) || state.bots[0];
     }
@@ -416,7 +418,7 @@
         });
 
         let payload = null;
-        try { payload = await response.json(); } catch (_) {}
+        try { payload = await response.json(); } catch (_) { /* Some API errors can return empty bodies. */ }
 
         if (response.ok) {
           state.result = { mode: state.mode, region: state.region, gamertag, bot: bot?.gamertag || null };
