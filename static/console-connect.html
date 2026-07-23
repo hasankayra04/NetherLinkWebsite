@@ -295,7 +295,7 @@
 
     function pickFriendBot() {
       if (!Array.isArray(state.bots) || state.bots.length === 0) return null;
-      return state.bots.find((b) => typeof b.friendCount !== 'number' || b.friendCount < b.maxFriends) || state.bots[0];
+      return state.bots.find((b) => b.friendCount == null || (typeof b.friendCount === 'number' && b.friendCount < b.maxFriends)) || state.bots[0];
     }
 
     authForm.addEventListener('submit', async (event) => {
@@ -360,7 +360,11 @@
         return;
       }
       const numeric = Number.parseInt(portInput.value, 10);
-      portInput.setCustomValidity(Number.isInteger(numeric) && numeric >= 1 && numeric <= 65535 ? '' : 'Use a port between 1 and 65535.');
+      if (Number.isNaN(numeric)) {
+        portInput.setCustomValidity('Use a port between 1 and 65535.');
+        return;
+      }
+      portInput.setCustomValidity(numeric >= 1 && numeric <= 65535 ? '' : 'Use a port between 1 and 65535.');
     });
 
     connectForm.addEventListener('submit', async (event) => {
