@@ -405,9 +405,7 @@
 
       const address = addressInput.value.trim();
       const port = Number.parseInt(portInput.value.trim(), 10);
-      const gamertag = gamertagSelect.value || '';
-
-      if (!address) {
+      const gamertag = (state.mode === 'friends' && state.gamertags.length > 0) ? (gamertagSelect.value || '') : '';
         setConnectError('Enter your server address first.');
         return;
       }
