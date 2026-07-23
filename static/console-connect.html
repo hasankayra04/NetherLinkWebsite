@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>MCCompanion Console Connect</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1118;
+      --surface: #121926;
+      --surface-2: #172131;
+      --border: #223048;
+      --border-strong: #31435f;
+      --text: #edf2f7;
+      --muted: #9db0c6;
+      --accent: #67e404;
+      --accent-soft: rgba(103, 228, 4, 0.12);
+      --danger: #f87171;
+      --danger-soft: rgba(248, 113, 113, 0.12);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: linear-gradient(180deg, #091018 0%, #0b1118 100%); color: var(--text); font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    body { padding: max(16px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
+    .app { max-width: 680px; margin: 0 auto; display: grid; gap: 14px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+    h1, h2 { margin: 0; }
+    h1 { font-size: clamp(26px, 5vw, 34px); }
+    h2 { font-size: 22px; }
+    p { margin: 8px 0 0; color: var(--muted); line-height: 1.5; }
+    .field { margin-top: 14px; }
+    label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; color: var(--muted); }
+    button, input, select { font: inherit; width: 100%; min-height: 48px; border-radius: 12px; border: 1px solid var(--border-strong); background: #0f1724; color: var(--text); padding: 10px 12px; }
+    button { cursor: pointer; background: var(--surface-2); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .row > button { flex: 1; }
+    .active { border-color: rgba(103, 228, 4, 0.45); background: var(--accent-soft); color: var(--accent); font-weight: 800; }
+    .notice { margin-top: 14px; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--surface-2); padding: 12px; font-size: 14px; line-height: 1.5; }
+    .notice.error { border-color: rgba(248, 113, 113, 0.5); background: var(--danger-soft); color: var(--danger); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .hidden { display: none; }
+    .muted { color: var(--muted); }
+    ol { margin: 10px 0 0; padding-left: 20px; line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="card">
+      <h1>Console Connect</h1>
+      <p>Only the web connector flow from the account page is included here.</p>
+    </section>
+
+    <section id="auth-card" class="card">
+      <h2>Sign in</h2>
+      <p>Sign in with your MCCompanion account to start a session.</p>
+      <form id="auth-form">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="current-password" required>
+        </div>
+        <div class="field row">
+          <button type="submit">Sign in</button>
+          <button id="reset-button" type="button">Reset password</button>
+        </div>
+      </form>
+      <div id="auth-error" class="notice error hidden"></div>
+    </section>
+
+    <section id="connect-card" class="card hidden">
+      <div class="row" style="align-items:center;">
+        <div style="flex:1 1 180px;">
+          <h2>Connect from the web</h2>
+          <p id="signed-in-as" class="muted"></p>
+        </div>
+        <button id="logout-button" type="button" style="max-width:180px;">Sign out</button>
+      </div>
+
+      <form id="connect-form">
+        <div class="field">
+          <label>Connection mode</label>
+          <div class="row">
+            <button type="button" data-mode="dns" class="active">DNS</button>
+            <button type="button" data-mode="friends">Friends</button>
+            <button type="button" data-mode="java">Java</button>
+          </div>
+          <p id="mode-hint" class="muted">Set your console DNS to a relay, then join a featured server.</p>
+        </div>
+
+        <div class="field">
+          <label for="connect-address">Server address</label>
+          <input id="connect-address" type="text" placeholder="play.myserver.net" autocapitalize="off" spellcheck="false" required>
+        </div>
+
+        <div class="field">
+          <label for="connect-port">Port</label>
+          <input id="connect-port" type="text" inputmode="numeric" value="19132" required>
+        </div>
+
+        <div class="field hidden" id="gamertag-field">
+          <label for="connect-gamertag">Bedrock gamertag</label>
+          <select id="connect-gamertag"></select>
+        </div>
+
+        <div class="field">
+          <label>Relay region</label>
+          <div class="row">
+            <button type="button" data-region="EU" class="active">EU Server</button>
+            <button type="button" data-region="US">US Server</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <button id="submit-button" type="submit">Start session</button>
+        </div>
+      </form>
+
+      <div id="connect-error" class="notice error hidden"></div>
+      <div id="connect-result" class="notice hidden"></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js';
+    import {
+      getAuth,
+      setPersistence,
+      browserLocalPersistence,
+      onAuthStateChanged,
+      signInWithEmailAndPassword,
+      sendPasswordResetEmail,
+      signOut
+    } from 'https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js';
+
+    const API_BASE = 'https://api.mccompanion.net';
+    const FIREBASE_CONFIG = {
+      apiKey: 'AIzaSyDagxbLCjjUSnEG-KpiPyrXVKSb9i6cxXQ',
+      authDomain: 'mccompanionadmin.firebaseapp.com',
+      projectId: 'mccompanionadmin',
+      storageBucket: 'mccompanionadmin.firebasestorage.app',
+      messagingSenderId: '670852401318',
+      appId: '1:670852401318:web:2ad57d7d34847b03004c67'
+    };
+
+    const CONNECT_RELAYS = {
+      EU: { name: 'EU Server', ip: '161.97.182.113' },
+      US: { name: 'US Server', ip: '217.77.15.138' }
+    };
+    const CONNECT_DEFAULT_PORT = { bedrock: 19132, java: 25565 };
+    const CONNECT_MODE_STRING = { dns: 'NINTENDO', friends: 'FRIENDS', java: 'JAVA' };
+
+    const firebaseApp = initializeApp(FIREBASE_CONFIG);
+    const auth = getAuth(firebaseApp);
+    setPersistence(auth, browserLocalPersistence).catch(() => {});
+
+    const state = {
+      mode: 'dns',
+      region: 'EU',
+      portTouched: false,
+      loading: false,
+      result: null,
+      bots: null,
+      gamertags: [],
+      profileLoaded: false
+    };
+
+    const authCard = document.getElementById('auth-card');
+    const connectCard = document.getElementById('connect-card');
+    const authForm = document.getElementById('auth-form');
+    const authError = document.getElementById('auth-error');
+    const resetButton = document.getElementById('reset-button');
+    const logoutButton = document.getElementById('logout-button');
+    const signedInAs = document.getElementById('signed-in-as');
+
+    const connectForm = document.getElementById('connect-form');
+    const connectError = document.getElementById('connect-error');
+    const connectResult = document.getElementById('connect-result');
+    const modeHint = document.getElementById('mode-hint');
+    const addressInput = document.getElementById('connect-address');
+    const portInput = document.getElementById('connect-port');
+    const gamertagField = document.getElementById('gamertag-field');
+    const gamertagSelect = document.getElementById('connect-gamertag');
+    const submitButton = document.getElementById('submit-button');
+
+    function setAuthError(message) {
+      authError.textContent = message || '';
+      authError.classList.toggle('hidden', !message);
+    }
+
+    function setConnectError(message) {
+      connectError.textContent = message || '';
+      connectError.classList.toggle('hidden', !message);
+    }
+
+    function renderResult(result) {
+      if (!result) {
+        connectResult.classList.add('hidden');
+        connectResult.innerHTML = '';
+        return;
+      }
+      const relay = CONNECT_RELAYS[result.region];
+      const list = result.mode === 'friends'
+        ? `<ol>
+            <li>On Xbox Live, add <span class="mono">${result.bot || ''}</span> as a friend.</li>
+            <li>Open Minecraft and go to the Friends tab.</li>
+            <li>Join the server that appears under LAN worlds.</li>
+           </ol>`
+        : `<ol>
+            <li>Set your DNS to <span class="mono">${relay.ip}</span>.</li>
+            <li>Open Minecraft and pick any featured server.</li>
+            <li>You will be sent to your own server.</li>
+           </ol>`;
+      const note = result.gamertag
+        ? `Matched by gamertag ${result.gamertag} and your current IP.`
+        : 'Matched by your current IP only.';
+      connectResult.innerHTML = `<strong>Session ready.</strong>${list}<p class="muted">${note}</p>`;
+      connectResult.classList.remove('hidden');
+    }
+
+    function renderMode() {
+      document.querySelectorAll('[data-mode]').forEach((button) => {
+        button.classList.toggle('active', button.getAttribute('data-mode') === state.mode);
+      });
+      if (state.mode === 'dns') modeHint.textContent = 'Set your console DNS to a relay, then join a featured server.';
+      if (state.mode === 'friends') modeHint.textContent = 'A bot adds you as a friend, and your server shows in the Friends tab.';
+      if (state.mode === 'java') modeHint.textContent = 'Bridge to a Java Edition server through the relay.';
+
+      if (!state.portTouched) {
+        portInput.value = String(state.mode === 'java' ? CONNECT_DEFAULT_PORT.java : CONNECT_DEFAULT_PORT.bedrock);
+      }
+      gamertagField.classList.toggle('hidden', !(state.mode === 'friends' && state.gamertags.length > 0));
+    }
+
+    function renderRegion() {
+      document.querySelectorAll('[data-region]').forEach((button) => {
+        button.classList.toggle('active', button.getAttribute('data-region') === state.region);
+      });
+    }
+
+    function setLoading(loading) {
+      state.loading = loading;
+      submitButton.disabled = loading;
+      submitButton.textContent = loading ? 'Setting up…' : 'Start session';
+    }
+
+    async function getToken() {
+      if (!auth.currentUser) return null;
+      return auth.currentUser.getIdToken();
+    }
+
+    async function authedFetch(url, options = {}) {
+      const token = await getToken();
+      if (!token) throw new Error('Not authenticated');
+      return fetch(url, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          Authorization: `******
+        }
+      });
+    }
+
+    async function loadProfileData() {
+      if (state.profileLoaded) return;
+      state.profileLoaded = true;
+      try {
+        const res = await authedFetch(`${API_BASE}/api/account/dashboard`);
+        if (!res.ok) return;
+        const data = await res.json();
+        state.gamertags = (data?.profile?.bedrockAccounts || []).map((a) => a.xboxGamertag).filter(Boolean);
+        gamertagSelect.innerHTML = state.gamertags.map((tag) => `<option value="${tag}">${tag}</option>`).join('');
+      } catch (_) {}
+      renderMode();
+    }
+
+    async function loadBotsIfNeeded() {
+      if (state.mode !== 'friends' || state.bots !== null) return;
+      try {
+        const response = await fetch(`${API_BASE}/api/bots`);
+        if (!response.ok) throw new Error();
+        const data = await response.json();
+        state.bots = Array.isArray(data.bots) ? data.bots : [];
+      } catch (_) {
+        state.bots = [];
+      }
+    }
+
+    function pickFriendBot() {
+      if (!Array.isArray(state.bots) || state.bots.length === 0) return null;
+      return state.bots.find((b) => b.friendCount == null || b.friendCount < b.maxFriends) || state.bots[0];
+    }
+
+    authForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      setAuthError('');
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        const message = error?.code === 'auth/invalid-credential' || error?.code === 'auth/wrong-password'
+          ? 'Email or password is incorrect.'
+          : error?.message || 'Sign-in failed.';
+        setAuthError(message);
+      }
+    });
+
+    resetButton.addEventListener('click', async () => {
+      setAuthError('');
+      const email = document.getElementById('email').value.trim();
+      if (!email) {
+        setAuthError('Enter your email first.');
+        return;
+      }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        setAuthError('Password reset email sent.');
+      } catch (error) {
+        setAuthError(error?.message || 'Could not send reset email.');
+      }
+    });
+
+    logoutButton.addEventListener('click', async () => {
+      await signOut(auth).catch(() => {});
+    });
+
+    document.querySelectorAll('[data-mode]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        state.mode = button.getAttribute('data-mode') || 'dns';
+        state.result = null;
+        renderResult(null);
+        setConnectError('');
+        await loadBotsIfNeeded();
+        renderMode();
+      });
+    });
+
+    document.querySelectorAll('[data-region]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.region = button.getAttribute('data-region') || 'EU';
+        state.result = null;
+        renderResult(null);
+        renderRegion();
+      });
+    });
+
+    portInput.addEventListener('input', () => {
+      portInput.value = portInput.value.replace(/[^0-9]/g, '');
+      state.portTouched = true;
+    });
+
+    connectForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      setConnectError('');
+      renderResult(null);
+
+      const address = addressInput.value.trim();
+      const port = Number.parseInt(portInput.value.trim(), 10);
+      const gamertag = gamertagSelect.value || '';
+
+      if (!address) {
+        setConnectError('Enter your server address first.');
+        return;
+      }
+      if (!Number.isInteger(port) || port < 1 || port > 65535) {
+        setConnectError('That port does not look right. Use a number between 1 and 65535.');
+        return;
+      }
+
+      const bot = state.mode === 'friends' ? pickFriendBot() : null;
+      if (state.mode === 'friends' && !gamertag) {
+        setConnectError('Friends mode needs a linked Bedrock account. Link one in the app first.');
+        return;
+      }
+      if (state.mode === 'friends' && !bot) {
+        setConnectError('No friend bot is available right now. Try DNS mode instead.');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const body = {
+          remoteIP: address,
+          remotePort: port,
+          mode: CONNECT_MODE_STRING[state.mode]
+        };
+        if (gamertag) body.bedrockGamertag = gamertag;
+
+        const response = await authedFetch(`${API_BASE}/api/route`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        let payload = null;
+        try { payload = await response.json(); } catch (_) {}
+
+        if (response.ok) {
+          state.result = { mode: state.mode, region: state.region, gamertag, bot: bot?.gamertag || null };
+          renderResult(state.result);
+          return;
+        }
+        if (response.status === 403) throw new Error(payload?.message || 'Your connection is blocked.');
+        if (response.status === 429) throw new Error('You are doing that a bit too fast. Wait a moment and try again.');
+        throw new Error(payload?.message || `Something went wrong (status ${response.status}). Try again.`);
+      } catch (error) {
+        setConnectError(error?.message || 'Could not reach the server. Check your connection and try again.');
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      setAuthError('');
+      setConnectError('');
+      state.result = null;
+      renderResult(null);
+      if (!user) {
+        authCard.classList.remove('hidden');
+        connectCard.classList.add('hidden');
+        signedInAs.textContent = '';
+        state.profileLoaded = false;
+        state.gamertags = [];
+        state.bots = null;
+        renderMode();
+        renderRegion();
+        return;
+      }
+
+      authCard.classList.add('hidden');
+      connectCard.classList.remove('hidden');
+      signedInAs.textContent = `Signed in as ${user.email || user.uid}`;
+      await loadProfileData();
+      if (state.mode === 'friends') await loadBotsIfNeeded();
+      renderMode();
+      renderRegion();
+    });
+
+    renderMode();
+    renderRegion();
+  </script>
+</body>
+</html>
