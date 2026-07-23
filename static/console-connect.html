@@ -257,7 +257,9 @@
 
     function renderRegion() {
       document.querySelectorAll('[data-region]').forEach((button) => {
-        button.classList.toggle('active', button.getAttribute('data-region') === state.region);
+        const active = button.getAttribute('data-region') === state.region;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
       });
     }
 
