@@ -1158,6 +1158,18 @@ header('Content-Type: text/html; charset=UTF-8');
       if (typeof gamertag === 'string') state.connectForm.gamertag = gamertag;
     }
 
+    function createSubmissionDraft(submission) {
+      return {
+        name: submission.name || '',
+        description: submission.description || '',
+        tags: (submission.tags || []).join(', '),
+        category: submission.category || '',
+        longDescription: submission.longDescription || '',
+        creatorWebsite: submission.creatorWebsite || '',
+        creatorDiscord: submission.creatorDiscord || ''
+      };
+    }
+
     async function submitPack(event) {
       event.preventDefault();
       syncPackDraftFromDom();
@@ -1224,15 +1236,7 @@ header('Content-Type: text/html; charset=UTF-8');
       const submission = state.submissions.find((item) => item.id === id);
       if (!submission) return;
       state.editingSubmissionId = id;
-      state.editSubmissionDraft = {
-        name: submission.name || '',
-        description: submission.description || '',
-        tags: (submission.tags || []).join(', '),
-        category: submission.category || '',
-        longDescription: submission.longDescription || '',
-        creatorWebsite: submission.creatorWebsite || '',
-        creatorDiscord: submission.creatorDiscord || ''
-      };
+      state.editSubmissionDraft = createSubmissionDraft(submission);
       state.editingSubmissionThumb = {
         url: submission.thumbnailUrl || '',
         preview: submission.thumbnailUrl || '',
@@ -1589,6 +1593,7 @@ header('Content-Type: text/html; charset=UTF-8');
               <div class="field">
                 <label for="connect-port">Port</label>
                 <input id="connect-port" type="text" inputmode="numeric" value="${escapeHtml(state.connectForm.port)}" placeholder="${CONNECT_DEFAULT_PORT[mode === 'java' ? 'java' : 'bedrock']}">
+                <p class="panel-copy">Use the Minecraft server port here. Most setups use 19132 for Bedrock or 25565 for Java.</p>
               </div>
             </div>
             ${gamertags.length > 0 ? `
@@ -1668,15 +1673,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
     function renderEditSubmissionForm(submission) {
       if (state.editingSubmissionId !== submission.id) return '';
-      const draft = state.editSubmissionDraft || {
-        name: submission.name || '',
-        description: submission.description || '',
-        tags: (submission.tags || []).join(', '),
-        category: submission.category || '',
-        longDescription: submission.longDescription || '',
-        creatorWebsite: submission.creatorWebsite || '',
-        creatorDiscord: submission.creatorDiscord || ''
-      };
+      const draft = state.editSubmissionDraft || createSubmissionDraft(submission);
       return `
         <div class="submission-edit" data-edit-root="${escapeHtml(submission.id)}">
           <div class="fields">
@@ -1700,6 +1697,7 @@ header('Content-Type: text/html; charset=UTF-8');
             <div class="field">
               <label>Tags</label>
               <input data-edit="tags" type="text" value="${escapeHtml(draft.tags)}" placeholder="faithful, pvp, dark">
+              <p class="panel-copy">Tags are lowercased automatically and only keep letters, numbers, and hyphens.</p>
             </div>
             <div class="field">
               <label>Long description</label>
@@ -1816,6 +1814,7 @@ header('Content-Type: text/html; charset=UTF-8');
             <div class="field">
               <label for="pack-tags">Tags</label>
               <input id="pack-tags" type="text" placeholder="faithful, pvp, dark" value="${escapeHtml(draft.tags)}">
+              <p class="panel-copy">Tags are lowercased automatically and only keep letters, numbers, and hyphens.</p>
             </div>
             <div class="field">
               <label for="pack-long-description">Long description</label>
