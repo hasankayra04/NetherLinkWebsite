@@ -198,6 +198,13 @@ header('Content-Type: text/html; charset=UTF-8');
       font-weight: 800;
     }
 
+    .button-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+
     .badge {
       display: inline-flex;
       align-items: center;
@@ -1365,7 +1372,7 @@ header('Content-Type: text/html; charset=UTF-8');
             </div>
             <div class="button-row">
               <button type="submit">${state.busy ? 'Signing in…' : 'Sign in'}</button>
-              <a class="button" href="/register" style="display:flex;align-items:center;justify-content:center;text-decoration:none;">Create account</a>
+              <a class="button button-link" href="/register">Create account</a>
             </div>
           </form>
           <form id="reset-form" class="fields" style="margin-top: 18px;">
@@ -1393,7 +1400,7 @@ header('Content-Type: text/html; charset=UTF-8');
               </div>
             </div>
             <div class="button-row">
-              <a class="button" href="/register" style="display:flex;align-items:center;justify-content:center;text-decoration:none;">Open registration</a>
+              <a class="button button-link" href="/register">Open registration</a>
             </div>
           </section>
         `;
@@ -1637,7 +1644,7 @@ header('Content-Type: text/html; charset=UTF-8');
               </div>
             </div>
             <div class="button-row">
-              <a class="button" href="/skins" style="display:flex;align-items:center;justify-content:center;text-decoration:none;">Open skin workshop</a>
+              <a class="button button-link" href="/skins">Open skin workshop</a>
             </div>
           </section>
         `;
@@ -1898,10 +1905,10 @@ header('Content-Type: text/html; charset=UTF-8');
     function renderQuickLinks() {
       const links = [];
       if (state.roles.includes('partner') || state.roles.includes('admin')) {
-        links.push('<a class="button" href="/partner-portal" style="display:flex;align-items:center;justify-content:center;text-decoration:none;">Open partner portal</a>');
+        links.push('<a class="button button-link" href="/partner-portal">Open partner portal</a>');
       }
       if (state.roles.includes('admin')) {
-        links.push('<a class="button" href="/admin" style="display:flex;align-items:center;justify-content:center;text-decoration:none;">Open admin panel</a>');
+        links.push('<a class="button button-link" href="/admin">Open admin panel</a>');
       }
       if (!links.length) return '';
       return `
