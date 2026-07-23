@@ -237,7 +237,8 @@
       if (!state.portTouched) {
         portInput.value = String(state.mode === 'java' ? CONNECT_DEFAULT_PORT.java : CONNECT_DEFAULT_PORT.bedrock);
       }
-      gamertagField.classList.toggle('hidden', !(state.mode === 'friends' && state.gamertags.length > 0));
+      const showGamertagField = state.mode === 'friends' && state.gamertags.length > 0;
+      gamertagField.classList.toggle('hidden', !showGamertagField);
     }
 
     function renderRegion() {
