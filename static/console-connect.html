@@ -397,10 +397,6 @@
         return;
       }
 
-      if (state.mode === 'friends' && !gamertag) {
-        setConnectError('Friends mode needs a linked Bedrock account. Link one in the MCCompanion mobile app first.');
-        return;
-      }
       const bot = state.mode === 'friends' ? pickFriendBot() : null;
       if (state.mode === 'friends' && !bot) {
         setConnectError('No friend bot is available right now. Try DNS mode instead.');
