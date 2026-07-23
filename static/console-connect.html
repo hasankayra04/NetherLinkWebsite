@@ -100,7 +100,7 @@
 
         <div class="field">
           <label for="connect-port">Port</label>
-          <input id="connect-port" type="text" inputmode="numeric" value="19132" required>
+          <input id="connect-port" type="text" inputmode="numeric" pattern="[0-9]*" min="1" max="65535" value="19132" required>
         </div>
 
         <div class="field hidden" id="gamertag-field">
@@ -295,7 +295,7 @@
 
     function pickFriendBot() {
       if (!Array.isArray(state.bots) || state.bots.length === 0) return null;
-      return state.bots.find((b) => b.friendCount === null || b.friendCount === undefined || b.friendCount < b.maxFriends) || state.bots[0];
+      return state.bots.find((b) => typeof b.friendCount !== 'number' || b.friendCount < b.maxFriends) || state.bots[0];
     }
 
     authForm.addEventListener('submit', async (event) => {
@@ -355,6 +355,12 @@
     portInput.addEventListener('input', () => {
       portInput.value = portInput.value.replace(/[^0-9]/g, '');
       state.portTouched = true;
+      if (!portInput.value) {
+        portInput.setCustomValidity('');
+        return;
+      }
+      const numeric = Number.parseInt(portInput.value, 10);
+      portInput.setCustomValidity(Number.isInteger(numeric) && numeric >= 1 && numeric <= 65535 ? '' : 'Use a port between 1 and 65535.');
     });
 
     connectForm.addEventListener('submit', async (event) => {
