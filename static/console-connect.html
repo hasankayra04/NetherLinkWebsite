@@ -154,6 +154,7 @@
     };
     const CONNECT_DEFAULT_PORT = { bedrock: 19132, java: 25565 };
     const CONNECT_MODE_STRING = { dns: 'NINTENDO', friends: 'FRIENDS', java: 'JAVA' };
+    const PORT_ERROR_MESSAGE = 'Use a port between 1 and 65535.';
 
     const firebaseApp = initializeApp(FIREBASE_CONFIG);
     const auth = getAuth(firebaseApp);
@@ -295,7 +296,11 @@
 
     function pickFriendBot() {
       if (!Array.isArray(state.bots) || state.bots.length === 0) return null;
-      return state.bots.find((b) => b.friendCount == null || (typeof b.friendCount === 'number' && b.friendCount < b.maxFriends)) || state.bots[0];
+      return state.bots.find((b) =>
+        b.friendCount === null ||
+        b.friendCount === undefined ||
+        (typeof b.friendCount === 'number' && b.friendCount < b.maxFriends)
+      ) || state.bots[0];
     }
 
     authForm.addEventListener('submit', async (event) => {
@@ -361,10 +366,10 @@
       }
       const numeric = Number.parseInt(portInput.value, 10);
       if (Number.isNaN(numeric)) {
-        portInput.setCustomValidity('Use a port between 1 and 65535.');
+        portInput.setCustomValidity(PORT_ERROR_MESSAGE);
         return;
       }
-      portInput.setCustomValidity(numeric >= 1 && numeric <= 65535 ? '' : 'Use a port between 1 and 65535.');
+      portInput.setCustomValidity(numeric >= 1 && numeric <= 65535 ? '' : PORT_ERROR_MESSAGE);
     });
 
     connectForm.addEventListener('submit', async (event) => {
