@@ -1150,8 +1150,9 @@ header('Content-Type: text/html; charset=UTF-8');
     }
 
     function hasFreeFriendSlot(bot) {
-      const friendCount = bot.friendCount ?? null;
-      return friendCount === null || friendCount < bot.maxFriends;
+      if (bot.friendCount === null) return true;
+      if (bot.friendCount === undefined) return false;
+      return bot.friendCount < bot.maxFriends;
     }
 
     function syncConnectFormFromDom() {
@@ -1700,7 +1701,7 @@ header('Content-Type: text/html; charset=UTF-8');
             <div class="field">
               <label>Tags</label>
               <input data-edit="tags" type="text" value="${escapeHtml(draft.tags)}" placeholder="faithful, pvp, dark">
-              <p class="panel-copy">${escapeHtml(TAG_HELP_TEXT)}</p>
+              <p class="panel-copy">${TAG_HELP_TEXT}</p>
             </div>
             <div class="field">
               <label>Long description</label>
@@ -1817,7 +1818,7 @@ header('Content-Type: text/html; charset=UTF-8');
             <div class="field">
               <label for="pack-tags">Tags</label>
               <input id="pack-tags" data-pack-draft="tags" type="text" placeholder="faithful, pvp, dark" value="${escapeHtml(draft.tags)}">
-              <p class="panel-copy">${escapeHtml(TAG_HELP_TEXT)}</p>
+              <p class="panel-copy">${TAG_HELP_TEXT}</p>
             </div>
             <div class="field">
               <label for="pack-long-description">Long description</label>
