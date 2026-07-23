@@ -269,6 +269,14 @@
       });
     }
 
+    async function parseJsonSafe(response) {
+      try {
+        return await response.json();
+      } catch (err) {
+        return null;
+      }
+    }
+
     async function loadProfileData() {
       if (state.profileLoaded) return;
       state.profileLoaded = true;
@@ -395,7 +403,7 @@
 
       const bot = state.mode === 'friends' ? pickFriendBot() : null;
       if (state.mode === 'friends' && !gamertag) {
-        setConnectError('Friends mode needs a linked Bedrock account. Link one in the app first.');
+        setConnectError('Friends mode needs a linked Bedrock account. Link one in the MCCompanion mobile app first.');
         return;
       }
       if (state.mode === 'friends' && !bot) {
@@ -418,8 +426,7 @@
           body: JSON.stringify(body)
         });
 
-        let payload = null;
-        try { payload = await response.json(); } catch (err) { /* Some API errors can return empty bodies. */ }
+        const payload = await parseJsonSafe(response);
 
         if (response.ok) {
           state.result = { mode: state.mode, region: state.region, gamertag, bot: bot?.gamertag || null };
