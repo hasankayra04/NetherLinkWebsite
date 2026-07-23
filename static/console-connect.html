@@ -409,7 +409,9 @@
 
       const address = addressInput.value.trim();
       const port = Number.parseInt(portInput.value.trim(), 10);
-      const gamertag = (state.mode === 'friends' && state.gamertags.length > 0) ? (gamertagSelect.value || '') : '';
+      const submitMode = state.mode;
+      const submitRegion = state.region;
+      const gamertag = state.gamertags.length > 0 ? (gamertagSelect.value || '') : '';
       if (!address) {
         setConnectError('Enter your server address first.');
         return;
@@ -419,8 +421,8 @@
         return;
       }
 
-      const bot = state.mode === 'friends' ? pickFriendBot() : null;
-      if (state.mode === 'friends' && !bot) {
+      const bot = submitMode === 'friends' ? pickFriendBot() : null;
+      if (submitMode === 'friends' && !bot) {
         setConnectError('No friend bot is available right now. Try DNS mode instead.');
         return;
       }
@@ -430,7 +432,7 @@
         const body = {
           remoteIP: address,
           remotePort: port,
-          mode: CONNECT_MODE_STRING[state.mode]
+          mode: CONNECT_MODE_STRING[submitMode]
         };
         if (gamertag) body.bedrockGamertag = gamertag;
 
