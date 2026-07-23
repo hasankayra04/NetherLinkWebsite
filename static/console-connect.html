@@ -240,7 +240,9 @@
 
     function renderMode() {
       document.querySelectorAll('[data-mode]').forEach((button) => {
-        button.classList.toggle('active', button.getAttribute('data-mode') === state.mode);
+        const active = button.getAttribute('data-mode') === state.mode;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
       });
       if (state.mode === 'dns') modeHint.textContent = 'Set your console DNS to a relay, then join a featured server.';
       if (state.mode === 'friends') modeHint.textContent = 'A bot adds you as a friend, and your server shows in the Friends tab.';
