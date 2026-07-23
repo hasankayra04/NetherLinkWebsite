@@ -208,19 +208,29 @@
         return;
       }
       const relay = CONNECT_RELAYS[result.region];
+      const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[c]));
+      const safeBot = escapeHtml(result.bot || '');
+      const safeIp = escapeHtml(relay.ip);
+      const safeGamertag = escapeHtml(result.gamertag || '');
       const list = result.mode === 'friends'
         ? `<ol>
-            <li>On Xbox Live, add <span class="mono">${result.bot || ''}</span> as a friend.</li>
+            <li>On Xbox Live, add <span class="mono">${safeBot}</span> as a friend.</li>
             <li>Open Minecraft and go to the Friends tab.</li>
             <li>Join the server that appears under LAN worlds.</li>
            </ol>`
         : `<ol>
-            <li>Set your DNS to <span class="mono">${relay.ip}</span>.</li>
+            <li>Set your DNS to <span class="mono">${safeIp}</span>.</li>
             <li>Open Minecraft and pick any featured server.</li>
             <li>You will be sent to your own server.</li>
            </ol>`;
       const note = result.gamertag
-        ? `Matched by gamertag ${result.gamertag} and your current IP.`
+        ? `Matched by gamertag ${safeGamertag} and your current IP.`
         : 'Matched by your current IP only.';
       connectResult.innerHTML = `<strong>Session ready.</strong>${list}<p class="muted">${note}</p>`;
       connectResult.classList.remove('hidden');
