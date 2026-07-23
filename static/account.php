@@ -570,6 +570,7 @@ header('Content-Type: text/html; charset=UTF-8');
     };
     const CONNECT_DEFAULT_PORT = { bedrock: 19132, java: 25565 };
     const CONNECT_MODE_STRING = { dns: 'NINTENDO', friends: 'FRIENDS', java: 'JAVA' };
+    const TAG_HELP_TEXT = 'Tags are lowercased automatically and only keep letters, numbers, and hyphens.';
     const ACTIVITY_LABELS = {
       skin_upload: { icon: '🎨', label: 'Uploaded skin', colorClass: 'accent' },
       pack_submitted: { icon: '📦', label: 'Submitted pack', colorClass: 'warning' },
@@ -675,7 +676,7 @@ header('Content-Type: text/html; charset=UTF-8');
       return '';
     }
 
-    function initials(value) {
+    function firstInitial(value) {
       return String(value || '?').trim().charAt(0).toUpperCase() || '?';
     }
 
@@ -1028,7 +1029,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
     function pickFriendBot() {
       if (!Array.isArray(state.connectBots) || state.connectBots.length === 0) return null;
-      return state.connectBots.find((bot) => bot.friendCount === null || bot.friendCount === undefined || bot.friendCount < bot.maxFriends) || state.connectBots[0];
+      return state.connectBots.find((bot) => hasFreeFriendSlot(bot)) || state.connectBots[0];
     }
 
     async function submitConnect(event) {
@@ -1149,6 +1150,10 @@ header('Content-Type: text/html; charset=UTF-8');
         creatorDiscord: document.getElementById('pack-creator-discord')?.value || state.submitPackDraft.creatorDiscord,
         ownership: Boolean(document.getElementById('pack-ownership')?.checked ?? state.submitPackDraft.ownership)
       };
+    }
+
+    function hasFreeFriendSlot(bot) {
+      return bot.friendCount === null || bot.friendCount === undefined || bot.friendCount < bot.maxFriends;
     }
 
     function syncConnectFormFromDom() {
@@ -1697,7 +1702,7 @@ header('Content-Type: text/html; charset=UTF-8');
             <div class="field">
               <label>Tags</label>
               <input data-edit="tags" type="text" value="${escapeHtml(draft.tags)}" placeholder="faithful, pvp, dark">
-              <p class="panel-copy">Tags are lowercased automatically and only keep letters, numbers, and hyphens.</p>
+              <p class="panel-copy">${escapeHtml(TAG_HELP_TEXT)}</p>
             </div>
             <div class="field">
               <label>Long description</label>
@@ -1814,7 +1819,7 @@ header('Content-Type: text/html; charset=UTF-8');
             <div class="field">
               <label for="pack-tags">Tags</label>
               <input id="pack-tags" type="text" placeholder="faithful, pvp, dark" value="${escapeHtml(draft.tags)}">
-              <p class="panel-copy">Tags are lowercased automatically and only keep letters, numbers, and hyphens.</p>
+              <p class="panel-copy">${escapeHtml(TAG_HELP_TEXT)}</p>
             </div>
             <div class="field">
               <label for="pack-long-description">Long description</label>
@@ -1920,7 +1925,7 @@ header('Content-Type: text/html; charset=UTF-8');
         <aside class="stack">
           <section class="panel">
             <div class="hero-user" style="align-items:flex-start;">
-              <div class="avatar">${avatarUrl ? `<img src="${avatarUrl}" alt="Avatar">` : initials(username)}</div>
+              <div class="avatar">${avatarUrl ? `<img src="${avatarUrl}" alt="Avatar">` : firstInitial(username)}</div>
               <div style="min-width:0;">
                 <p class="title" style="font-size: 26px; margin-bottom: 8px;">${escapeHtml(username)}</p>
                 ${state.profile?.displayName ? `<p class="subtitle" style="margin-top:0;">${escapeHtml(state.profile.displayName)}</p>` : ''}
@@ -1986,7 +1991,7 @@ header('Content-Type: text/html; charset=UTF-8');
         <section class="hero">
           <div class="hero-top">
             <div class="hero-user">
-              <div class="avatar">${avatarUrl ? `<img src="${avatarUrl}" alt="Avatar">` : initials(username)}</div>
+              <div class="avatar">${avatarUrl ? `<img src="${avatarUrl}" alt="Avatar">` : firstInitial(username)}</div>
               <div style="min-width:0;">
                 <p class="badge accent">Console-friendly account</p>
                 <h1 class="title">${escapeHtml(username)}</h1>
