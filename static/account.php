@@ -1140,20 +1140,18 @@ header('Content-Type: text/html; charset=UTF-8');
     }
 
     function syncPackDraftFromDom() {
-      state.submitPackDraft = {
-        name: document.getElementById('pack-name')?.value || state.submitPackDraft.name,
-        description: document.getElementById('pack-description')?.value || state.submitPackDraft.description,
-        category: document.getElementById('pack-category')?.value || state.submitPackDraft.category,
-        tags: document.getElementById('pack-tags')?.value || state.submitPackDraft.tags,
-        longDescription: document.getElementById('pack-long-description')?.value || state.submitPackDraft.longDescription,
-        creatorWebsite: document.getElementById('pack-creator-website')?.value || state.submitPackDraft.creatorWebsite,
-        creatorDiscord: document.getElementById('pack-creator-discord')?.value || state.submitPackDraft.creatorDiscord,
-        ownership: Boolean(document.getElementById('pack-ownership')?.checked ?? state.submitPackDraft.ownership)
-      };
+      const next = { ...state.submitPackDraft };
+      document.querySelectorAll('[data-pack-draft]').forEach((field) => {
+        const key = field.getAttribute('data-pack-draft');
+        if (!key) return;
+        next[key] = field.type === 'checkbox' ? Boolean(field.checked) : field.value;
+      });
+      state.submitPackDraft = next;
     }
 
     function hasFreeFriendSlot(bot) {
-      return bot.friendCount === null || bot.friendCount === undefined || bot.friendCount < bot.maxFriends;
+      const friendCount = bot.friendCount ?? null;
+      return friendCount === null || friendCount < bot.maxFriends;
     }
 
     function syncConnectFormFromDom() {
@@ -1802,11 +1800,11 @@ header('Content-Type: text/html; charset=UTF-8');
             <div class="field-grid">
               <div class="field">
                 <label for="pack-name">Pack name</label>
-                <input id="pack-name" type="text" maxlength="64" placeholder="Faithful 32x" value="${escapeHtml(draft.name)}">
+                <input id="pack-name" data-pack-draft="name" type="text" maxlength="64" placeholder="Faithful 32x" value="${escapeHtml(draft.name)}">
               </div>
               <div class="field">
                 <label for="pack-category">Category</label>
-                <select id="pack-category">
+                <select id="pack-category" data-pack-draft="category">
                   <option value="">Choose a category</option>
                   ${PACK_CATEGORIES.map((category) => `<option value="${category}" ${draft.category === category ? 'selected' : ''}>${category}</option>`).join('')}
                 </select>
@@ -1814,25 +1812,25 @@ header('Content-Type: text/html; charset=UTF-8');
             </div>
             <div class="field">
               <label for="pack-description">Short description</label>
-              <input id="pack-description" type="text" maxlength="160" placeholder="One short line for the pack card" value="${escapeHtml(draft.description)}">
+              <input id="pack-description" data-pack-draft="description" type="text" maxlength="160" placeholder="One short line for the pack card" value="${escapeHtml(draft.description)}">
             </div>
             <div class="field">
               <label for="pack-tags">Tags</label>
-              <input id="pack-tags" type="text" placeholder="faithful, pvp, dark" value="${escapeHtml(draft.tags)}">
+              <input id="pack-tags" data-pack-draft="tags" type="text" placeholder="faithful, pvp, dark" value="${escapeHtml(draft.tags)}">
               <p class="panel-copy">${escapeHtml(TAG_HELP_TEXT)}</p>
             </div>
             <div class="field">
               <label for="pack-long-description">Long description</label>
-              <textarea id="pack-long-description" placeholder="Full description shown to reviewers">${escapeHtml(draft.longDescription)}</textarea>
+              <textarea id="pack-long-description" data-pack-draft="longDescription" placeholder="Full description shown to reviewers">${escapeHtml(draft.longDescription)}</textarea>
             </div>
             <div class="field-grid">
               <div class="field">
                 <label for="pack-creator-website">Creator website</label>
-                <input id="pack-creator-website" type="url" placeholder="https://example.com" value="${escapeHtml(draft.creatorWebsite)}">
+                <input id="pack-creator-website" data-pack-draft="creatorWebsite" type="url" placeholder="https://example.com" value="${escapeHtml(draft.creatorWebsite)}">
               </div>
               <div class="field">
                 <label for="pack-creator-discord">Creator Discord</label>
-                <input id="pack-creator-discord" type="text" placeholder="username#0000 or @username" value="${escapeHtml(draft.creatorDiscord)}">
+                <input id="pack-creator-discord" data-pack-draft="creatorDiscord" type="text" placeholder="username#0000 or @username" value="${escapeHtml(draft.creatorDiscord)}">
               </div>
             </div>
             <div class="field-grid">
@@ -1854,7 +1852,7 @@ header('Content-Type: text/html; charset=UTF-8');
               </div>
             </div>
             <label class="toggle">
-              <input id="pack-ownership" type="checkbox" ${draft.ownership ? 'checked' : ''}>
+              <input id="pack-ownership" data-pack-draft="ownership" type="checkbox" ${draft.ownership ? 'checked' : ''}>
               <span>I confirm that I created this pack or I have permission to submit it.</span>
             </label>
             <button type="submit">${state.loading.packSubmit ? 'Submitting…' : 'Submit pack'}</button>
@@ -2094,8 +2092,8 @@ header('Content-Type: text/html; charset=UTF-8');
         uploadPackThumbnail(file, false);
       });
       document.getElementById('pack-form')?.addEventListener('submit', submitPack);
-      ['pack-name', 'pack-description', 'pack-category', 'pack-tags', 'pack-long-description', 'pack-creator-website', 'pack-creator-discord', 'pack-ownership'].forEach((id) => {
-        document.getElementById(id)?.addEventListener(id === 'pack-ownership' ? 'change' : 'input', syncPackDraftFromDom);
+      document.querySelectorAll('[data-pack-draft]').forEach((field) => {
+        field.addEventListener(field.type === 'checkbox' || field.tagName === 'SELECT' ? 'change' : 'input', syncPackDraftFromDom);
       });
 
       document.querySelectorAll('[data-edit-submission]').forEach((button) => {
